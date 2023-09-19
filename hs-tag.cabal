@@ -10,7 +10,9 @@ executable hs-tag
     hs-source-dirs:   app
 
     main-is:          Main.hs
-    other-modules:    Options
+    other-modules:
+        Config,
+        Options
 
     mixins:
         base hiding (Prelude),
@@ -18,13 +20,15 @@ executable hs-tag
         relude
 
     build-depends:
+        aeson,
         base,
         htaglib,
         optparse-applicative,
         path,
         path-io,
         relude,
-        text
+        text,
+        yaml
 
     default-language: Haskell2010
 
@@ -38,6 +42,7 @@ executable hs-tag
       -Wredundant-constraints
 
    default-extensions:
+      DeriveGeneric
       OverloadedStrings
       RecordWildCards
       ScopedTypeVariables

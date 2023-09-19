@@ -1,8 +1,21 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Main where
 
-import Options
+import Config (Config (..), defaultConfig)
+import Data.Aeson (encode)
+import Data.Yaml (ToJSON (toJSON), decodeFileThrow, encodeFile)
+import Options (
+    CheckOptions (..),
+    DisplayOptions (..),
+    EditOptions (..),
+    Options (..),
+    SetOrRemove (..),
+    optionsInfo,
+ )
 import Options.Applicative (execParser)
-import Path (prjSomeBase, toFilePath)
+import Path (Abs, Dir, Path, mkRelDir, mkRelFile, prjSomeBase, toFilePath, (</>))
+import Path.IO (XdgDirectory (..), doesFileExist, ensureDir, getXdgDir)
 import Sound.HTagLib (
     Album,
     Artist,
@@ -68,9 +81,26 @@ audioTrackGetter =
         <*> yearGetter
         <*> trackNumberGetter
 
+getConfigDir :: IO (Path Abs Dir)
+getConfigDir = getXdgDir XdgConfig $ Just $(mkRelDir "hs-tag")
+
 main :: IO ()
 main = do
     options <- execParser optionsInfo
+    -- let config = defaultConfig
+    -- print $ encode $ toJSON config
+    -- Check exception if not found create a default
+    -- file not found
+    -- unable to parse
+    -- config :: Either ParseException Config <- decodeFileEither "/home/jc/.config/hs-tag/config.yaml"
+    -- test if file is present if not create it
+    configDir <- getConfigDir
+    let configFile = configDir </> $(mkRelFile "config.yaml")
+        configFileStr = toFilePath configFile
+    ensureDir configDir
+    unlessM (doesFileExist configFile) $ encodeFile configFileStr defaultConfig
+    config :: Config <- decodeFileThrow $ toFilePath configFile
+    print config
     case options of
         Display DisplayOptions{..} -> do
             let filename = prjSomeBase toFilePath doFile
@@ -89,6 +119,22 @@ main = do
                             , toSetter trackNumberSetter eoTrack
                             ]
             setTags filename Nothing setter
+        Check CheckOptions{..} -> do
+            print "In check"
+            -- test if the target is a file or a directory
+            -- if file
+            let dirname = prjSomeBase toFilePath coDirectory
+            -- Get recursively all audio files
+            -- Get tags of all files
+            -- Check same artist or various artists
+            -- Check same album
+            -- Check same genre if same artist
+            -- Check genre valid
+            -- Check year/track number
+            -- Check filepath
+            -- Check has cover.jpg with the right size
+            -- output report per directory
+            return ()
   where
     toSetter _ Nothing = Nothing
     toSetter setter (Just Remove) = Just $ setter Nothing

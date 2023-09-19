@@ -1,4 +1,5 @@
 module Options (
+    CheckOptions (..),
     DisplayOptions (..),
     EditOptions (..),
     Options (..),
@@ -25,8 +26,10 @@ import Options.Applicative (
  )
 import Options.Applicative.Builder (flag')
 import Path (
+    Dir,
     File,
     SomeBase,
+    parseSomeDir,
     parseSomeFile,
  )
 import Sound.HTagLib (
@@ -58,11 +61,22 @@ data EditOptions = EditOptions
     }
     deriving (Show)
 
-data Options = Display DisplayOptions | Edit EditOptions
+newtype CheckOptions = CheckOptions
+    {coDirectory :: SomeBase Dir}
+    deriving (Show)
+
+data Options = Display DisplayOptions | Edit EditOptions | Check CheckOptions
     deriving (Show)
 
 optionsInfo :: ParserInfo Options
 optionsInfo = info (optionsP <**> helper) idm
+
+checkOptionsP :: Parser CheckOptions
+checkOptionsP =
+    CheckOptions
+        <$> argument
+            (maybeReader parseSomeDir)
+            (metavar "FILE")
 
 displayOptionsP :: Parser DisplayOptions
 displayOptionsP =
@@ -146,4 +160,7 @@ optionsP =
             <> command
                 "edit"
                 (info (Edit <$> editOptionsP) (progDesc "Edit tags"))
+            <> command
+                "check"
+                (info (Check <$> checkOptionsP) (progDesc "Check album"))
         )

@@ -1,0 +1,12 @@
+Roadmap:
+x show mp3 tag
+- edit mp3 tag
+- show diagnostic for a whole album:
+  - check file path
+  - check year & genreGetter
+  - check cover
+  - propose to fix diagnostic
+- handle a artist
+  - check genre consistency
+  - propose to fix the diagnostic
+
