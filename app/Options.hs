@@ -1,13 +1,14 @@
-module Options (
-    DisplayOptions (..),
+module Options
+  ( DisplayOptions (..),
     EditOptions (..),
     Options (..),
     SetOrRemove (..),
     optionsInfo,
-) where
+  )
+where
 
-import Options.Applicative (
-    Parser,
+import Options.Applicative
+  ( Parser,
     ParserInfo,
     argument,
     command,
@@ -22,15 +23,15 @@ import Options.Applicative (
     option,
     progDesc,
     strOption,
- )
+  )
 import Options.Applicative.Builder (flag')
-import Path (
-    File,
+import Path
+  ( File,
     SomeBase,
     parseSomeFile,
- )
-import Sound.HTagLib (
-    Album,
+  )
+import Sound.HTagLib
+  ( Album,
     Artist,
     Genre,
     Title,
@@ -38,99 +39,99 @@ import Sound.HTagLib (
     Year,
     mkTrackNumber,
     mkYear,
- )
+  )
 
 newtype DisplayOptions = DisplayOptions
-    {doFile :: SomeBase File}
-    deriving (Show)
+  {doFile :: SomeBase File}
+  deriving (Show)
 
 data SetOrRemove a = Set a | Remove
-    deriving (Show)
+  deriving (Show)
 
 data EditOptions = EditOptions
-    { eoFile :: !(SomeBase File)
-    , eoTitle :: !(Maybe Title)
-    , eoArtist :: !(Maybe Artist)
-    , eoAlbum :: !(Maybe Album)
-    , eoGenre :: !(Maybe Genre)
-    , eoYear :: !(Maybe (SetOrRemove Year))
-    , eoTrack :: !(Maybe (SetOrRemove TrackNumber))
-    }
-    deriving (Show)
+  { eoFile :: !(SomeBase File),
+    eoTitle :: !(Maybe Title),
+    eoArtist :: !(Maybe Artist),
+    eoAlbum :: !(Maybe Album),
+    eoGenre :: !(Maybe Genre),
+    eoYear :: !(Maybe (SetOrRemove Year)),
+    eoTrack :: !(Maybe (SetOrRemove TrackNumber))
+  }
+  deriving (Show)
 
 data Options = Display DisplayOptions | Edit EditOptions
-    deriving (Show)
+  deriving (Show)
 
 optionsInfo :: ParserInfo Options
 optionsInfo = info (optionsP <**> helper) idm
 
 displayOptionsP :: Parser DisplayOptions
 displayOptionsP =
-    DisplayOptions
-        <$> argument
-            (maybeReader parseSomeFile)
-            (metavar "FILE")
+  DisplayOptions
+    <$> argument
+      (maybeReader parseSomeFile)
+      (metavar "FILE")
 
 editOptionsP :: Parser EditOptions
 editOptionsP =
-    EditOptions
-        <$> argument
-            (maybeReader parseSomeFile)
-            (metavar "FILE")
-        <*> optional
-            ( strOption
-                ( long "title"
-                    <> metavar "TITLE"
-                    <> help "Set the title"
-                )
+  EditOptions
+    <$> argument
+      (maybeReader parseSomeFile)
+      (metavar "FILE")
+    <*> optional
+      ( strOption
+          ( long "title"
+              <> metavar "TITLE"
+              <> help "Set the title"
+          )
+      )
+    <*> optional
+      ( strOption
+          ( long "artist"
+              <> metavar "ARTIST"
+              <> help "Set the artist"
+          )
+      )
+    <*> optional
+      ( strOption
+          ( long "album"
+              <> metavar "ALBUM"
+              <> help "Set the album"
+          )
+      )
+    <*> optional
+      ( strOption
+          ( long "genre"
+              <> metavar "GENRE"
+              <> help "Set the genre"
+          )
+      )
+    <*> optional
+      ( option
+          (maybeReader strToYear)
+          ( long "year"
+              <> metavar "YEAR"
+              <> help "Set the year"
+          )
+          <|> flag'
+            Remove
+            ( long "noyear"
+                <> help "Unset the year"
             )
-        <*> optional
-            ( strOption
-                ( long "artist"
-                    <> metavar "ARTIST"
-                    <> help "Set the artist"
-                )
+      )
+    <*> optional
+      ( option
+          (maybeReader strToTrackNumber)
+          ( long "track"
+              <> metavar "TRACK"
+              <> help "Set the track number"
+          )
+          <|> flag'
+            Remove
+            ( long "notrack"
+                <> help "Unset the track"
             )
-        <*> optional
-            ( strOption
-                ( long "album"
-                    <> metavar "ALBUM"
-                    <> help "Set the album"
-                )
-            )
-        <*> optional
-            ( strOption
-                ( long "genre"
-                    <> metavar "GENRE"
-                    <> help "Set the genre"
-                )
-            )
-        <*> optional
-            ( option
-                (maybeReader strToYear)
-                ( long "year"
-                    <> metavar "YEAR"
-                    <> help "Set the year"
-                )
-                <|> flag'
-                    Remove
-                    ( long "noyear"
-                        <> help "Unset the year"
-                    )
-            )
-        <*> optional
-            ( option
-                (maybeReader strToTrackNumber)
-                ( long "track"
-                    <> metavar "TRACK"
-                    <> help "Set the track number"
-                )
-                <|> flag'
-                    Remove
-                    ( long "notrack"
-                        <> help "Unset the track"
-                    )
-            )
+      )
   where
     strToYear :: String -> Maybe (SetOrRemove Year)
     strToYear = fmap Set . mkYear <=< readMaybe
@@ -139,11 +140,11 @@ editOptionsP =
 
 optionsP :: Parser Options
 optionsP =
-    hsubparser
-        ( command
-            "display"
-            (info (Display <$> displayOptionsP) (progDesc "Show tags"))
-            <> command
-                "edit"
-                (info (Edit <$> editOptionsP) (progDesc "Edit tags"))
-        )
+  hsubparser
+    ( command
+        "display"
+        (info (Display <$> displayOptionsP) (progDesc "Show tags"))
+        <> command
+          "edit"
+          (info (Edit <$> editOptionsP) (progDesc "Edit tags"))
+    )

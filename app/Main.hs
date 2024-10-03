@@ -3,8 +3,8 @@ module Main where
 import Options
 import Options.Applicative (execParser)
 import Path (prjSomeBase, toFilePath)
-import Sound.HTagLib (
-    Album,
+import Sound.HTagLib
+  ( Album,
     Artist,
     Genre,
     TagGetter,
@@ -31,64 +31,64 @@ import Sound.HTagLib (
     unYear,
     yearGetter,
     yearSetter,
- )
+  )
 
 data AudioTrack = AudioTrack
-    { atTitle :: !Title
-    , atArtist :: !Artist
-    , atAlbum :: !Album
-    , atGenre :: !Genre
-    , atYear :: !(Maybe Year)
-    , atTrack :: !(Maybe TrackNumber)
-    }
-    deriving (Show)
+  { atTitle :: !Title,
+    atArtist :: !Artist,
+    atAlbum :: !Album,
+    atGenre :: !Genre,
+    atYear :: !(Maybe Year),
+    atTrack :: !(Maybe TrackNumber)
+  }
+  deriving (Show)
 
 render :: AudioTrack -> Text
-render AudioTrack{..} =
-    unlines
-        [ "Title: " <> unTitle atTitle
-        , "Artist: " <> unArtist atArtist
-        , "Album: " <> unAlbum atAlbum
-        , "Genre: " <> unGenre atGenre
-        , "Year: " <> withMissing unYear atYear
-        , "Track: " <> withMissing unTrackNumber atTrack
-        ]
+render AudioTrack {..} =
+  unlines
+    [ "Title: " <> unTitle atTitle,
+      "Artist: " <> unArtist atArtist,
+      "Album: " <> unAlbum atAlbum,
+      "Genre: " <> unGenre atGenre,
+      "Year: " <> withMissing unYear atYear,
+      "Track: " <> withMissing unTrackNumber atTrack
+    ]
 
-withMissing :: Show b => (a -> b) -> Maybe a -> Text
+withMissing :: (Show b) => (a -> b) -> Maybe a -> Text
 withMissing _ Nothing = "missing"
 withMissing f (Just x) = show . f $ x
 
 audioTrackGetter :: TagGetter AudioTrack
 audioTrackGetter =
-    AudioTrack
-        <$> titleGetter
-        <*> artistGetter
-        <*> albumGetter
-        <*> genreGetter
-        <*> yearGetter
-        <*> trackNumberGetter
+  AudioTrack
+    <$> titleGetter
+    <*> artistGetter
+    <*> albumGetter
+    <*> genreGetter
+    <*> yearGetter
+    <*> trackNumberGetter
 
 main :: IO ()
 main = do
-    options <- execParser optionsInfo
-    case options of
-        Display DisplayOptions{..} -> do
-            let filename = prjSomeBase toFilePath doFile
-            track <- getTags filename audioTrackGetter
-            putTextLn $ render track
-        Edit EditOptions{..} -> do
-            let filename = prjSomeBase toFilePath eoFile
-                setter =
-                    fold $
-                        catMaybes
-                            [ titleSetter <$> eoTitle
-                            , artistSetter <$> eoArtist
-                            , albumSetter <$> eoAlbum
-                            , genreSetter <$> eoGenre
-                            , toSetter yearSetter eoYear
-                            , toSetter trackNumberSetter eoTrack
-                            ]
-            setTags filename Nothing setter
+  options <- execParser optionsInfo
+  case options of
+    Display DisplayOptions {..} -> do
+      let filename = prjSomeBase toFilePath doFile
+      track <- getTags filename audioTrackGetter
+      putTextLn $ render track
+    Edit EditOptions {..} -> do
+      let filename = prjSomeBase toFilePath eoFile
+          setter =
+            fold $
+              catMaybes
+                [ titleSetter <$> eoTitle,
+                  artistSetter <$> eoArtist,
+                  albumSetter <$> eoAlbum,
+                  genreSetter <$> eoGenre,
+                  toSetter yearSetter eoYear,
+                  toSetter trackNumberSetter eoTrack
+                ]
+      setTags filename Nothing setter
   where
     toSetter _ Nothing = Nothing
     toSetter setter (Just Remove) = Just $ setter Nothing
