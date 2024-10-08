@@ -75,22 +75,24 @@ main = do
   options <- execParser optionsInfo
   case options of
     Display DisplayOptions {..} -> do
-      let filename = prjSomeBase toFilePath doFile
-      track <- getTags filename $ audioTrackGetter doFile
-      putTextLn $ render track
+      forM_ doFiles $ \file -> do
+        let filename = prjSomeBase toFilePath file
+        track <- getTags filename $ audioTrackGetter file
+        putTextLn $ render track
     Edit EditOptions {..} -> do
-      let filename = prjSomeBase toFilePath eoFile
-          setter =
-            fold $
-              catMaybes
-                [ titleSetter <$> eoTitle,
-                  artistSetter <$> eoArtist,
-                  albumSetter <$> eoAlbum,
-                  genreSetter <$> eoGenre,
-                  toSetter yearSetter eoYear,
-                  toSetter trackNumberSetter eoTrack
-                ]
-      setTags filename Nothing setter
+      forM_ eoFiles $ \file -> do
+        let filename = prjSomeBase toFilePath file
+            setter =
+              fold $
+                catMaybes
+                  [ titleSetter <$> eoTitle,
+                    artistSetter <$> eoArtist,
+                    albumSetter <$> eoAlbum,
+                    genreSetter <$> eoGenre,
+                    toSetter yearSetter eoYear,
+                    toSetter trackNumberSetter eoTrack
+                  ]
+        setTags filename Nothing setter
   where
     toSetter _ Nothing = Nothing
     toSetter setter (Just Remove) = Just $ setter Nothing

@@ -42,14 +42,14 @@ import Sound.HTagLib
   )
 
 newtype DisplayOptions = DisplayOptions
-  {doFile :: SomeBase File}
+  {doFiles :: [SomeBase File]}
   deriving (Show)
 
 data SetOrRemove a = Set a | Remove
   deriving (Show)
 
 data EditOptions = EditOptions
-  { eoFile :: !(SomeBase File),
+  { eoFiles :: ![SomeBase File],
     eoTitle :: !(Maybe Title),
     eoArtist :: !(Maybe Artist),
     eoAlbum :: !(Maybe Album),
@@ -69,14 +69,14 @@ displayOptionsP :: Parser DisplayOptions
 displayOptionsP =
   DisplayOptions
     <$> argument
-      (maybeReader parseSomeFile)
+      (some $ maybeReader parseSomeFile)
       (metavar "FILE")
 
 editOptionsP :: Parser EditOptions
 editOptionsP =
   EditOptions
     <$> argument
-      (maybeReader parseSomeFile)
+      (some $ maybeReader parseSomeFile)
       (metavar "FILE")
     <*> optional
       ( strOption
