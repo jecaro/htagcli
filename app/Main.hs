@@ -2,7 +2,7 @@ module Main where
 
 import Options
 import Options.Applicative (execParser)
-import Path (prjSomeBase, toFilePath)
+import Path (File, SomeBase, prjSomeBase, toFilePath)
 import Sound.HTagLib
   ( Album,
     Artist,
@@ -34,7 +34,8 @@ import Sound.HTagLib
   )
 
 data AudioTrack = AudioTrack
-  { atTitle :: !Title,
+  { atFile :: !(SomeBase File),
+    atTitle :: !Title,
     atArtist :: !Artist,
     atAlbum :: !Album,
     atGenre :: !Genre,
@@ -46,7 +47,8 @@ data AudioTrack = AudioTrack
 render :: AudioTrack -> Text
 render AudioTrack {..} =
   unlines
-    [ "Title: " <> unTitle atTitle,
+    [ "File: " <> toText (prjSomeBase toFilePath atFile),
+      "Title: " <> unTitle atTitle,
       "Artist: " <> unArtist atArtist,
       "Album: " <> unAlbum atAlbum,
       "Genre: " <> unGenre atGenre,
@@ -58,9 +60,9 @@ withMissing :: (Show b) => (a -> b) -> Maybe a -> Text
 withMissing _ Nothing = "missing"
 withMissing f (Just x) = show . f $ x
 
-audioTrackGetter :: TagGetter AudioTrack
-audioTrackGetter =
-  AudioTrack
+audioTrackGetter :: SomeBase File -> TagGetter AudioTrack
+audioTrackGetter path =
+  AudioTrack path
     <$> titleGetter
     <*> artistGetter
     <*> albumGetter
@@ -74,7 +76,7 @@ main = do
   case options of
     Display DisplayOptions {..} -> do
       let filename = prjSomeBase toFilePath doFile
-      track <- getTags filename audioTrackGetter
+      track <- getTags filename $ audioTrackGetter doFile
       putTextLn $ render track
     Edit EditOptions {..} -> do
       let filename = prjSomeBase toFilePath eoFile
