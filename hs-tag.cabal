@@ -7,10 +7,15 @@ author:             jecaro
 maintainer:         jeancharles.quillet@gmail.com
 
 executable hs-tag
-    hs-source-dirs:   app
+    hs-source-dirs:
+        app
 
-    main-is:          Main.hs
-    other-modules:    Options
+    main-is:
+        Main.hs
+
+    other-modules:
+        AudioTrack
+        Options
 
     mixins:
         base hiding (Prelude),

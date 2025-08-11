@@ -1,84 +1,25 @@
 module Main where
 
+import AudioTrack (getTags, render)
 import Options
 import Options.Applicative (execParser)
-import Path (File, SomeBase, prjSomeBase, toFilePath)
+import Path (prjSomeBase, toFilePath)
 import Sound.HTagLib
-  ( Album,
-    Artist,
-    Genre,
-    TagGetter,
-    Title,
-    TrackNumber,
-    Year,
-    albumGetter,
-    albumSetter,
-    artistGetter,
+  ( albumSetter,
     artistSetter,
-    genreGetter,
     genreSetter,
-    getTags,
     setTags,
-    titleGetter,
     titleSetter,
-    trackNumberGetter,
     trackNumberSetter,
-    unAlbum,
-    unArtist,
-    unGenre,
-    unTitle,
-    unTrackNumber,
-    unYear,
-    yearGetter,
     yearSetter,
   )
-
-data AudioTrack = AudioTrack
-  { atFile :: !(SomeBase File),
-    atTitle :: !Title,
-    atArtist :: !Artist,
-    atAlbum :: !Album,
-    atGenre :: !Genre,
-    atYear :: !(Maybe Year),
-    atTrack :: !(Maybe TrackNumber)
-  }
-  deriving (Show)
-
-render :: AudioTrack -> Text
-render AudioTrack {..} =
-  unlines
-    [ "File: " <> toText (prjSomeBase toFilePath atFile),
-      "Title: " <> unTitle atTitle,
-      "Artist: " <> unArtist atArtist,
-      "Album: " <> unAlbum atAlbum,
-      "Genre: " <> unGenre atGenre,
-      "Year: " <> withMissing unYear atYear,
-      "Track: " <> withMissing unTrackNumber atTrack
-    ]
-
-withMissing :: (Show b) => (a -> b) -> Maybe a -> Text
-withMissing _ Nothing = "missing"
-withMissing f (Just x) = show . f $ x
-
-audioTrackGetter :: SomeBase File -> TagGetter AudioTrack
-audioTrackGetter path =
-  AudioTrack path
-    <$> titleGetter
-    <*> artistGetter
-    <*> albumGetter
-    <*> genreGetter
-    <*> yearGetter
-    <*> trackNumberGetter
 
 main :: IO ()
 main = do
   options <- execParser optionsInfo
   case options of
-    Display DisplayOptions {..} -> do
-      forM_ doFiles $ \file -> do
-        let filename = prjSomeBase toFilePath file
-        track <- getTags filename $ audioTrackGetter file
-        putTextLn $ render track
+    Display DisplayOptions {..} ->
+      traverse_ ((putTextLn . render) <=< getTags) doFiles
     Edit EditOptions {..} -> do
       forM_ eoFiles $ \file -> do
         let filename = prjSomeBase toFilePath file
