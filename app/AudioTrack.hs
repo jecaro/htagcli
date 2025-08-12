@@ -25,13 +25,13 @@ import Sound.HTagLib
 import qualified Sound.HTagLib as HTagLib
 
 data AudioTrack = AudioTrack
-  { atFile :: !(SomeBase File),
-    atTitle :: !Title,
-    atArtist :: !Artist,
-    atAlbum :: !Album,
-    atGenre :: !Genre,
-    atYear :: !(Maybe Year),
-    atTrack :: !(Maybe TrackNumber)
+  { atFile :: SomeBase File,
+    atTitle :: Title,
+    atArtist :: Artist,
+    atAlbum :: Album,
+    atGenre :: Genre,
+    atYear :: Maybe Year,
+    atTrack :: Maybe TrackNumber
   }
   deriving (Show)
 

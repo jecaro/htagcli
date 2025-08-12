@@ -49,13 +49,13 @@ data SetOrRemove a = Set a | Remove
   deriving (Show)
 
 data EditOptions = EditOptions
-  { eoFiles :: ![SomeBase File],
-    eoTitle :: !(Maybe Title),
-    eoArtist :: !(Maybe Artist),
-    eoAlbum :: !(Maybe Album),
-    eoGenre :: !(Maybe Genre),
-    eoYear :: !(Maybe (SetOrRemove Year)),
-    eoTrack :: !(Maybe (SetOrRemove TrackNumber))
+  { eoFiles :: [SomeBase File],
+    eoTitle :: Maybe Title,
+    eoArtist :: Maybe Artist,
+    eoAlbum :: Maybe Album,
+    eoGenre :: Maybe Genre,
+    eoYear :: Maybe (SetOrRemove Year),
+    eoTrack :: Maybe (SetOrRemove TrackNumber)
   }
   deriving (Show)
 
