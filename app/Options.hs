@@ -66,18 +66,12 @@ optionsInfo :: ParserInfo Options
 optionsInfo = info (optionsP <**> helper) idm
 
 displayOptionsP :: Parser DisplayOptions
-displayOptionsP =
-  DisplayOptions
-    <$> argument
-      (some $ maybeReader parseSomeFile)
-      (metavar "FILE")
+displayOptionsP = DisplayOptions <$> some fileP
 
 editOptionsP :: Parser EditOptions
 editOptionsP =
   EditOptions
-    <$> argument
-      (some $ maybeReader parseSomeFile)
-      (metavar "FILE")
+    <$> some fileP
     <*> optional
       ( strOption
           ( long "title"
@@ -137,6 +131,9 @@ editOptionsP =
     strToYear = fmap Set . mkYear <=< readMaybe
     strToTrackNumber :: String -> Maybe (SetOrRemove TrackNumber)
     strToTrackNumber = fmap Set . mkTrackNumber <=< readMaybe
+
+fileP :: Parser (SomeBase File)
+fileP = argument (maybeReader parseSomeFile) (metavar "FILE")
 
 optionsP :: Parser Options
 optionsP =
