@@ -31,7 +31,7 @@ executable htagcli
         relude,
         text
 
-    default-language: Haskell2010
+    default-language: GHC2021
 
     ghc-options:
       -Wall
@@ -45,6 +45,5 @@ executable htagcli
    default-extensions:
       OverloadedStrings
       RecordWildCards
-      ScopedTypeVariables
       StrictData
 
