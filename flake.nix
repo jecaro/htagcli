@@ -27,9 +27,10 @@
           packages = p: [ self.packages.${system}.htagcli ];
           withHoogle = true;
           buildInputs = with haskellPackages; [
-            haskell-language-server
-            ghcid
+            cabal-gild
             cabal-install
+            ghcid
+            haskell-language-server
           ];
         });
     };

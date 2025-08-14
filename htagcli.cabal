@@ -1,49 +1,46 @@
-cabal-version:      2.4
-name:               htagcli
-version:            0.1.0.0
-
-license:            LGPL-3.0-or-later
-author:             jecaro
-maintainer:         jeancharles.quillet@gmail.com
+cabal-version: 2.4
+name: htagcli
+version: 0.1.0.0
+license: LGPL-3.0-or-later
+author: jecaro
+maintainer: jeancharles.quillet@gmail.com
 
 executable htagcli
-    hs-source-dirs:
-        app
+  hs-source-dirs:
+    app
 
-    main-is:
-        Main.hs
+  main-is:
+    Main.hs
 
-    other-modules:
-        AudioTrack
-        Options
+  other-modules:
+    AudioTrack
+    Options
 
-    mixins:
-        base hiding (Prelude),
-        relude (Relude as Prelude),
-        relude
+  mixins:
+    base hiding (Prelude),
+    relude (Relude as Prelude),
+    relude,
 
-    build-depends:
-        base,
-        htaglib,
-        optparse-applicative,
-        path,
-        path-io,
-        relude,
-        text
+  build-depends:
+    base,
+    htaglib,
+    optparse-applicative,
+    path,
+    path-io,
+    relude,
+    text,
 
-    default-language: GHC2021
+  default-language: GHC2021
+  ghc-options:
+    -Wall
+    -Wcompat
+    -Widentities
+    -Wincomplete-record-updates
+    -Wincomplete-uni-patterns
+    -Wpartial-fields
+    -Wredundant-constraints
 
-    ghc-options:
-      -Wall
-      -Wcompat
-      -Widentities
-      -Wincomplete-record-updates
-      -Wincomplete-uni-patterns
-      -Wpartial-fields
-      -Wredundant-constraints
-
-   default-extensions:
-      OverloadedStrings
-      RecordWildCards
-      StrictData
-
+  default-extensions:
+    OverloadedStrings
+    RecordWildCards
+    StrictData
