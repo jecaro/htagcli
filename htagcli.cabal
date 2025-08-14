@@ -1,12 +1,12 @@
 cabal-version:      2.4
-name:               hs-tag
+name:               htagcli
 version:            0.1.0.0
 
 license:            LGPL-3.0-or-later
 author:             jecaro
 maintainer:         jeancharles.quillet@gmail.com
 
-executable hs-tag
+executable htagcli
     hs-source-dirs:
         app
 

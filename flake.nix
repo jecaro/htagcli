@@ -13,18 +13,18 @@
     in
     {
       overlay = (final: prev: {
-        hs-tag = final.haskellPackages.callCabal2nix "hs-tag" ./. { };
+        htagcli = final.haskellPackages.callCabal2nix "htagcli" ./. { };
       });
       packages = forAllSystems (system: {
-        hs-tag = nixpkgsFor.${system}.hs-tag;
+        htagcli = nixpkgsFor.${system}.htagcli;
       });
-      defaultPackage = forAllSystems (system: self.packages.${system}.hs-tag);
+      defaultPackage = forAllSystems (system: self.packages.${system}.htagcli);
       checks = self.packages;
       devShell = forAllSystems (system:
         let haskellPackages = nixpkgsFor.${system}.haskellPackages;
         in
         haskellPackages.shellFor {
-          packages = p: [ self.packages.${system}.hs-tag ];
+          packages = p: [ self.packages.${system}.htagcli ];
           withHoogle = true;
           buildInputs = with haskellPackages; [
             haskell-language-server
