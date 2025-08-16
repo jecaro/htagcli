@@ -23,6 +23,7 @@ executable htagcli
 
   build-depends:
     base,
+    conduit,
     htaglib,
     optparse-applicative,
     path,

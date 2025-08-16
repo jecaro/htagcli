@@ -1,6 +1,9 @@
 module Options
-  ( DisplayOptions (..),
+  ( Directory (..),
+    DisplayOptions (..),
     EditOptions (..),
+    Files (..),
+    FilesOrDirectory (..),
     Options (..),
     SetOrRemove (..),
     optionsInfo,
@@ -26,8 +29,10 @@ import Options.Applicative
   )
 import Options.Applicative.Builder (flag')
 import Path
-  ( File,
+  ( Dir,
+    File,
     SomeBase,
+    parseSomeDir,
     parseSomeFile,
   )
 import Sound.HTagLib
@@ -42,14 +47,31 @@ import Sound.HTagLib
   )
 
 newtype DisplayOptions = DisplayOptions
-  {doFiles :: [SomeBase File]}
+  { doFilesOrDirectory :: FilesOrDirectory
+  }
   deriving (Show)
 
 data SetOrRemove a = Set a | Remove
   deriving (Show)
 
+data Directory = Directory
+  { diPath :: SomeBase Dir,
+    diExtensions :: [Text]
+  }
+  deriving (Show)
+
+newtype Files = Files
+  { fiFiles :: [SomeBase File]
+  }
+  deriving (Show)
+
+data FilesOrDirectory
+  = FDFiles Files
+  | FDDirectory Directory
+  deriving (Show)
+
 data EditOptions = EditOptions
-  { eoFiles :: [SomeBase File],
+  { eoFilesOrDirectory :: FilesOrDirectory,
     eoTitle :: Maybe Title,
     eoArtist :: Maybe Artist,
     eoAlbum :: Maybe Album,
@@ -66,12 +88,12 @@ optionsInfo :: ParserInfo Options
 optionsInfo = info (optionsP <**> helper) idm
 
 displayOptionsP :: Parser DisplayOptions
-displayOptionsP = DisplayOptions <$> some fileP
+displayOptionsP = DisplayOptions <$> filesOrDirectoryP
 
 editOptionsP :: Parser EditOptions
 editOptionsP =
   EditOptions
-    <$> some fileP
+    <$> filesOrDirectoryP
     <*> optional
       ( strOption
           ( long "title"
@@ -132,8 +154,34 @@ editOptionsP =
     strToTrackNumber :: String -> Maybe (SetOrRemove TrackNumber)
     strToTrackNumber = fmap Set . mkTrackNumber <=< readMaybe
 
-fileP :: Parser (SomeBase File)
-fileP = argument (maybeReader parseSomeFile) (metavar "FILE")
+filesOrDirectoryP :: Parser FilesOrDirectory
+filesOrDirectoryP =
+  hsubparser
+    ( command
+        "files"
+        (info (FDFiles . Files <$> someBaseFilesP) (progDesc "Process files"))
+        <> command
+          "directory"
+          ( info
+              (mkDirectory <$> someBaseDirP <*> extensionsP)
+              ( progDesc
+                  "Recursively process files in a directory with specified extensions"
+              )
+          )
+    )
+  where
+    mkDirectory directory extensions =
+      FDDirectory $ Directory directory extensions
+
+someBaseFilesP :: Parser [SomeBase File]
+someBaseFilesP = some $ argument (maybeReader parseSomeFile) (metavar "FILES")
+
+extensionsP :: Parser [Text]
+extensionsP =
+  some (fromString <$> strOption (long "extension" <> metavar "EXTENSION"))
+
+someBaseDirP :: Parser (SomeBase Dir)
+someBaseDirP = argument (maybeReader parseSomeDir) (metavar "DIRECTORY")
 
 optionsP :: Parser Options
 optionsP =

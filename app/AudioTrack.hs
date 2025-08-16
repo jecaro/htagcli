@@ -22,7 +22,7 @@ import Sound.HTagLib
     unYear,
     yearGetter,
   )
-import qualified Sound.HTagLib as HTagLib
+import Sound.HTagLib qualified as HTagLib
 
 data AudioTrack = AudioTrack
   { atFile :: SomeBase File,
@@ -51,7 +51,7 @@ withMissing :: (Show b) => (a -> b) -> Maybe a -> Text
 withMissing _ Nothing = "missing"
 withMissing f (Just x) = show . f $ x
 
-getTags :: SomeBase File -> IO AudioTrack
+getTags :: (MonadIO m) => SomeBase File -> m AudioTrack
 getTags file = do
   let fileStr = prjSomeBase toFilePath file
   HTagLib.getTags fileStr $ getter file
