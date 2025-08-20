@@ -1,5 +1,6 @@
-module AudioTrack (AudioTrack (..), getTags, render) where
+module AudioTrack (AudioTrack (..), haveTag, getTags, render) where
 
+import Data.Text qualified as Text
 import Path (File, SomeBase, prjSomeBase, toFilePath)
 import Sound.HTagLib
   ( Album,
@@ -23,6 +24,7 @@ import Sound.HTagLib
     yearGetter,
   )
 import Sound.HTagLib qualified as HTagLib
+import Tag (Tag (..))
 
 data AudioTrack = AudioTrack
   { atFile :: SomeBase File,
@@ -65,3 +67,11 @@ getter path =
     <*> genreGetter
     <*> yearGetter
     <*> trackNumberGetter
+
+haveTag :: Tag -> AudioTrack -> Bool
+haveTag Title = not . Text.null . unTitle . atTitle
+haveTag Artist = not . Text.null . unArtist . atArtist
+haveTag Album = not . Text.null . unAlbum . atAlbum
+haveTag Genre = not . Text.null . unGenre . atGenre
+haveTag Year = isJust . atYear
+haveTag Track = isJust . atTrack

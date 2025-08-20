@@ -1,11 +1,13 @@
 module Options
-  ( Directory (..),
+  ( CheckOptions (..),
+    Directory (..),
     DisplayOptions (..),
     EditOptions (..),
     Files (..),
     FilesOrDirectory (..),
     Options (..),
     SetOrRemove (..),
+    Tag,
     optionsInfo,
   )
 where
@@ -45,6 +47,7 @@ import Sound.HTagLib
     mkTrackNumber,
     mkYear,
   )
+import Tag (Tag, parse)
 
 newtype DisplayOptions = DisplayOptions
   { doFilesOrDirectory :: FilesOrDirectory
@@ -81,7 +84,13 @@ data EditOptions = EditOptions
   }
   deriving (Show)
 
-data Options = Display DisplayOptions | Edit EditOptions
+data CheckOptions = CheckOptions
+  { coFilesOrDirectory :: FilesOrDirectory,
+    coTags :: [Tag]
+  }
+  deriving (Show)
+
+data Options = Display DisplayOptions | Edit EditOptions | Check CheckOptions
   deriving (Show)
 
 optionsInfo :: ParserInfo Options
@@ -89,6 +98,20 @@ optionsInfo = info (optionsP <**> helper) idm
 
 displayOptionsP :: Parser DisplayOptions
 displayOptionsP = DisplayOptions <$> filesOrDirectoryP
+
+checkOptionsP :: Parser CheckOptions
+checkOptionsP = CheckOptions <$> filesOrDirectoryP <*> tagsP
+
+tagsP :: Parser [Tag]
+tagsP =
+  some
+    ( option
+        (maybeReader parse)
+        ( long "tag"
+            <> metavar "TAG"
+            <> help "Specify a tag to check (title, artist, album, genre, year, track)"
+        )
+    )
 
 editOptionsP :: Parser EditOptions
 editOptionsP =
@@ -192,4 +215,7 @@ optionsP =
         <> command
           "edit"
           (info (Edit <$> editOptionsP) (progDesc "Edit tags"))
+        <> command
+          "check"
+          (info (Check <$> checkOptionsP) (progDesc "Check tags"))
     )

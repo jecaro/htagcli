@@ -1,6 +1,6 @@
 module Main where
 
-import AudioTrack (getTags, render)
+import AudioTrack (getTags, haveTag, render)
 import Conduit
   ( ConduitT,
     MonadResource,
@@ -14,8 +14,10 @@ import Conduit
     (.|),
   )
 import Data.Text (isSuffixOf)
+import Data.Text qualified as Text
 import Options
-  ( Directory (..),
+  ( CheckOptions (..),
+    Directory (..),
     DisplayOptions (..),
     EditOptions (..),
     Files (..),
@@ -35,6 +37,7 @@ import Sound.HTagLib
     trackNumberSetter,
     yearSetter,
   )
+import Tag qualified
 
 fileOrDirectoryC ::
   (MonadResource m, MonadThrow m) =>
@@ -71,6 +74,27 @@ main = do
                             toSetter trackNumberSetter eoTrack
                           ]
                 setTags filename Nothing setter
+            )
+    Check CheckOptions {..} -> do
+      runConduitRes $
+        fileOrDirectoryC coFilesOrDirectory
+          .| mapM_C
+            ( \file -> do
+                let filename = prjSomeBase toFilePath file
+                track <- getTags file
+                let missingTags =
+                      mapMaybe
+                        ( \t ->
+                            if haveTag t track
+                              then Nothing
+                              else Just t
+                        )
+                        coTags
+                unless (null missingTags) $ do
+                  putTextLn $
+                    fromString filename
+                      <> " missing "
+                      <> Text.intercalate ", " (Tag.render <$> missingTags)
             )
   where
     toSetter _ Nothing = Nothing

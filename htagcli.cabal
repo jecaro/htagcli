@@ -15,6 +15,7 @@ executable htagcli
   other-modules:
     AudioTrack
     Options
+    Tag
 
   mixins:
     base hiding (Prelude),
@@ -42,6 +43,7 @@ executable htagcli
     -Wredundant-constraints
 
   default-extensions:
+    LambdaCase
     OverloadedStrings
     RecordWildCards
     StrictData
