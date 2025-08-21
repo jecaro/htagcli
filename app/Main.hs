@@ -1,6 +1,7 @@
 module Main where
 
-import AudioTrack (getTags, haveTag, render)
+import AudioTrack (AudioTrack (..), getTags, haveTag)
+import AudioTrack qualified
 import Conduit
   ( ConduitT,
     MonadResource,
@@ -35,6 +36,7 @@ import Sound.HTagLib
     setTags,
     titleSetter,
     trackNumberSetter,
+    unGenre,
     yearSetter,
   )
 import Tag qualified
@@ -56,7 +58,7 @@ main = do
     Display DisplayOptions {..} -> do
       runConduitRes $
         fileOrDirectoryC doFilesOrDirectory
-          .| mapM_C (putTextLn . render <=< getTags)
+          .| mapM_C (putTextLn . AudioTrack.render <=< getTags)
     Edit EditOptions {..} -> do
       runConduitRes $
         fileOrDirectoryC eoFilesOrDirectory
@@ -90,11 +92,21 @@ main = do
                               else Just t
                         )
                         coTags
-                unless (null missingTags) $ do
+                unless (null missingTags) $
                   putTextLn $
                     fromString filename
                       <> " missing "
                       <> Text.intercalate ", " (Tag.render <$> missingTags)
+                let genreOk =
+                      null coGenreAmong
+                        || unGenre (atGenre track) `elem` coGenreAmong
+                unless genreOk $
+                  putTextLn $
+                    fromString filename
+                      <> " has genre "
+                      <> unGenre (atGenre track)
+                      <> ", expected one of "
+                      <> Text.intercalate ", " coGenreAmong
             )
   where
     toSetter _ Nothing = Nothing

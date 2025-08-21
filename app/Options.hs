@@ -86,7 +86,8 @@ data EditOptions = EditOptions
 
 data CheckOptions = CheckOptions
   { coFilesOrDirectory :: FilesOrDirectory,
-    coTags :: [Tag]
+    coTags :: [Tag],
+    coGenreAmong :: [Text]
   }
   deriving (Show)
 
@@ -100,16 +101,26 @@ displayOptionsP :: Parser DisplayOptions
 displayOptionsP = DisplayOptions <$> filesOrDirectoryP
 
 checkOptionsP :: Parser CheckOptions
-checkOptionsP = CheckOptions <$> filesOrDirectoryP <*> tagsP
+checkOptionsP = CheckOptions <$> filesOrDirectoryP <*> tagsP <*> genreAmongP
 
 tagsP :: Parser [Tag]
 tagsP =
-  some
+  many
     ( option
         (maybeReader parse)
         ( long "tag"
             <> metavar "TAG"
             <> help "Specify a tag to check (title, artist, album, genre, year, track)"
+        )
+    )
+
+genreAmongP :: Parser [Text]
+genreAmongP =
+  many
+    ( strOption
+        ( long "genre-among"
+            <> metavar "GENRE"
+            <> help "Specify a genre to check against"
         )
     )
 
