@@ -7,11 +7,11 @@ module Options
     FilesOrDirectory (..),
     Options (..),
     SetOrRemove (..),
-    Tag,
     optionsInfo,
   )
 where
 
+import Check (Check (..))
 import Options.Applicative
   ( Parser,
     ParserInfo,
@@ -30,6 +30,7 @@ import Options.Applicative
     strOption,
   )
 import Options.Applicative.Builder (flag')
+import Options.Applicative.NonEmpty (some1)
 import Path
   ( Dir,
     File,
@@ -86,8 +87,7 @@ data EditOptions = EditOptions
 
 data CheckOptions = CheckOptions
   { coFilesOrDirectory :: FilesOrDirectory,
-    coTags :: [Tag],
-    coGenreAmong :: [Text]
+    coChecks :: NonEmpty Check
   }
   deriving (Show)
 
@@ -101,22 +101,26 @@ displayOptionsP :: Parser DisplayOptions
 displayOptionsP = DisplayOptions <$> filesOrDirectoryP
 
 checkOptionsP :: Parser CheckOptions
-checkOptionsP = CheckOptions <$> filesOrDirectoryP <*> tagsP <*> genreAmongP
+checkOptionsP = CheckOptions <$> filesOrDirectoryP <*> checksP
 
-tagsP :: Parser [Tag]
+checksP :: Parser (NonEmpty Check)
+checksP = some1 (TagsExist <$> tagsP <|> GenreAmong <$> genreAmongP)
+
+tagsP :: Parser (NonEmpty Tag)
 tagsP =
-  many
+  some1
     ( option
         (maybeReader parse)
         ( long "tag"
             <> metavar "TAG"
-            <> help "Specify a tag to check (title, artist, album, genre, year, track)"
+            <> help
+              "Specify a tag to check (title, artist, album, genre, year, track)"
         )
     )
 
-genreAmongP :: Parser [Text]
+genreAmongP :: Parser (NonEmpty Text)
 genreAmongP =
-  many
+  some1
     ( strOption
         ( long "genre-among"
             <> metavar "GENRE"

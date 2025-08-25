@@ -1,7 +1,8 @@
 module Main where
 
-import AudioTrack (AudioTrack (..), getTags, haveTag)
+import AudioTrack (getTags)
 import AudioTrack qualified
+import Check (check)
 import Conduit
   ( ConduitT,
     MonadResource,
@@ -15,7 +16,6 @@ import Conduit
     (.|),
   )
 import Data.Text (isSuffixOf)
-import Data.Text qualified as Text
 import Options
   ( CheckOptions (..),
     Directory (..),
@@ -36,10 +36,8 @@ import Sound.HTagLib
     setTags,
     titleSetter,
     trackNumberSetter,
-    unGenre,
     yearSetter,
   )
-import Tag qualified
 
 fileOrDirectoryC ::
   (MonadResource m, MonadThrow m) =>
@@ -84,31 +82,12 @@ main = do
             ( \file -> do
                 let filename = prjSomeBase toFilePath file
                 track <- getTags file
-                let missingTags =
-                      mapMaybe
-                        ( \t ->
-                            if haveTag t track
-                              then Nothing
-                              else Just t
-                        )
-                        coTags
-                unless (null missingTags) $
-                  putTextLn $
-                    fromString filename
-                      <> " missing "
-                      <> Text.intercalate ", " (Tag.render <$> missingTags)
-                let genreOk =
-                      null coGenreAmong
-                        || unGenre (atGenre track) `elem` coGenreAmong
-                unless genreOk $
-                  putTextLn $
-                    fromString filename
-                      <> " has genre "
-                      <> unGenre (atGenre track)
-                      <> ", expected one of "
-                      <> Text.intercalate ", " coGenreAmong
+                traverse_ (checkPrintError filename track) coChecks
             )
   where
     toSetter _ Nothing = Nothing
     toSetter setter (Just Remove) = Just $ setter Nothing
     toSetter setter (Just (Set v)) = Just . setter $ Just v
+    checkPrintError file track c =
+      whenJust (check c track) $ \err ->
+        putTextLn $ fromString file <> ": " <> err
