@@ -11,44 +11,12 @@ module Options
   )
 where
 
-import Check (Check (..))
-import Options.Applicative
-  ( Parser,
-    ParserInfo,
-    argument,
-    command,
-    help,
-    helper,
-    hsubparser,
-    idm,
-    info,
-    long,
-    maybeReader,
-    metavar,
-    option,
-    progDesc,
-    strOption,
-  )
-import Options.Applicative.Builder (flag')
-import Options.Applicative.NonEmpty (some1)
-import Path
-  ( Dir,
-    File,
-    SomeBase,
-    parseSomeDir,
-    parseSomeFile,
-  )
-import Sound.HTagLib
-  ( Album,
-    Artist,
-    Genre,
-    Title,
-    TrackNumber,
-    Year,
-    mkTrackNumber,
-    mkYear,
-  )
-import Tag (Tag, parse)
+import Check qualified
+import Options.Applicative qualified as Options
+import Options.Applicative.NonEmpty qualified as Options
+import Path qualified
+import Sound.HTagLib qualified as HTagLib
+import Tag qualified
 
 newtype DisplayOptions = DisplayOptions
   { doFilesOrDirectory :: FilesOrDirectory
@@ -59,13 +27,13 @@ data SetOrRemove a = Set a | Remove
   deriving (Show)
 
 data Directory = Directory
-  { diPath :: SomeBase Dir,
+  { diPath :: Path.SomeBase Path.Dir,
     diExtensions :: [Text]
   }
   deriving (Show)
 
 newtype Files = Files
-  { fiFiles :: [SomeBase File]
+  { fiFiles :: [Path.SomeBase Path.File]
   }
   deriving (Show)
 
@@ -76,133 +44,136 @@ data FilesOrDirectory
 
 data EditOptions = EditOptions
   { eoFilesOrDirectory :: FilesOrDirectory,
-    eoTitle :: Maybe Title,
-    eoArtist :: Maybe Artist,
-    eoAlbum :: Maybe Album,
-    eoGenre :: Maybe Genre,
-    eoYear :: Maybe (SetOrRemove Year),
-    eoTrack :: Maybe (SetOrRemove TrackNumber)
+    eoTitle :: Maybe HTagLib.Title,
+    eoArtist :: Maybe HTagLib.Artist,
+    eoAlbum :: Maybe HTagLib.Album,
+    eoGenre :: Maybe HTagLib.Genre,
+    eoYear :: Maybe (SetOrRemove HTagLib.Year),
+    eoTrack :: Maybe (SetOrRemove HTagLib.TrackNumber)
   }
   deriving (Show)
 
 data CheckOptions = CheckOptions
   { coFilesOrDirectory :: FilesOrDirectory,
-    coChecks :: NonEmpty Check
+    coChecks :: NonEmpty Check.Check
   }
   deriving (Show)
 
 data Options = Display DisplayOptions | Edit EditOptions | Check CheckOptions
   deriving (Show)
 
-optionsInfo :: ParserInfo Options
-optionsInfo = info (optionsP <**> helper) idm
+optionsInfo :: Options.ParserInfo Options
+optionsInfo = Options.info (optionsP <**> Options.helper) Options.idm
 
-displayOptionsP :: Parser DisplayOptions
+displayOptionsP :: Options.Parser DisplayOptions
 displayOptionsP = DisplayOptions <$> filesOrDirectoryP
 
-checkOptionsP :: Parser CheckOptions
+checkOptionsP :: Options.Parser CheckOptions
 checkOptionsP = CheckOptions <$> filesOrDirectoryP <*> checksP
 
-checksP :: Parser (NonEmpty Check)
-checksP = some1 (TagsExist <$> tagsP <|> GenreAmong <$> genreAmongP)
+checksP :: Options.Parser (NonEmpty Check.Check)
+checksP =
+  Options.some1
+    (Check.TagsExist <$> tagsP <|> Check.GenreAmong <$> genreAmongP)
 
-tagsP :: Parser (NonEmpty Tag)
+tagsP :: Options.Parser (NonEmpty Tag.Tag)
 tagsP =
-  some1
-    ( option
-        (maybeReader parse)
-        ( long "tag"
-            <> metavar "TAG"
-            <> help
+  Options.some1
+    ( Options.option
+        (Options.maybeReader Tag.parse)
+        ( Options.long "tag"
+            <> Options.metavar "TAG"
+            <> Options.help
               "Specify a tag to check (title, artist, album, genre, year, track)"
         )
     )
 
-genreAmongP :: Parser (NonEmpty Text)
+genreAmongP :: Options.Parser (NonEmpty Text)
 genreAmongP =
-  some1
-    ( strOption
-        ( long "genre-among"
-            <> metavar "GENRE"
-            <> help "Specify a genre to check against"
+  Options.some1
+    ( Options.strOption
+        ( Options.long "genre-among"
+            <> Options.metavar "GENRE"
+            <> Options.help "Specify a genre to check against"
         )
     )
 
-editOptionsP :: Parser EditOptions
+editOptionsP :: Options.Parser EditOptions
 editOptionsP =
   EditOptions
     <$> filesOrDirectoryP
     <*> optional
-      ( strOption
-          ( long "title"
-              <> metavar "TITLE"
-              <> help "Set the title"
+      ( Options.strOption
+          ( Options.long "title"
+              <> Options.metavar "TITLE"
+              <> Options.help "Set the title"
           )
       )
     <*> optional
-      ( strOption
-          ( long "artist"
-              <> metavar "ARTIST"
-              <> help "Set the artist"
+      ( Options.strOption
+          ( Options.long "artist"
+              <> Options.metavar "ARTIST"
+              <> Options.help "Set the artist"
           )
       )
     <*> optional
-      ( strOption
-          ( long "album"
-              <> metavar "ALBUM"
-              <> help "Set the album"
+      ( Options.strOption
+          ( Options.long "album"
+              <> Options.metavar "ALBUM"
+              <> Options.help "Set the album"
           )
       )
     <*> optional
-      ( strOption
-          ( long "genre"
-              <> metavar "GENRE"
-              <> help "Set the genre"
+      ( Options.strOption
+          ( Options.long "genre"
+              <> Options.metavar "GENRE"
+              <> Options.help "Set the genre"
           )
       )
     <*> optional
-      ( option
-          (maybeReader strToYear)
-          ( long "year"
-              <> metavar "YEAR"
-              <> help "Set the year"
+      ( Options.option
+          (Options.maybeReader strToYear)
+          ( Options.long "year"
+              <> Options.metavar "YEAR"
+              <> Options.help "Set the year"
           )
-          <|> flag'
+          <|> Options.flag'
             Remove
-            ( long "noyear"
-                <> help "Unset the year"
+            ( Options.long "noyear"
+                <> Options.help "Unset the year"
             )
       )
     <*> optional
-      ( option
-          (maybeReader strToTrackNumber)
-          ( long "track"
-              <> metavar "TRACK"
-              <> help "Set the track number"
+      ( Options.option
+          (Options.maybeReader strToTrackNumber)
+          ( Options.long "track"
+              <> Options.metavar "TRACK"
+              <> Options.help "Set the track number"
           )
-          <|> flag'
+          <|> Options.flag'
             Remove
-            ( long "notrack"
-                <> help "Unset the track"
-            )
+            (Options.long "notrack" <> Options.help "Unset the track")
       )
   where
-    strToYear :: String -> Maybe (SetOrRemove Year)
-    strToYear = fmap Set . mkYear <=< readMaybe
-    strToTrackNumber :: String -> Maybe (SetOrRemove TrackNumber)
-    strToTrackNumber = fmap Set . mkTrackNumber <=< readMaybe
+    strToYear :: String -> Maybe (SetOrRemove HTagLib.Year)
+    strToYear = fmap Set . HTagLib.mkYear <=< readMaybe
+    strToTrackNumber :: String -> Maybe (SetOrRemove HTagLib.TrackNumber)
+    strToTrackNumber = fmap Set . HTagLib.mkTrackNumber <=< readMaybe
 
-filesOrDirectoryP :: Parser FilesOrDirectory
+filesOrDirectoryP :: Options.Parser FilesOrDirectory
 filesOrDirectoryP =
-  hsubparser
-    ( command
+  Options.hsubparser
+    ( Options.command
         "files"
-        (info (FDFiles . Files <$> someBaseFilesP) (progDesc "Process files"))
-        <> command
+        ( Options.info
+            (FDFiles . Files <$> someBaseFilesP)
+            (Options.progDesc "Process files")
+        )
+        <> Options.command
           "directory"
-          ( info
+          ( Options.info
               (mkDirectory <$> someBaseDirP <*> extensionsP)
-              ( progDesc
+              ( Options.progDesc
                   "Recursively process files in a directory with specified extensions"
               )
           )
@@ -211,26 +182,45 @@ filesOrDirectoryP =
     mkDirectory directory extensions =
       FDDirectory $ Directory directory extensions
 
-someBaseFilesP :: Parser [SomeBase File]
-someBaseFilesP = some $ argument (maybeReader parseSomeFile) (metavar "FILES")
+someBaseFilesP :: Options.Parser [Path.SomeBase Path.File]
+someBaseFilesP =
+  some $
+    Options.argument
+      (Options.maybeReader Path.parseSomeFile)
+      (Options.metavar "FILES")
 
-extensionsP :: Parser [Text]
+extensionsP :: Options.Parser [Text]
 extensionsP =
-  some (fromString <$> strOption (long "extension" <> metavar "EXTENSION"))
+  some
+    ( fromString
+        <$> Options.strOption
+          ( Options.long "extension"
+              <> Options.metavar "EXTENSION"
+          )
+    )
 
-someBaseDirP :: Parser (SomeBase Dir)
-someBaseDirP = argument (maybeReader parseSomeDir) (metavar "DIRECTORY")
+someBaseDirP :: Options.Parser (Path.SomeBase Path.Dir)
+someBaseDirP =
+  Options.argument
+    (Options.maybeReader Path.parseSomeDir)
+    (Options.metavar "DIRECTORY")
 
-optionsP :: Parser Options
+optionsP :: Options.Parser Options
 optionsP =
-  hsubparser
-    ( command
+  Options.hsubparser
+    ( Options.command
         "display"
-        (info (Display <$> displayOptionsP) (progDesc "Show tags"))
-        <> command
+        ( Options.info
+            (Display <$> displayOptionsP)
+            (Options.progDesc "Show tags")
+        )
+        <> Options.command
           "edit"
-          (info (Edit <$> editOptionsP) (progDesc "Edit tags"))
-        <> command
+          (Options.info (Edit <$> editOptionsP) (Options.progDesc "Edit tags"))
+        <> Options.command
           "check"
-          (info (Check <$> checkOptionsP) (progDesc "Check tags"))
+          ( Options.info
+              (Check <$> checkOptionsP)
+              (Options.progDesc "Check tags")
+          )
     )

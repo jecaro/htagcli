@@ -1,77 +1,56 @@
 module AudioTrack (AudioTrack (..), haveTag, getTags, render) where
 
 import Data.Text qualified as Text
-import Path (File, SomeBase, prjSomeBase, toFilePath)
-import Sound.HTagLib
-  ( Album,
-    Artist,
-    Genre,
-    TagGetter,
-    Title,
-    TrackNumber,
-    Year,
-    albumGetter,
-    artistGetter,
-    genreGetter,
-    titleGetter,
-    trackNumberGetter,
-    unAlbum,
-    unArtist,
-    unGenre,
-    unTitle,
-    unTrackNumber,
-    unYear,
-    yearGetter,
-  )
+import Path qualified
 import Sound.HTagLib qualified as HTagLib
-import Tag (Tag (..))
+import Tag qualified
 
 data AudioTrack = AudioTrack
-  { atFile :: SomeBase File,
-    atTitle :: Title,
-    atArtist :: Artist,
-    atAlbum :: Album,
-    atGenre :: Genre,
-    atYear :: Maybe Year,
-    atTrack :: Maybe TrackNumber
+  { atFile :: Path.SomeBase Path.File,
+    atTitle :: HTagLib.Title,
+    atArtist :: HTagLib.Artist,
+    atAlbum :: HTagLib.Album,
+    atGenre :: HTagLib.Genre,
+    atYear :: Maybe HTagLib.Year,
+    atTrack :: Maybe HTagLib.TrackNumber
   }
   deriving (Show)
 
 render :: AudioTrack -> Text
 render AudioTrack {..} =
   unlines
-    [ "File: " <> toText (prjSomeBase toFilePath atFile),
-      "Title: " <> unTitle atTitle,
-      "Artist: " <> unArtist atArtist,
-      "Album: " <> unAlbum atAlbum,
-      "Genre: " <> unGenre atGenre,
-      "Year: " <> withMissing unYear atYear,
-      "Track: " <> withMissing unTrackNumber atTrack
+    [ "File: " <> toText (Path.prjSomeBase Path.toFilePath atFile),
+      "Title: " <> HTagLib.unTitle atTitle,
+      "Artist: " <> HTagLib.unArtist atArtist,
+      "Album: " <> HTagLib.unAlbum atAlbum,
+      "Genre: " <> HTagLib.unGenre atGenre,
+      "Year: " <> withMissing HTagLib.unYear atYear,
+      "Track: " <> withMissing HTagLib.unTrackNumber atTrack
     ]
 
 withMissing :: (Show b) => (a -> b) -> Maybe a -> Text
 withMissing _ Nothing = "missing"
 withMissing f (Just x) = show . f $ x
 
-getTags :: (MonadIO m) => SomeBase File -> m AudioTrack
+getTags :: (MonadIO m) => Path.SomeBase Path.File -> m AudioTrack
 getTags file = do
-  let fileStr = prjSomeBase toFilePath file
+  let fileStr = Path.prjSomeBase Path.toFilePath file
   HTagLib.getTags fileStr $ getter file
 
-getter :: SomeBase File -> TagGetter AudioTrack
+getter :: Path.SomeBase Path.File -> HTagLib.TagGetter AudioTrack
 getter path =
   AudioTrack path
-    <$> titleGetter
-    <*> artistGetter
-    <*> albumGetter
-    <*> genreGetter
-    <*> yearGetter
-    <*> trackNumberGetter
+    <$> HTagLib.titleGetter
+    <*> HTagLib.artistGetter
+    <*> HTagLib.albumGetter
+    <*> HTagLib.genreGetter
+    <*> HTagLib.yearGetter
+    <*> HTagLib.trackNumberGetter
 
-haveTag :: Tag -> AudioTrack -> Bool
-haveTag Title = not . Text.null . unTitle . atTitle
-haveTag Artist = not . Text.null . unArtist . atArtist
-haveTag Album = not . Text.null . unAlbum . atAlbum
-haveTag Genre = not . Text.null . unGenre . atGenre
-haveTag Year = isJust . atYear
-haveTag Track = isJust . atTrack
+haveTag :: Tag.Tag -> AudioTrack -> Bool
+haveTag Tag.Title = not . Text.null . HTagLib.unTitle . atTitle
+haveTag Tag.Artist = not . Text.null . HTagLib.unArtist . atArtist
+haveTag Tag.Album = not . Text.null . HTagLib.unAlbum . atAlbum
+haveTag Tag.Genre = not . Text.null . HTagLib.unGenre . atGenre
+haveTag Tag.Year = isJust . atYear
+haveTag Tag.Track = isJust . atTrack
