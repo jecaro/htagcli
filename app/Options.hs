@@ -33,7 +33,7 @@ data Directory = Directory
   deriving (Show)
 
 newtype Files = Files
-  { fiFiles :: [Path.SomeBase Path.File]
+  { fiFiles :: NonEmpty (Path.SomeBase Path.File)
   }
   deriving (Show)
 
@@ -182,9 +182,9 @@ filesOrDirectoryP =
     mkDirectory directory extensions =
       FDDirectory $ Directory directory extensions
 
-someBaseFilesP :: Options.Parser [Path.SomeBase Path.File]
+someBaseFilesP :: Options.Parser (NonEmpty (Path.SomeBase Path.File))
 someBaseFilesP =
-  some $
+  Options.some1 $
     Options.argument
       (Options.maybeReader Path.parseSomeFile)
       (Options.metavar "FILES")
