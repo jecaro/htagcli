@@ -55,7 +55,7 @@ data EditOptions = EditOptions
 
 data CheckOptions = CheckOptions
   { coFilesOrDirectory :: FilesOrDirectory,
-    coChecks :: NonEmpty Check.Check
+    coChecks :: Maybe (NonEmpty Check.Check)
   }
   deriving (Show)
 
@@ -69,7 +69,7 @@ displayOptionsP :: Options.Parser DisplayOptions
 displayOptionsP = DisplayOptions <$> filesOrDirectoryP
 
 checkOptionsP :: Options.Parser CheckOptions
-checkOptionsP = CheckOptions <$> filesOrDirectoryP <*> checksP
+checkOptionsP = CheckOptions <$> filesOrDirectoryP <*> optional checksP
 
 checksP :: Options.Parser (NonEmpty Check.Check)
 checksP =

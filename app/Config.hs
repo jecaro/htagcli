@@ -1,0 +1,86 @@
+{-# LANGUAGE TemplateHaskell #-}
+
+module Config (Error (..), readChecks, render) where
+
+import Check qualified
+import Data.Text qualified as Text
+import GHC.IO.Exception qualified as Exception
+import Path ((</>))
+import Path qualified
+import Path.IO qualified as Path
+import System.IO.Error qualified as Error
+import Tag qualified
+import Toml qualified
+import UnliftIO.Exception qualified as Exception
+
+data Error
+  = ErToml Text.Text
+  | ErNotFound Exception.IOException
+  | ErUnicode UnicodeException
+  deriving (Show)
+
+instance Exception.Exception Error
+
+render :: Error -> Text.Text
+render (ErToml err) = "TOML error: \n" <> err
+render (ErNotFound err) =
+  "Config file not found: " <> maybe mempty fromString (Error.ioeGetFileName err)
+render (ErUnicode err) = "Unicode error: " <> show err
+
+readChecks :: IO (NonEmpty Check.Check)
+readChecks = do
+  configFile <- getFileInConfigDir $(Path.mkRelFile "htagcli.toml")
+  bytestring <-
+    Exception.mapExceptionM ErNotFound $
+      readFileBS $
+        Path.toFilePath configFile
+  text <- Exception.fromEither $ first ErUnicode $ decodeUtf8Strict bytestring
+  Exception.fromEither $ decodeChecks text
+
+-- | Get a path from a file in the config directory
+getFileInConfigDir ::
+  (MonadIO m) => Path.Path Path.Rel t -> m (Path.Path Path.Abs t)
+getFileInConfigDir file = flip (</>) file <$> getConfigDir
+
+-- | Get the configuration directory
+getConfigDir :: (MonadIO m) => m (Path.Path Path.Abs Path.Dir)
+getConfigDir = Path.getXdgDir Path.XdgConfig $ Just $(Path.mkRelDir "htagcli")
+
+decodeChecks :: Text -> Either Error (NonEmpty Check.Check)
+decodeChecks = decode' checksC
+
+-- | Variant of 'Toml.decode' that returns our custom 'Error' type
+decode' :: Toml.TomlCodec c -> Text -> Either Error c
+decode' codec content =
+  first (ErToml . Toml.prettyTomlDecodeErrors) $
+    Toml.decode codec content
+
+checksC :: Toml.TomlCodec (NonEmpty Check.Check)
+checksC = Toml.nonEmpty checkC "checks"
+
+checkC :: Toml.TomlCodec Check.Check
+checkC =
+  Toml.dimatch matchTags Check.TagsExist tagsC
+    <|> Toml.dimatch matchGenre Check.GenreAmong genreAmongCodec
+
+matchTags :: Check.Check -> Maybe (NonEmpty Tag.Tag)
+matchTags (Check.TagsExist tags) = Just tags
+matchTags _ = Nothing
+
+matchGenre :: Check.Check -> Maybe (NonEmpty Text)
+matchGenre (Check.GenreAmong genres) = Just genres
+matchGenre _ = Nothing
+
+tagsC :: Toml.TomlCodec (NonEmpty Tag.Tag)
+tagsC = Toml.arrayNonEmptyOf tagC "tags"
+
+tagC :: Toml.TomlBiMap Tag.Tag Toml.AnyValue
+tagC = Toml._TextBy Tag.render parse
+  where
+    parse :: Text -> Either Text Tag.Tag
+    parse text = case Tag.parse (toString text) of
+      Just tag -> Right tag
+      Nothing -> Left $ "Invalid tag: " <> text
+
+genreAmongCodec :: Toml.TomlCodec (NonEmpty Text)
+genreAmongCodec = Toml.arrayNonEmptyOf Toml._Text "genre_among"
