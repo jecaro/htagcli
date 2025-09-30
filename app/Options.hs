@@ -198,6 +198,8 @@ extensionsP =
               <> Options.metavar "EXTENSION"
           )
     )
+    -- Default to a sensitive set of common audio file extensions
+    <|> pure ("m4a" :| ["mp3", "flac", "ogg", "wma"])
 
 someBaseDirP :: Options.Parser (Path.SomeBase Path.Dir)
 someBaseDirP =
