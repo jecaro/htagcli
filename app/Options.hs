@@ -28,7 +28,7 @@ data SetOrRemove a = Set a | Remove
 
 data Directory = Directory
   { diPath :: Path.SomeBase Path.Dir,
-    diExtensions :: [Text]
+    diExtensions :: NonEmpty Text
   }
   deriving (Show)
 
@@ -189,9 +189,9 @@ someBaseFilesP =
       (Options.maybeReader Path.parseSomeFile)
       (Options.metavar "FILES")
 
-extensionsP :: Options.Parser [Text]
+extensionsP :: Options.Parser (NonEmpty Text)
 extensionsP =
-  some
+  Options.some1
     ( fromString
         <$> Options.strOption
           ( Options.long "extension"
