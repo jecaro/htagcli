@@ -42,10 +42,14 @@ library
   exposed-modules:
     AudioTrack
     Check
+    Pattern
     Tag
 
   build-depends:
+    filepath,
     htaglib,
+    megaparsec,
+    parser-combinators,
     path,
 
 executable htagcli
@@ -66,6 +70,7 @@ executable htagcli
     conduit,
     htagcli,
     htaglib,
+    megaparsec,
     optparse-applicative,
     path,
     path-io,
@@ -87,15 +92,23 @@ test-suite tests
     Main.hs
 
   other-modules:
-    Tests.Example
+    Tests.Pattern
+    Tests.Tag
 
   ghc-options:
     -F
     -pgmF=tasty-autocollect
 
   build-depends:
+    hedgehog,
     hspec-expectations,
+    hspec-megaparsec,
     htagcli,
+    htaglib,
+    megaparsec,
+    parser-combinators,
+    path,
     tasty,
     tasty-autocollect,
+    tasty-hedgehog,
     tasty-hunit-compat,

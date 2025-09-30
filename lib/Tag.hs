@@ -1,21 +1,28 @@
-module Tag (Tag (..), render, parse) where
+module Tag (Tag (..), asText, parser) where
+
+import Text.Megaparsec qualified as Megaparsec
+import Text.Megaparsec.Char qualified as Megaparsec
+
+type Parser = Megaparsec.Parsec Void Text
 
 data Tag = Title | Artist | Album | Genre | Year | Track
-  deriving (Show, Eq)
+  deriving (Show, Eq, Enum, Bounded)
 
-render :: Tag -> Text
-render Title = "title"
-render Artist = "artist"
-render Album = "album"
-render Genre = "genre"
-render Year = "year"
-render Track = "track"
+asText :: Tag -> Text
+asText Title = "title"
+asText Artist = "artist"
+asText Album = "album"
+asText Genre = "genre"
+asText Year = "year"
+asText Track = "track"
 
-parse :: Text -> Maybe Tag
-parse "title" = Just Title
-parse "artist" = Just Artist
-parse "album" = Just Album
-parse "genre" = Just Genre
-parse "year" = Just Year
-parse "track" = Just Track
-parse _ = Nothing
+parser :: Parser Tag.Tag
+parser =
+  Megaparsec.choice
+    [ Tag.Title <$ Megaparsec.string "title",
+      Tag.Artist <$ Megaparsec.string "artist",
+      Tag.Album <$ Megaparsec.string "album",
+      Tag.Genre <$ Megaparsec.string "genre",
+      Tag.Year <$ Megaparsec.string "year",
+      Tag.Track <$ Megaparsec.string "track"
+    ]

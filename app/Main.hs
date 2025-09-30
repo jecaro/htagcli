@@ -35,7 +35,7 @@ main = do
         Conduit.runConduitRes $
           fileOrDirectoryC doFilesOrDirectory
             .| Conduit.mapM_C
-              (putTextLn . AudioTrack.render <=< AudioTrack.getTags)
+              (putTextLn . AudioTrack.asText <=< AudioTrack.getTags)
       Options.Edit Options.EditOptions {..} -> do
         Conduit.runConduitRes $
           fileOrDirectoryC eoFilesOrDirectory

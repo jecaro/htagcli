@@ -8,8 +8,10 @@ import GHC.IO.Exception qualified as Exception
 import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
+import Pattern qualified
 import System.IO.Error qualified as Error
 import Tag qualified
+import Text.Megaparsec qualified as Megaparsec
 import Toml qualified
 import UnliftIO.Exception qualified as Exception
 
@@ -61,7 +63,8 @@ checksC = Toml.nonEmpty checkC "checks"
 checkC :: Toml.TomlCodec Check.Check
 checkC =
   Toml.dimatch matchTags Check.TagsExist tagsC
-    <|> Toml.dimatch matchGenre Check.GenreAmong genreAmongCodec
+    <|> Toml.dimatch matchGenre Check.GenreAmong genreAmongC
+    <|> Toml.dimatch matchFilenameMatches Check.FilenameMatches filenameMatchesC
 
 matchTags :: Check.Check -> Maybe (NonEmpty Tag.Tag)
 matchTags (Check.TagsExist tags) = Just tags
@@ -71,16 +74,28 @@ matchGenre :: Check.Check -> Maybe (NonEmpty Text)
 matchGenre (Check.GenreAmong genres) = Just genres
 matchGenre _ = Nothing
 
+matchFilenameMatches :: Check.Check -> Maybe Pattern.Pattern
+matchFilenameMatches (Check.FilenameMatches pattern) = Just pattern
+matchFilenameMatches _ = Nothing
+
 tagsC :: Toml.TomlCodec (NonEmpty Tag.Tag)
 tagsC = Toml.arrayNonEmptyOf tagC "tags"
 
 tagC :: Toml.TomlBiMap Tag.Tag Toml.AnyValue
-tagC = Toml._TextBy Tag.render parse
+tagC = Toml._TextBy Tag.asText parse
   where
     parse :: Text -> Either Text Tag.Tag
-    parse text = case Tag.parse text of
+    parse text = case Megaparsec.parseMaybe Tag.parser text of
       Just tag -> Right tag
       Nothing -> Left $ "Invalid tag: " <> text
 
-genreAmongCodec :: Toml.TomlCodec (NonEmpty Text)
-genreAmongCodec = Toml.arrayNonEmptyOf Toml._Text "genre_among"
+genreAmongC :: Toml.TomlCodec (NonEmpty Text)
+genreAmongC = Toml.arrayNonEmptyOf Toml._Text "genre_among"
+
+filenameMatchesC :: Toml.TomlCodec Pattern.Pattern
+filenameMatchesC = Toml.textBy Pattern.asText parse "filename_matches"
+  where
+    parse :: Text -> Either Text Pattern.Pattern
+    parse text =
+      first (toText . Megaparsec.errorBundlePretty) $
+        Megaparsec.parse Pattern.parser "" text

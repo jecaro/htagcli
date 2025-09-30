@@ -15,8 +15,10 @@ import Check qualified
 import Options.Applicative qualified as Options
 import Options.Applicative.NonEmpty qualified as Options
 import Path qualified
+import Pattern qualified
 import Sound.HTagLib qualified as HTagLib
 import Tag qualified
+import Text.Megaparsec qualified as Megaparsec
 
 newtype DisplayOptions = DisplayOptions
   { doFilesOrDirectory :: FilesOrDirectory
@@ -74,19 +76,27 @@ checkOptionsP = CheckOptions <$> filesOrDirectoryP <*> optional checksP
 checksP :: Options.Parser (NonEmpty Check.Check)
 checksP =
   Options.some1
-    (Check.TagsExist <$> tagsP <|> Check.GenreAmong <$> genreAmongP)
+    ( Check.TagsExist
+        <$> tagsP
+          <|> Check.GenreAmong
+        <$> genreAmongP
+          <|> Check.FilenameMatches
+        <$> filematchesP
+    )
 
 tagsP :: Options.Parser (NonEmpty Tag.Tag)
 tagsP =
   Options.some1
     ( Options.option
-        (Options.maybeReader $ Tag.parse . toText)
+        (Options.maybeReader $ parse . toText)
         ( Options.long "tag"
             <> Options.metavar "TAG"
             <> Options.help
               "Specify a tag to check (title, artist, album, genre, year, track)"
         )
     )
+  where
+    parse = Megaparsec.parseMaybe Tag.parser
 
 genreAmongP :: Options.Parser (NonEmpty Text)
 genreAmongP =
@@ -97,6 +107,19 @@ genreAmongP =
             <> Options.help "Specify a genre to check against"
         )
     )
+
+filematchesP :: Options.Parser Pattern.Pattern
+filematchesP =
+  Options.option
+    (Options.maybeReader $ parse . toText)
+    ( Options.long "filematches"
+        <> Options.metavar "PATTERN"
+        <> Options.help
+          "Specify a filename pattern to check against \
+          \(example: {genre}/{artist}/{album}/{tracknumber} - {title})"
+    )
+  where
+    parse = Megaparsec.parseMaybe Pattern.parser
 
 editOptionsP :: Options.Parser EditOptions
 editOptionsP =
