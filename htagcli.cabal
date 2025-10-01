@@ -72,3 +72,30 @@ executable htagcli
     text,
     tomland,
     unliftio,
+
+test-suite tests
+  import:
+    defaults
+
+  type:
+    exitcode-stdio-1.0
+
+  hs-source-dirs:
+    tests
+
+  main-is:
+    Main.hs
+
+  other-modules:
+    Tests.Example
+
+  ghc-options:
+    -F
+    -pgmF=tasty-autocollect
+
+  build-depends:
+    hspec-expectations,
+    htagcli,
+    tasty,
+    tasty-autocollect,
+    tasty-hunit-compat,
