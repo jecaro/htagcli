@@ -5,37 +5,7 @@ license: LGPL-3.0-or-later
 author: jecaro
 maintainer: jeancharles.quillet@gmail.com
 
-executable htagcli
-  hs-source-dirs:
-    app
-
-  main-is:
-    Main.hs
-
-  other-modules:
-    AudioTrack
-    Check
-    Config
-    Options
-    Tag
-
-  mixins:
-    base hiding (Prelude),
-    relude (Relude as Prelude),
-    relude,
-
-  build-depends:
-    base,
-    conduit,
-    htaglib,
-    optparse-applicative,
-    path,
-    path-io,
-    relude,
-    text,
-    tomland,
-    unliftio,
-
+common defaults
   default-language: GHC2021
   ghc-options:
     -Wall
@@ -52,3 +22,53 @@ executable htagcli
     PackageImports
     RecordWildCards
     StrictData
+
+  mixins:
+    base hiding (Prelude),
+    relude (Relude as Prelude),
+    relude,
+
+  build-depends:
+    base,
+    relude,
+
+library
+  import:
+    defaults
+
+  hs-source-dirs:
+    lib
+
+  exposed-modules:
+    AudioTrack
+    Check
+    Tag
+
+  build-depends:
+    htaglib,
+    path,
+
+executable htagcli
+  import:
+    defaults
+
+  hs-source-dirs:
+    app
+
+  main-is:
+    Main.hs
+
+  other-modules:
+    Config
+    Options
+
+  build-depends:
+    conduit,
+    htagcli,
+    htaglib,
+    optparse-applicative,
+    path,
+    path-io,
+    text,
+    tomland,
+    unliftio,
