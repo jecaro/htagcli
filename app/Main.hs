@@ -70,8 +70,8 @@ main = do
     toSetter setter (Just Options.Remove) = Just $ setter Nothing
     toSetter setter (Just (Options.Set v)) = Just . setter $ Just v
     checkPrintError file track check =
-      whenJust (Check.check check track) $ \err ->
-        putTextLn $ fromString file <> ": " <> err
+      whenLeft_ (Check.check check track) $ \err ->
+        putTextLn $ fromString file <> ": " <> Check.render err
 
 exceptions :: SomeException -> IO ()
 exceptions someException = do
