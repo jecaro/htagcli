@@ -11,7 +11,7 @@ render Genre = "genre"
 render Year = "year"
 render Track = "track"
 
-parse :: String -> Maybe Tag
+parse :: Text -> Maybe Tag
 parse "title" = Just Title
 parse "artist" = Just Artist
 parse "album" = Just Album

@@ -78,7 +78,7 @@ tagC :: Toml.TomlBiMap Tag.Tag Toml.AnyValue
 tagC = Toml._TextBy Tag.render parse
   where
     parse :: Text -> Either Text Tag.Tag
-    parse text = case Tag.parse (toString text) of
+    parse text = case Tag.parse text of
       Just tag -> Right tag
       Nothing -> Left $ "Invalid tag: " <> text
 

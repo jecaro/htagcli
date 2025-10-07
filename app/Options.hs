@@ -80,7 +80,7 @@ tagsP :: Options.Parser (NonEmpty Tag.Tag)
 tagsP =
   Options.some1
     ( Options.option
-        (Options.maybeReader Tag.parse)
+        (Options.maybeReader $ Tag.parse . toText)
         ( Options.long "tag"
             <> Options.metavar "TAG"
             <> Options.help
