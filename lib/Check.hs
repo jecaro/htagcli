@@ -31,10 +31,11 @@ render (GenreMismatch expected genre) =
     <> ", got "
     <> genre
 render (FilenameMismatch expected actual) =
-  "Filename does not match the expected pattern "
+  "Filename does not match the expected pattern expected \""
     <> expected
-    <> ", got "
+    <> "\", got \""
     <> actual
+    <> "\""
 
 check :: Check -> AudioTrack.AudioTrack -> Either Error ()
 check (TagsExist tags) track =
