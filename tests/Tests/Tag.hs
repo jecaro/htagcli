@@ -1,5 +1,4 @@
 {- AUTOCOLLECT.TEST -}
-{-# LANGUAGE QuasiQuotes #-}
 
 module Tests.Tag
   (

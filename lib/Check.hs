@@ -1,4 +1,4 @@
-module Check (Check (..), check, render) where
+module Check (Check (..), Error (..), check, render) where
 
 import AudioTrack qualified
 import Data.List.NonEmpty qualified as NonEmpty
@@ -19,7 +19,7 @@ data Error
   = MissingTags (NonEmpty Tag.Tag)
   | GenreMismatch (NonEmpty Text) Text
   | FilenameMismatch Text Text
-  deriving (Show)
+  deriving (Eq, Show)
 
 render :: Error -> Text
 render (MissingTags tags) =
@@ -51,9 +51,12 @@ check (GenreAmong genres) track
         GenreMismatch
           genres
           (HTagLib.unGenre $ AudioTrack.atGenre track)
-check (FilenameMatches pattern) track
-  | isJust $ Text.stripSuffix expected actual = Right ()
-  | otherwise = Left $ FilenameMismatch expected actual
+check (FilenameMatches pattern) track = do
+  whenJust (nonEmpty $ Pattern.tags pattern) $ \tags ->
+    check (TagsExist tags) track
+  whenNothing_ (Text.stripSuffix expected actual) $
+    Left $
+      FilenameMismatch expected actual
   where
     expected = Pattern.format track pattern
     actual = toText $ FilePath.dropExtension filename

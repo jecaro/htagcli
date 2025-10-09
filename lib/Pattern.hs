@@ -4,6 +4,7 @@ module Pattern
     format,
     parser,
     asText,
+    tags,
   )
 where
 
@@ -26,6 +27,12 @@ type Parser = Megaparsec.Parsec Void Text
 parser :: Parser Pattern
 parser =
   (componentParser `NonEmpty.sepBy1` Megaparsec.char '/') <* Megaparsec.eof
+
+tags :: Pattern -> [Tag.Tag]
+tags = foldMap $ foldMap tagList
+  where
+    tagList (Placeholder tag) = [tag]
+    tagList (Text _) = []
 
 componentParser :: Parser Component
 componentParser = NonEmpty.some fragmentParser

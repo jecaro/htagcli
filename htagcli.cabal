@@ -92,6 +92,7 @@ test-suite tests
     Main.hs
 
   other-modules:
+    Tests.Check
     Tests.Pattern
     Tests.Tag
 
