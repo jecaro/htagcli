@@ -51,10 +51,10 @@ check (GenreAmong genres) track
         GenreMismatch
           genres
           (HTagLib.unGenre $ AudioTrack.atGenre track)
-check (FilenameMatches pieces) track
+check (FilenameMatches pattern) track
   | isJust $ Text.stripSuffix expected actual = Right ()
   | otherwise = Left $ FilenameMismatch expected actual
   where
-    expected = Pattern.format track pieces
+    expected = Pattern.format track pattern
     actual = toText $ FilePath.dropExtension filename
     filename = Path.prjSomeBase Path.toFilePath $ AudioTrack.atFile track

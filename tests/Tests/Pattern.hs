@@ -30,7 +30,7 @@ test =
           (NonEmpty.fromList [NonEmpty.fromList [Pattern.Text "some-path"]])
           (track $ Path.Rel [relfile|./some-path|])
           `shouldBe` True,
-      testCase "single file in parts" $
+      testCase "single file in fragments" $
         filenameMatches
           ( NonEmpty.fromList
               [ NonEmpty.fromList
@@ -67,7 +67,7 @@ test :: TestTree
 test =
   testGroup
     "Tag patterns"
-    [ testCase "one item per piece" $
+    [ testCase "one fragment per component" $
         filenameMatches
           ( NonEmpty.fromList
               [ NonEmpty.fromList [Pattern.Placeholder Tag.Genre],
@@ -78,7 +78,7 @@ test =
           )
           (track $ Path.Rel [relfile|./genre/artist/album/title.mp3|])
           `shouldBe` True,
-      testCase "multiple items per piece" $
+      testCase "multiple fragment per component" $
         filenameMatches
           ( NonEmpty.fromList
               [ NonEmpty.fromList [Pattern.Placeholder Tag.Genre],
