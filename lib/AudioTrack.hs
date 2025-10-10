@@ -3,7 +3,6 @@ module AudioTrack
     haveTag,
     getTags,
     asText,
-    format,
   )
 where
 
@@ -61,11 +60,3 @@ haveTag Tag.Album = not . Text.null . HTagLib.unAlbum . atAlbum
 haveTag Tag.Genre = not . Text.null . HTagLib.unGenre . atGenre
 haveTag Tag.Year = isJust . atYear
 haveTag Tag.Track = isJust . atTrack
-
-format :: Tag.Tag -> AudioTrack -> Text
-format Tag.Title = HTagLib.unTitle . atTitle
-format Tag.Artist = HTagLib.unArtist . atArtist
-format Tag.Album = HTagLib.unAlbum . atAlbum
-format Tag.Genre = HTagLib.unGenre . atGenre
-format Tag.Year = maybe "" (Text.pack . show . HTagLib.unYear) . atYear
-format Tag.Track = maybe "" (Text.pack . show . HTagLib.unTrackNumber) . atTrack

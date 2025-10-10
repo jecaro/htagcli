@@ -12,6 +12,7 @@ import Pattern qualified
 import System.IO.Error qualified as Error
 import Tag qualified
 import Text.Megaparsec qualified as Megaparsec
+import Toml ((.=))
 import Toml qualified
 import UnliftIO.Exception qualified as Exception
 
@@ -64,7 +65,10 @@ checkC :: Toml.TomlCodec Check.Check
 checkC =
   Toml.dimatch matchTags Check.TagsExist tagsC
     <|> Toml.dimatch matchGenre Check.GenreAmong genreAmongC
-    <|> Toml.dimatch matchFilenameMatches Check.FilenameMatches filenameMatchesC
+    <|> Toml.dimatch
+      matchFilenameMatches
+      (uncurry Check.FilenameMatches)
+      filenameMatchesC
 
 matchTags :: Check.Check -> Maybe (NonEmpty Tag.Tag)
 matchTags (Check.TagsExist tags) = Just tags
@@ -74,8 +78,10 @@ matchGenre :: Check.Check -> Maybe (NonEmpty Text)
 matchGenre (Check.GenreAmong genres) = Just genres
 matchGenre _ = Nothing
 
-matchFilenameMatches :: Check.Check -> Maybe Pattern.Pattern
-matchFilenameMatches (Check.FilenameMatches pattern) = Just pattern
+matchFilenameMatches ::
+  Check.Check -> Maybe (Pattern.Pattern, Pattern.Formatting)
+matchFilenameMatches (Check.FilenameMatches pattern formatting) =
+  Just (pattern, formatting)
 matchFilenameMatches _ = Nothing
 
 tagsC :: Toml.TomlCodec (NonEmpty Tag.Tag)
@@ -92,10 +98,26 @@ tagC = Toml._TextBy Tag.asText parse
 genreAmongC :: Toml.TomlCodec (NonEmpty Text)
 genreAmongC = Toml.arrayNonEmptyOf Toml._Text "genre_among"
 
-filenameMatchesC :: Toml.TomlCodec Pattern.Pattern
-filenameMatchesC = Toml.textBy Pattern.asText parse "filename_matches"
+filenameMatchesC :: Toml.TomlCodec (Pattern.Pattern, Pattern.Formatting)
+filenameMatchesC = Toml.pair patternC formattingC
+
+patternC :: Toml.TomlCodec Pattern.Pattern
+patternC = Toml.textBy Pattern.asText parse "filename_matches"
   where
     parse :: Text -> Either Text Pattern.Pattern
     parse text =
       first (toText . Megaparsec.errorBundlePretty) $
         Megaparsec.parse Pattern.parser "" text
+
+formattingC :: Toml.TomlCodec Pattern.Formatting
+formattingC =
+  Pattern.Formatting
+    <$> slashesC "slashes" .= Pattern.foSlashes
+    <*> spacesC "spaces" .= Pattern.foSpaces
+    <*> Toml.int "pad_track_numbers" .= Pattern.foPadTrackNumbers
+
+slashesC :: Toml.Key -> Toml.TomlCodec Pattern.Slashes
+slashesC = Toml.textBy Pattern.slashesAsText Pattern.parseSlashes
+
+spacesC :: Toml.Key -> Toml.TomlCodec Pattern.Spaces
+spacesC = Toml.textBy Pattern.spacesAsText Pattern.parseSpaces

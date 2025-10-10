@@ -12,7 +12,7 @@ import Tag qualified
 data Check
   = TagsExist (NonEmpty Tag.Tag)
   | GenreAmong (NonEmpty Text)
-  | FilenameMatches Pattern.Pattern
+  | FilenameMatches Pattern.Pattern Pattern.Formatting
   deriving (Show)
 
 data Error
@@ -51,13 +51,13 @@ check (GenreAmong genres) track
         GenreMismatch
           genres
           (HTagLib.unGenre $ AudioTrack.atGenre track)
-check (FilenameMatches pattern) track = do
+check (FilenameMatches pattern formatting) track = do
   whenJust (nonEmpty $ Pattern.tags pattern) $ \tags ->
     check (TagsExist tags) track
   whenNothing_ (Text.stripSuffix expected actual) $
     Left $
       FilenameMismatch expected actual
   where
-    expected = Pattern.format track pattern
+    expected = Pattern.format formatting track pattern
     actual = toText $ FilePath.dropExtension filename
     filename = Path.prjSomeBase Path.toFilePath $ AudioTrack.atFile track

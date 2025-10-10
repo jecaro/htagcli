@@ -26,12 +26,12 @@ test =
   testGroup
     "Static patterns"
     [ testCase "single file" $
-        filenameMatches
+        filenameMatchesNoFormatting
           (NonEmpty.fromList [NonEmpty.fromList [Pattern.Text "some-path"]])
-          (track $ Path.Rel [relfile|./some-path|])
+          (trackWithFile $ Path.Rel [relfile|./some-path|])
           `shouldBe` True,
       testCase "single file in fragments" $
-        filenameMatches
+        filenameMatchesNoFormatting
           ( NonEmpty.fromList
               [ NonEmpty.fromList
                   [ Pattern.Text "some",
@@ -40,26 +40,26 @@ test =
                   ]
               ]
           )
-          (track $ Path.Rel [relfile|./some-splitted-path|])
+          (trackWithFile $ Path.Rel [relfile|./some-splitted-path|])
           `shouldBe` True,
       testCase "file in a directory" $
-        filenameMatches
+        filenameMatchesNoFormatting
           ( NonEmpty.fromList
               [ NonEmpty.fromList [Pattern.Text "some-path"],
                 NonEmpty.fromList [Pattern.Text "to-somewhere"]
               ]
           )
-          (track $ Path.Rel [relfile|./some-path/to-somewhere|])
+          (trackWithFile $ Path.Rel [relfile|./some-path/to-somewhere|])
           `shouldBe` True,
       testCase "file in a directory with an extension" $
-        filenameMatches
+        filenameMatchesNoFormatting
           ( NonEmpty.fromList
               [ NonEmpty.fromList [Pattern.Text "some-path"],
                 NonEmpty.fromList [Pattern.Text "to-somewhere"],
                 NonEmpty.fromList [Pattern.Text "audio"]
               ]
           )
-          (track $ Path.Rel [relfile|./some-path/to-somewhere/audio.mp3|])
+          (trackWithFile $ Path.Rel [relfile|./some-path/to-somewhere/audio.mp3|])
           `shouldBe` True
     ]
 
@@ -68,7 +68,7 @@ test =
   testGroup
     "Tag patterns"
     [ testCase "one fragment per component" $
-        filenameMatches
+        filenameMatchesNoFormatting
           ( NonEmpty.fromList
               [ NonEmpty.fromList [Pattern.Placeholder Tag.Genre],
                 NonEmpty.fromList [Pattern.Placeholder Tag.Artist],
@@ -76,10 +76,10 @@ test =
                 NonEmpty.fromList [Pattern.Placeholder Tag.Title]
               ]
           )
-          (track $ Path.Rel [relfile|./genre/artist/album/title.mp3|])
+          (trackWithFile $ Path.Rel [relfile|./genre/artist/album/title.mp3|])
           `shouldBe` True,
       testCase "multiple fragment per component" $
-        filenameMatches
+        filenameMatchesNoFormatting
           ( NonEmpty.fromList
               [ NonEmpty.fromList [Pattern.Placeholder Tag.Genre],
                 NonEmpty.fromList [Pattern.Placeholder Tag.Artist],
@@ -95,7 +95,9 @@ test =
                   ]
               ]
           )
-          (track $ Path.Rel [relfile|./genre/artist/2024-album/1-title.mp3|])
+          ( trackWithFile $
+              Path.Rel [relfile|./genre/artist/2024-album/1-title.mp3|]
+          )
           `shouldBe` True
     ]
 
@@ -145,18 +147,92 @@ test =
             ]
     ]
 
-filenameMatches :: Pattern.Pattern -> AudioTrack.AudioTrack -> Bool
-filenameMatches pattern track' =
-  isRight $ Check.check (Check.FilenameMatches pattern) track'
+test :: TestTree
+test =
+  testGroup
+    "Formatting options"
+    [ testCase "no substitutions" $
+        filenameMatches
+          trackDashTitle
+          Pattern.noFormatting
+          (trackWithTitleAndFile "title" $ Path.Rel [relfile|./1-title.mp3|])
+          `shouldBe` True,
+      testGroup
+        "tag with slashes"
+        [ testCase "remove" $
+            filenameMatches
+              trackDashTitle
+              (Pattern.noFormatting {Pattern.foSlashes = Pattern.SlRemove})
+              ( trackWithTitleAndFile "title/with/slashes" $
+                  Path.Rel [relfile|./1-titlewithslashes.mp3|]
+              )
+              `shouldBe` True,
+          testCase "to underscore" $
+            filenameMatches
+              trackDashTitle
+              (Pattern.noFormatting {Pattern.foSlashes = Pattern.SlToUnderscore})
+              ( trackWithTitleAndFile "title/with/slashes" $
+                  Path.Rel [relfile|./1-title_with_slashes.mp3|]
+              )
+              `shouldBe` True
+        ],
+      testGroup
+        "tag with spaces"
+        [ testCase "keep" $
+            filenameMatches
+              trackDashTitle
+              (Pattern.noFormatting {Pattern.foSpaces = Pattern.SpKeep})
+              ( trackWithTitleAndFile "title with spaces" $
+                  Path.Rel [relfile|./1-title with spaces.mp3|]
+              )
+              `shouldBe` True,
+          testCase "to underscore" $
+            filenameMatches
+              trackDashTitle
+              (Pattern.noFormatting {Pattern.foSpaces = Pattern.SpToUnderscore})
+              ( trackWithTitleAndFile "title with spaces" $
+                  Path.Rel [relfile|./1-title_with_spaces.mp3|]
+              )
+              `shouldBe` True
+        ],
+      testCase "zero padding" $
+        filenameMatches
+          trackDashTitle
+          (Pattern.noFormatting {Pattern.foPadTrackNumbers = 3})
+          ( trackWithTitleAndFile "title" $
+              Path.Rel [relfile|./001-title.mp3|]
+          )
+          `shouldBe` True
+    ]
+  where
+    trackDashTitle =
+      NonEmpty.fromList
+        [ NonEmpty.fromList
+            [ Pattern.Placeholder Tag.Track,
+              Pattern.Text "-",
+              Pattern.Placeholder Tag.Title
+            ]
+        ]
 
-track :: Path.SomeBase Path.File -> AudioTrack.AudioTrack
-track file =
+filenameMatchesNoFormatting :: Pattern.Pattern -> AudioTrack.AudioTrack -> Bool
+filenameMatchesNoFormatting pattern = filenameMatches pattern Pattern.noFormatting
+
+filenameMatches ::
+  Pattern.Pattern -> Pattern.Formatting -> AudioTrack.AudioTrack -> Bool
+filenameMatches pattern formatting =
+  isRight . Check.check (Check.FilenameMatches pattern formatting)
+
+trackWithTitleAndFile :: Text -> Path.SomeBase Path.File -> AudioTrack.AudioTrack
+trackWithTitleAndFile title file =
   AudioTrack.AudioTrack
     { atFile = file,
-      atTitle = HTagLib.mkTitle "title",
+      atTitle = HTagLib.mkTitle title,
       atArtist = HTagLib.mkArtist "artist",
       atAlbum = HTagLib.mkAlbum "album",
       atGenre = HTagLib.mkGenre "genre",
       atYear = HTagLib.mkYear 2024,
       atTrack = HTagLib.mkTrackNumber 1
     }
+
+trackWithFile :: Path.SomeBase Path.File -> AudioTrack.AudioTrack
+trackWithFile = trackWithTitleAndFile "title"

@@ -24,9 +24,9 @@ test =
   testGroup
     "FilenameMatches"
     [ testCase
-        "fail with MissingTags if the file doesn't contains a placeholder tag"
+        "fail with MissingTags if the file doesn't contain a placeholder tag"
         $ Check.check
-          ( Check.FilenameMatches $
+          ( filenameMatchesNoFormatting $
               NonEmpty.fromList
                 [NonEmpty.fromList [Pattern.Placeholder Tag.Artist]]
           )
@@ -35,7 +35,7 @@ test =
       testCase
         "fail with FilenameMismatch if the file contains a placeholder tag"
         $ Check.check
-          ( Check.FilenameMatches $
+          ( filenameMatchesNoFormatting $
               NonEmpty.fromList
                 [NonEmpty.fromList [Pattern.Placeholder Tag.Album]]
           )
@@ -44,13 +44,17 @@ test =
       testCase
         "succeed if the file matches the pattern"
         $ Check.check
-          ( Check.FilenameMatches $
+          ( filenameMatchesNoFormatting $
               NonEmpty.fromList
                 [NonEmpty.fromList [Pattern.Placeholder Tag.Title]]
           )
           track
           `shouldBe` Right ()
     ]
+
+filenameMatchesNoFormatting :: Pattern.Pattern -> Check.Check
+filenameMatchesNoFormatting pattern =
+  Check.FilenameMatches pattern Pattern.noFormatting
 
 track :: AudioTrack.AudioTrack
 track =

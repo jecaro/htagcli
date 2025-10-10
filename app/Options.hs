@@ -82,6 +82,7 @@ checksP =
         <$> genreAmongP
           <|> Check.FilenameMatches
         <$> filematchesP
+        <*> formattingP
     )
 
 tagsP :: Options.Parser (NonEmpty Tag.Tag)
@@ -120,6 +121,35 @@ filematchesP =
     )
   where
     parse = Megaparsec.parseMaybe Pattern.parser
+
+formattingP :: Options.Parser Pattern.Formatting
+formattingP =
+  Pattern.Formatting
+    <$> Options.option
+      (Options.eitherReader $ first toString . Pattern.parseSlashes . toText)
+      ( Options.long "slashes"
+          <> Options.metavar "SLASHES"
+          <> Options.help
+            "When checking filenames, how to handle slashes in tag placeholders \
+            \ [remove|to_underscore] (default: remove)"
+          <> Options.value Pattern.SlRemove
+      )
+    <*> Options.option
+      (Options.eitherReader $ first toString . Pattern.parseSpaces . toText)
+      ( Options.long "spaces"
+          <> Options.metavar "SPACES"
+          <> Options.help
+            "When checking filenames, how to handle spaces in tag placeholders \
+            \ [keep|to_underscore] (default: keep)"
+          <> Options.value Pattern.SpToUnderscore
+      )
+    <*> Options.option
+      Options.auto
+      ( Options.long "padtrack"
+          <> Options.metavar "N"
+          <> Options.help "Number of digits to pad track numbers to (default: 0)"
+          <> Options.value 0
+      )
 
 editOptionsP :: Options.Parser EditOptions
 editOptionsP =
