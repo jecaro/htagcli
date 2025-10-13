@@ -11,6 +11,7 @@ import Options qualified
 import Options.Applicative qualified as Options
 import Path qualified
 import Sound.HTagLib qualified as HTagLib
+import Sound.HTagLib.Extra qualified as HTagLib
 import UnliftIO.Exception qualified as Exception
 
 fileOrDirectoryC ::
@@ -48,6 +49,7 @@ main = do
                             [ HTagLib.titleSetter <$> eoTitle,
                               HTagLib.artistSetter <$> eoArtist,
                               HTagLib.albumSetter <$> eoAlbum,
+                              HTagLib.albumArtistSetter <$> eoAlbumArtist,
                               HTagLib.genreSetter <$> eoGenre,
                               toSetter HTagLib.yearSetter eoYear,
                               toSetter HTagLib.trackNumberSetter eoTrack

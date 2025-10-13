@@ -14,6 +14,7 @@ import Path (relfile)
 import Path qualified
 import Pattern qualified
 import Sound.HTagLib qualified as HTagLib
+import Sound.HTagLib.Extra qualified as HTagLib
 import Tag qualified
 import Test.Hspec.Expectations (shouldBe)
 import Test.Hspec.Megaparsec (shouldParse)
@@ -229,6 +230,7 @@ trackWithTitleAndFile title file =
       atTitle = HTagLib.mkTitle title,
       atArtist = HTagLib.mkArtist "artist",
       atAlbum = HTagLib.mkAlbum "album",
+      atAlbumArtist = HTagLib.mkAlbumArtist "albumartist",
       atGenre = HTagLib.mkGenre "genre",
       atYear = HTagLib.mkYear 2024,
       atTrack = HTagLib.mkTrackNumber 1

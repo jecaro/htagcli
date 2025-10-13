@@ -43,6 +43,7 @@ library
     AudioTrack
     Check
     Pattern
+    Sound.HTagLib.Extra
     Tag
 
   build-depends:

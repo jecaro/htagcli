@@ -1,5 +1,22 @@
 {
   "nodes": {
+    "htaglib-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1760368132,
+        "narHash": "sha256-FZk0OMK0hmbda6Hrn5XVJKNQyDLrhIE1GhnMw9FFXPY=",
+        "owner": "jecaro",
+        "repo": "htaglib",
+        "rev": "13d5981afa57b52cda717e5f96028c27fa71da2a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "jecaro",
+        "ref": "add-property-api",
+        "repo": "htaglib",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1754767907,
@@ -18,6 +35,7 @@
     },
     "root": {
       "inputs": {
+        "htaglib-src": "htaglib-src",
         "nixpkgs": "nixpkgs"
       }
     }

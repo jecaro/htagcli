@@ -17,6 +17,7 @@ import Options.Applicative.NonEmpty qualified as Options
 import Path qualified
 import Pattern qualified
 import Sound.HTagLib qualified as HTagLib
+import Sound.HTagLib.Extra qualified as HTagLib
 import Tag qualified
 import Text.Megaparsec qualified as Megaparsec
 
@@ -49,6 +50,7 @@ data EditOptions = EditOptions
     eoTitle :: Maybe HTagLib.Title,
     eoArtist :: Maybe HTagLib.Artist,
     eoAlbum :: Maybe HTagLib.Album,
+    eoAlbumArtist :: Maybe HTagLib.AlbumArtist,
     eoGenre :: Maybe HTagLib.Genre,
     eoYear :: Maybe (SetOrRemove HTagLib.Year),
     eoTrack :: Maybe (SetOrRemove HTagLib.TrackNumber)
@@ -174,6 +176,13 @@ editOptionsP =
           ( Options.long "album"
               <> Options.metavar "ALBUM"
               <> Options.help "Set the album"
+          )
+      )
+    <*> optional
+      ( Options.strOption
+          ( Options.long "albumartist"
+              <> Options.metavar "ALBUMARTIST"
+              <> Options.help "Set the album artist"
           )
       )
     <*> optional

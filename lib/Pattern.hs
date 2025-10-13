@@ -21,6 +21,7 @@ import Control.Applicative.Combinators.NonEmpty qualified as NonEmpty
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Text qualified as Text
 import Sound.HTagLib qualified as HTagLib
+import Sound.HTagLib.Extra qualified as HTagLib
 import Tag qualified
 import Text.Megaparsec qualified as Megaparsec
 import Text.Megaparsec.Char qualified as Megaparsec
@@ -123,6 +124,8 @@ formatTag formatting AudioTrack.AudioTrack {..} Tag.Artist =
   textFormatter formatting . HTagLib.unArtist $ atArtist
 formatTag formatting AudioTrack.AudioTrack {..} Tag.Album =
   textFormatter formatting . HTagLib.unAlbum $ atAlbum
+formatTag formatting AudioTrack.AudioTrack {..} Tag.AlbumArtist =
+  textFormatter formatting . HTagLib.unAlbumArtist $ atAlbumArtist
 formatTag formatting AudioTrack.AudioTrack {..} Tag.Genre =
   textFormatter formatting . HTagLib.unGenre $ atGenre
 formatTag _ AudioTrack.AudioTrack {..} Tag.Year =
