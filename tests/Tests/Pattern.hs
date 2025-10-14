@@ -28,16 +28,16 @@ test =
     "Static patterns"
     [ testCase "single file" $
         filenameMatchesNoFormatting
-          (NonEmpty.fromList [NonEmpty.fromList [Pattern.Text "some-path"]])
+          (NonEmpty.fromList [NonEmpty.fromList [Pattern.FrText "some-path"]])
           (trackWithFile $ Path.Rel [relfile|./some-path|])
           `shouldBe` True,
       testCase "single file in fragments" $
         filenameMatchesNoFormatting
           ( NonEmpty.fromList
               [ NonEmpty.fromList
-                  [ Pattern.Text "some",
-                    Pattern.Text "-splitted",
-                    Pattern.Text "-path"
+                  [ Pattern.FrText "some",
+                    Pattern.FrText "-splitted",
+                    Pattern.FrText "-path"
                   ]
               ]
           )
@@ -46,8 +46,8 @@ test =
       testCase "file in a directory" $
         filenameMatchesNoFormatting
           ( NonEmpty.fromList
-              [ NonEmpty.fromList [Pattern.Text "some-path"],
-                NonEmpty.fromList [Pattern.Text "to-somewhere"]
+              [ NonEmpty.fromList [Pattern.FrText "some-path"],
+                NonEmpty.fromList [Pattern.FrText "to-somewhere"]
               ]
           )
           (trackWithFile $ Path.Rel [relfile|./some-path/to-somewhere|])
@@ -55,9 +55,9 @@ test =
       testCase "file in a directory with an extension" $
         filenameMatchesNoFormatting
           ( NonEmpty.fromList
-              [ NonEmpty.fromList [Pattern.Text "some-path"],
-                NonEmpty.fromList [Pattern.Text "to-somewhere"],
-                NonEmpty.fromList [Pattern.Text "audio"]
+              [ NonEmpty.fromList [Pattern.FrText "some-path"],
+                NonEmpty.fromList [Pattern.FrText "to-somewhere"],
+                NonEmpty.fromList [Pattern.FrText "audio"]
               ]
           )
           (trackWithFile $ Path.Rel [relfile|./some-path/to-somewhere/audio.mp3|])
@@ -71,10 +71,14 @@ test =
     [ testCase "one fragment per component" $
         filenameMatchesNoFormatting
           ( NonEmpty.fromList
-              [ NonEmpty.fromList [Pattern.Placeholder Tag.Genre],
-                NonEmpty.fromList [Pattern.Placeholder Tag.Artist],
-                NonEmpty.fromList [Pattern.Placeholder Tag.Album],
-                NonEmpty.fromList [Pattern.Placeholder Tag.Title]
+              [ NonEmpty.fromList
+                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
+                NonEmpty.fromList
+                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist],
+                NonEmpty.fromList
+                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
+                NonEmpty.fromList
+                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
               ]
           )
           (trackWithFile $ Path.Rel [relfile|./genre/artist/album/title.mp3|])
@@ -82,23 +86,58 @@ test =
       testCase "multiple fragment per component" $
         filenameMatchesNoFormatting
           ( NonEmpty.fromList
-              [ NonEmpty.fromList [Pattern.Placeholder Tag.Genre],
-                NonEmpty.fromList [Pattern.Placeholder Tag.Artist],
+              [ NonEmpty.fromList
+                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
                 NonEmpty.fromList
-                  [ Pattern.Placeholder Tag.Year,
-                    Pattern.Text "-",
-                    Pattern.Placeholder Tag.Album
+                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist],
+                NonEmpty.fromList
+                  [ Pattern.FrPlaceholder $ Pattern.PlTag Tag.Year,
+                    Pattern.FrText "-",
+                    Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album
                   ],
                 NonEmpty.fromList
-                  [ Pattern.Placeholder Tag.Track,
-                    Pattern.Text "-",
-                    Pattern.Placeholder Tag.Title
+                  [ Pattern.FrPlaceholder $ Pattern.PlTag Tag.Track,
+                    Pattern.FrText "-",
+                    Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title
                   ]
               ]
           )
           ( trackWithFile $
               Path.Rel [relfile|./genre/artist/2024-album/1-title.mp3|]
           )
+          `shouldBe` True,
+      testCase "albumartist_ fallback to artist when albumartist is not present" $
+        filenameMatchesNoFormatting
+          ( NonEmpty.fromList
+              [ NonEmpty.fromList
+                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
+                NonEmpty.fromList
+                  [Pattern.FrPlaceholder Pattern.PlAlbumArtist],
+                NonEmpty.fromList
+                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
+                NonEmpty.fromList
+                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
+              ]
+          )
+          ( (trackWithFile $ Path.Rel [relfile|./genre/artist/album/title.mp3|])
+              { AudioTrack.atAlbumArtist = ""
+              }
+          )
+          `shouldBe` True,
+      testCase "albumartist_ use albumartist when it is present" $
+        filenameMatchesNoFormatting
+          ( NonEmpty.fromList
+              [ NonEmpty.fromList
+                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
+                NonEmpty.fromList
+                  [Pattern.FrPlaceholder Pattern.PlAlbumArtist],
+                NonEmpty.fromList
+                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
+                NonEmpty.fromList
+                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
+              ]
+          )
+          (trackWithFile $ Path.Rel [relfile|./genre/albumartist/album/title.mp3|])
           `shouldBe` True
     ]
 
@@ -110,8 +149,9 @@ test =
         "fail if the filename is smaller than the pattern"
         $ ( filenameMatchesNoFormatting $
               NonEmpty.fromList
-                [ NonEmpty.fromList [Pattern.Text "some-path"],
-                  NonEmpty.fromList [Pattern.Placeholder Tag.Title]
+                [ NonEmpty.fromList [Pattern.FrText "some-path"],
+                  NonEmpty.fromList
+                    [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
                 ]
           )
           ( trackWithFile $
@@ -127,22 +167,22 @@ test =
     [ testCase "single text" $
         Megaparsec.parse Pattern.parser "" "sometext"
           `shouldParse` NonEmpty.fromList
-            [NonEmpty.fromList [Pattern.Text "sometext"]],
+            [NonEmpty.fromList [Pattern.FrText "sometext"]],
       testCase "mixed text" $
         Megaparsec.parse Pattern.parser "" "sometext{artist}moretext"
           `shouldParse` NonEmpty.fromList
             [ NonEmpty.fromList
-                [ Pattern.Text "sometext",
-                  Pattern.Placeholder Tag.Artist,
-                  Pattern.Text "moretext"
+                [ Pattern.FrText "sometext",
+                  Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist,
+                  Pattern.FrText "moretext"
                 ]
             ],
       testCase "some text" $
         Megaparsec.parse Pattern.parser "" "sometext/with/slash"
           `shouldParse` NonEmpty.fromList
-            [ NonEmpty.fromList [Pattern.Text "sometext"],
-              NonEmpty.fromList [Pattern.Text "with"],
-              NonEmpty.fromList [Pattern.Text "slash"]
+            [ NonEmpty.fromList [Pattern.FrText "sometext"],
+              NonEmpty.fromList [Pattern.FrText "with"],
+              NonEmpty.fromList [Pattern.FrText "slash"]
             ],
       testCase "some mixed text" $
         Megaparsec.parse
@@ -151,17 +191,17 @@ test =
           "prefix-{artist}/{album}-suffix/before-{title}-after"
           `shouldParse` NonEmpty.fromList
             [ NonEmpty.fromList
-                [ Pattern.Text "prefix-",
-                  Pattern.Placeholder Tag.Artist
+                [ Pattern.FrText "prefix-",
+                  Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist
                 ],
               NonEmpty.fromList
-                [ Pattern.Placeholder Tag.Album,
-                  Pattern.Text "-suffix"
+                [ Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album,
+                  Pattern.FrText "-suffix"
                 ],
               NonEmpty.fromList
-                [ Pattern.Text "before-",
-                  Pattern.Placeholder Tag.Title,
-                  Pattern.Text "-after"
+                [ Pattern.FrText "before-",
+                  Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title,
+                  Pattern.FrText "-after"
                 ]
             ]
     ]
@@ -243,8 +283,9 @@ test =
         filenameMatches
           trackDashTitle
           (Pattern.noFormatting {Pattern.foPadTrackNumbers = Pattern.Ignore})
-          ( trackWithTitleAndFile "title" $
-              Path.Rel [relfile|./001-title.mp3|]
+          ( (trackWithTitleAndFile "title" $ Path.Rel [relfile|./001-title.mp3|])
+              { AudioTrack.atAlbumArtist = ""
+              }
           )
           `shouldBe` True
     ]
@@ -252,9 +293,9 @@ test =
     trackDashTitle =
       NonEmpty.fromList
         [ NonEmpty.fromList
-            [ Pattern.Placeholder Tag.Track,
-              Pattern.Text "-",
-              Pattern.Placeholder Tag.Title
+            [ Pattern.FrPlaceholder $ Pattern.PlTag Tag.Track,
+              Pattern.FrText "-",
+              Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title
             ]
         ]
 

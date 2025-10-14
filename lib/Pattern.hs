@@ -4,6 +4,7 @@ module Pattern
     parsePadding,
     paddingAsText,
     Fragment (..),
+    Placeholder (..),
     Unwanted (..),
     unwantedAsText,
     parseUnwanted,
@@ -32,7 +33,10 @@ import Text.Megaparsec qualified as Megaparsec
 import Text.Megaparsec.Char qualified as Megaparsec
 import Text.Printf qualified as Text
 
-data Fragment = Text Text | Placeholder Tag.Tag
+data Placeholder = PlTag Tag.Tag | PlAlbumArtist
+  deriving (Eq, Show)
+
+data Fragment = FrText Text | FrPlaceholder Placeholder
   deriving (Eq, Show)
 
 type Component = NonEmpty Fragment
@@ -76,29 +80,37 @@ parser =
 tags :: Pattern -> [Tag.Tag]
 tags = foldMap $ foldMap tagList
   where
-    tagList (Placeholder tag) = [tag]
-    tagList (Text _) = []
+    tagList (FrPlaceholder (PlTag tag)) = [tag]
+    tagList (FrPlaceholder PlAlbumArtist) = [Tag.Artist]
+    tagList (FrText _) = []
 
 componentParser :: Parser Component
 componentParser = NonEmpty.some fragmentParser
 
 fragmentParser :: Parser Fragment
-fragmentParser = Placeholder <$> placeholderParser <|> Text <$> textParser
+fragmentParser = FrPlaceholder <$> placeholderParser <|> FrText <$> textParser
 
 textParser :: Parser Text
 textParser = toText <$> Megaparsec.some (Megaparsec.satisfy notSlashNorBrace)
   where
     notSlashNorBrace c = c /= '/' && c /= '{' && c /= '}'
 
-placeholderParser :: Parser Tag.Tag
+placeholderParser :: Parser Placeholder
 placeholderParser =
-  Megaparsec.between (Megaparsec.char '{') (Megaparsec.char '}') Tag.parser
+  Megaparsec.between
+    (Megaparsec.char '{')
+    (Megaparsec.char '}')
+    (PlAlbumArtist <$ Megaparsec.string "albumartist_" <|> PlTag <$> Tag.parser)
 
 format :: Formatting -> AudioTrack.AudioTrack -> Pattern -> Text
-format formatting = formatWith . formatTag formatting
+format formatting = formatWith . formatPlaceholder formatting
 
 asText :: Pattern -> Text
-asText = formatWith Tag.asText
+asText = formatWith placeholderAsText
+
+placeholderAsText :: Placeholder -> Text
+placeholderAsText (PlTag tag) = "{" <> Tag.asText tag <> "}"
+placeholderAsText PlAlbumArtist = "{albumartist_}"
 
 unwantedAsText :: Unwanted -> Text
 unwantedAsText UnRemove = "remove"
@@ -129,16 +141,27 @@ parsePadding text =
     Just n | n > 0 -> Right (Pad n)
     _ -> Left "Should be 'none' or a positive integer"
 
-formatWith :: (Tag.Tag -> Text) -> Pattern -> Text
+formatWith :: (Placeholder -> Text) -> Pattern -> Text
 formatWith formatter pattern =
   fold $ NonEmpty.intersperse "/" $ formatComponentWith formatter <$> pattern
 
-formatComponentWith :: (Tag.Tag -> Text) -> Component -> Text
+formatComponentWith :: (Placeholder -> Text) -> Component -> Text
 formatComponentWith formatter = foldMap (formatFragmentWith formatter)
 
-formatFragmentWith :: (Tag.Tag -> Text) -> Fragment -> Text
-formatFragmentWith _ (Text text) = text
-formatFragmentWith formatter (Placeholder tag) = formatter tag
+formatFragmentWith :: (Placeholder -> Text) -> Fragment -> Text
+formatFragmentWith _ (FrText text) = text
+formatFragmentWith formatter (FrPlaceholder placeholder) = formatter placeholder
+
+formatPlaceholder :: Formatting -> AudioTrack.AudioTrack -> Placeholder -> Text
+formatPlaceholder formatting track (PlTag tag) = formatTag formatting track tag
+formatPlaceholder formatting track PlAlbumArtist = formatTag formatting track tag
+  where
+    tag
+      | not $
+          Text.null $
+            HTagLib.unAlbumArtist (AudioTrack.atAlbumArtist track) =
+          Tag.AlbumArtist
+      | otherwise = Tag.Artist
 
 formatTag :: Formatting -> AudioTrack.AudioTrack -> Tag.Tag -> Text
 formatTag formatting AudioTrack.AudioTrack {..} Tag.Title =
@@ -204,9 +227,9 @@ matchFragment ::
 matchFragment formatting track fragment =
   Text.stripPrefix formatted . ignoreLeadingZeros
   where
-    formatted = formatFragmentWith (formatTag formatting track) fragment
+    formatted = formatFragmentWith (formatPlaceholder formatting track) fragment
     ignoreLeadingZeros
-      | Placeholder Tag.Track <- fragment,
+      | FrPlaceholder (PlTag Tag.Track) <- fragment,
         Ignore <- foPadTrackNumbers formatting =
           Text.dropWhile (== '0')
       | otherwise = id

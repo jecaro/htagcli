@@ -29,7 +29,9 @@ test =
         $ Check.check
           ( filenameMatchesNoFormatting $
               NonEmpty.fromList
-                [NonEmpty.fromList [Pattern.Placeholder Tag.Artist]]
+                [ NonEmpty.fromList
+                    [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist]
+                ]
           )
           track
           `shouldBe` Left (Check.MissingTags (NonEmpty.fromList [Tag.Artist])),
@@ -38,7 +40,9 @@ test =
         $ Check.check
           ( filenameMatchesNoFormatting $
               NonEmpty.fromList
-                [NonEmpty.fromList [Pattern.Placeholder Tag.Album]]
+                [ NonEmpty.fromList
+                    [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album]
+                ]
           )
           track
           `shouldBe` Left (Check.FilenameMismatch "album"),
@@ -47,7 +51,9 @@ test =
         $ Check.check
           ( filenameMatchesNoFormatting $
               NonEmpty.fromList
-                [NonEmpty.fromList [Pattern.Placeholder Tag.Title]]
+                [ NonEmpty.fromList
+                    [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
+                ]
           )
           track
           `shouldBe` Right ()
