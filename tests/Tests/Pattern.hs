@@ -181,7 +181,7 @@ test =
         [ testCase "remove" $
             filenameMatches
               trackDashTitle
-              (Pattern.noFormatting {Pattern.foSlashes = Pattern.SlRemove})
+              (Pattern.noFormatting {Pattern.foSlashes = Pattern.UnRemove})
               ( trackWithTitleAndFile "title/with/slashes" $
                   Path.Rel [relfile|./1-titlewithslashes.mp3|]
               )
@@ -189,9 +189,28 @@ test =
           testCase "to underscore" $
             filenameMatches
               trackDashTitle
-              (Pattern.noFormatting {Pattern.foSlashes = Pattern.SlToUnderscore})
+              (Pattern.noFormatting {Pattern.foSlashes = Pattern.UnToUnderscore})
               ( trackWithTitleAndFile "title/with/slashes" $
                   Path.Rel [relfile|./1-title_with_slashes.mp3|]
+              )
+              `shouldBe` True
+        ],
+      testGroup
+        "tag with colons"
+        [ testCase "remove" $
+            filenameMatches
+              trackDashTitle
+              (Pattern.noFormatting {Pattern.foColons = Pattern.UnRemove})
+              ( trackWithTitleAndFile "title:with:colons" $
+                  Path.Rel [relfile|./1-titlewithcolons.mp3|]
+              )
+              `shouldBe` True,
+          testCase "to underscore" $
+            filenameMatches
+              trackDashTitle
+              (Pattern.noFormatting {Pattern.foColons = Pattern.UnToUnderscore})
+              ( trackWithTitleAndFile "title:with:colons" $
+                  Path.Rel [relfile|./1-title_with_colons.mp3|]
               )
               `shouldBe` True
         ],

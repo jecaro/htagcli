@@ -128,13 +128,22 @@ formattingP :: Options.Parser Pattern.Formatting
 formattingP =
   Pattern.Formatting
     <$> Options.option
-      (Options.eitherReader $ first toString . Pattern.parseSlashes . toText)
+      (Options.eitherReader $ first toString . Pattern.parseUnwanted . toText)
       ( Options.long "slashes"
           <> Options.metavar "SLASHES"
           <> Options.help
             "When checking filenames, how to handle slashes in tag placeholders \
             \ [remove|to_underscore] (default: remove)"
-          <> Options.value Pattern.SlRemove
+          <> Options.value Pattern.UnRemove
+      )
+    <*> Options.option
+      (Options.eitherReader $ first toString . Pattern.parseUnwanted . toText)
+      ( Options.long "colons"
+          <> Options.metavar "COLONS"
+          <> Options.help
+            "When checking filenames, how to handle colons in tag placeholders \
+            \ [remove|to_underscore] (default: remove)"
+          <> Options.value Pattern.UnRemove
       )
     <*> Options.option
       (Options.eitherReader $ first toString . Pattern.parseSpaces . toText)

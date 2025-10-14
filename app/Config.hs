@@ -112,12 +112,13 @@ patternC = Toml.textBy Pattern.asText parse "filename_matches"
 formattingC :: Toml.TomlCodec Pattern.Formatting
 formattingC =
   Pattern.Formatting
-    <$> slashesC "slashes" .= Pattern.foSlashes
+    <$> unwantedC "slashes" .= Pattern.foSlashes
+    <*> unwantedC "colons" .= Pattern.foColons
     <*> spacesC "spaces" .= Pattern.foSpaces
     <*> paddingC "pad_track_numbers" .= Pattern.foPadTrackNumbers
 
-slashesC :: Toml.Key -> Toml.TomlCodec Pattern.Slashes
-slashesC = Toml.textBy Pattern.slashesAsText Pattern.parseSlashes
+unwantedC :: Toml.Key -> Toml.TomlCodec Pattern.Unwanted
+unwantedC = Toml.textBy Pattern.unwantedAsText Pattern.parseUnwanted
 
 spacesC :: Toml.Key -> Toml.TomlCodec Pattern.Spaces
 spacesC = Toml.textBy Pattern.spacesAsText Pattern.parseSpaces

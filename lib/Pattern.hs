@@ -4,9 +4,9 @@ module Pattern
     parsePadding,
     paddingAsText,
     Fragment (..),
-    Slashes (..),
-    slashesAsText,
-    parseSlashes,
+    Unwanted (..),
+    unwantedAsText,
+    parseUnwanted,
     Spaces (..),
     spacesAsText,
     parseSpaces,
@@ -41,7 +41,7 @@ type Pattern = NonEmpty Component
 
 type Parser = Megaparsec.Parsec Void Text
 
-data Slashes = SlRemove | SlToUnderscore
+data Unwanted = UnRemove | UnToUnderscore
   deriving (Show, Eq, Enum, Bounded)
 
 data Spaces = SpKeep | SpToUnderscore
@@ -53,7 +53,8 @@ data Padding
   deriving (Show, Eq)
 
 data Formatting = Formatting
-  { foSlashes :: Slashes,
+  { foSlashes :: Unwanted,
+    foColons :: Unwanted,
     foSpaces :: Spaces,
     foPadTrackNumbers :: Padding
   }
@@ -62,7 +63,8 @@ data Formatting = Formatting
 noFormatting :: Formatting
 noFormatting =
   Formatting
-    { foSlashes = SlRemove,
+    { foSlashes = UnRemove,
+      foColons = UnRemove,
       foSpaces = SpKeep,
       foPadTrackNumbers = Pad 0
     }
@@ -98,14 +100,14 @@ format formatting = formatWith . formatTag formatting
 asText :: Pattern -> Text
 asText = formatWith Tag.asText
 
-slashesAsText :: Slashes -> Text
-slashesAsText SlRemove = "remove"
-slashesAsText SlToUnderscore = "to_underscore"
+unwantedAsText :: Unwanted -> Text
+unwantedAsText UnRemove = "remove"
+unwantedAsText UnToUnderscore = "to_underscore"
 
-parseSlashes :: Text -> Either Text Slashes
-parseSlashes "remove" = Right SlRemove
-parseSlashes "to_underscore" = Right SlToUnderscore
-parseSlashes _ = Left "Should be one of 'remove' or 'to_underscore'"
+parseUnwanted :: Text -> Either Text Unwanted
+parseUnwanted "remove" = Right UnRemove
+parseUnwanted "to_underscore" = Right UnToUnderscore
+parseUnwanted _ = Left "Should be one of 'remove' or 'to_underscore'"
 
 spacesAsText :: Spaces -> Text
 spacesAsText SpKeep = "keep"
@@ -155,16 +157,16 @@ formatTag formatting AudioTrack.AudioTrack {..} Tag.Track =
   maybe "" (trackNumberFormat formatting . HTagLib.unTrackNumber) atTrack
 
 textFormatter :: Formatting -> Text -> Text
-textFormatter Formatting {..} = spaces foSpaces . slashes foSlashes
+textFormatter Formatting {..} =
+  spaces foSpaces . unwanted '/' foSlashes . unwanted ':' foColons
   where
     spaces SpKeep = id
-    spaces SpToUnderscore = Text.map spaceToUnderscore
-    slashes SlRemove = Text.filter (/= '/')
-    slashes SlToUnderscore = Text.map slashToUnderscore
-    slashToUnderscore '/' = '_'
-    slashToUnderscore c = c
-    spaceToUnderscore ' ' = '_'
-    spaceToUnderscore c = c
+    spaces SpToUnderscore = Text.map $ toUnderscore ' '
+    unwanted char UnRemove = Text.filter (/= char)
+    unwanted char UnToUnderscore = Text.map (toUnderscore char)
+    toUnderscore char other
+      | other == char = '_'
+      | otherwise = other
 
 trackNumberFormat :: Formatting -> Int -> Text
 trackNumberFormat Formatting {..} =
