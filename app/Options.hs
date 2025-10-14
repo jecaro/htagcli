@@ -127,16 +127,7 @@ filematchesP =
 formattingP :: Options.Parser Pattern.Formatting
 formattingP =
   Pattern.Formatting
-    <$> unwantedP
-    <*> Options.option
-      (Options.eitherReader $ first toString . Pattern.parseSpaces . toText)
-      ( Options.long "spaces"
-          <> Options.metavar "SPACES"
-          <> Options.help
-            "When checking filenames, how to handle spaces in tag placeholders \
-            \ [keep|to_underscore] (default: keep)"
-          <> Options.value Pattern.SpToUnderscore
-      )
+    <$> charToCharActionP
     <*> Options.option
       (Options.eitherReader $ first toString . Pattern.parsePadding . toText)
       ( Options.long "padtrack"
@@ -146,19 +137,23 @@ formattingP =
           <> Options.value Pattern.Ignore
       )
 
-unwantedP :: Options.Parser [(Char, Pattern.Unwanted)]
-unwantedP =
+charToCharActionP :: Options.Parser [(Char, Pattern.CharAction)]
+charToCharActionP =
   Pattern.addSlashIfNeeded
     <$> Options.many
-      ( (,Pattern.UnRemove)
+      ( (,Pattern.ChRemove)
           <$> Options.option
             Options.auto
             (Options.long "remove" <> Options.metavar "CHAR")
-            <|> (,Pattern.UnToUnderscore)
+            <|> second Pattern.ChReplace
           <$> Options.option
-            Options.auto
-            (Options.long "to_underscore" <> Options.metavar "CHAR")
+            (Options.eitherReader $ first toString . parse)
+            (Options.long "replace" <> Options.metavar "CHAR")
       )
+  where
+    parse :: String -> Either Text (Char, Char)
+    parse [c1, ':', c2] = Right (c1, c2)
+    parse _ = Left "Must be in the form 'x:y'"
 
 editOptionsP :: Options.Parser EditOptions
 editOptionsP =

@@ -113,13 +113,12 @@ formattingC :: Toml.TomlCodec Pattern.Formatting
 formattingC =
   Pattern.Formatting
     <$> ( Pattern.addSlashIfNeeded
-            <$> Toml.list charAndUnwantedC "unwanted" .= Pattern.foUnwanted
+            <$> Toml.list charAndCharActionC "unwanted" .= Pattern.foCharActions
         )
-    <*> spacesC "spaces" .= Pattern.foSpaces
     <*> paddingC "pad_track_numbers" .= Pattern.foPadTrackNumbers
 
-charAndUnwantedC :: Toml.TomlCodec (Char, Pattern.Unwanted)
-charAndUnwantedC = Toml.pair (charC "char") (unwantedC "action")
+charAndCharActionC :: Toml.TomlCodec (Char, Pattern.CharAction)
+charAndCharActionC = Toml.pair (charC "char") (charActionC "action")
 
 charC :: Toml.Key -> Toml.TomlCodec Char
 charC = Toml.textBy Text.singleton parseChar
@@ -131,11 +130,13 @@ charC = Toml.textBy Text.singleton parseChar
           Right c
       | otherwise = Left "Should be a single character"
 
-unwantedC :: Toml.Key -> Toml.TomlCodec Pattern.Unwanted
-unwantedC = Toml.textBy Pattern.unwantedAsText Pattern.parseUnwanted
-
-spacesC :: Toml.Key -> Toml.TomlCodec Pattern.Spaces
-spacesC = Toml.textBy Pattern.spacesAsText Pattern.parseSpaces
+charActionC :: Toml.Key -> Toml.TomlCodec Pattern.CharAction
+charActionC = Toml.textBy Pattern.charActionAsText parse
+  where
+    parse :: Text -> Either Text Pattern.CharAction
+    parse text = case Megaparsec.parseMaybe Pattern.charActionParser text of
+      Just charAction -> Right charAction
+      Nothing -> Left $ "Invalid ation: " <> text
 
 paddingC :: Toml.Key -> Toml.TomlCodec Pattern.Padding
 paddingC = Toml.textBy Pattern.paddingAsText Pattern.parsePadding

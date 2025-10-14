@@ -5,13 +5,10 @@ module Pattern
     paddingAsText,
     Fragment (..),
     Placeholder (..),
-    Unwanted (..),
-    unwantedAsText,
-    parseUnwanted,
+    CharAction (..),
+    charActionAsText,
+    charActionParser,
     addSlashIfNeeded,
-    Spaces (..),
-    spacesAsText,
-    parseSpaces,
     Pattern,
     asText,
     parser,
@@ -46,11 +43,8 @@ type Pattern = NonEmpty Component
 
 type Parser = Megaparsec.Parsec Void Text
 
-data Unwanted = UnRemove | UnToUnderscore
-  deriving (Show, Eq, Enum, Bounded)
-
-data Spaces = SpKeep | SpToUnderscore
-  deriving (Show, Eq, Enum, Bounded)
+data CharAction = ChRemove | ChReplace Char
+  deriving (Show, Eq)
 
 data Padding
   = Ignore
@@ -58,8 +52,7 @@ data Padding
   deriving (Show, Eq)
 
 data Formatting = Formatting
-  { foUnwanted :: [(Char, Unwanted)],
-    foSpaces :: Spaces,
+  { foCharActions :: [(Char, CharAction)],
     foPadTrackNumbers :: Padding
   }
   deriving (Show, Eq)
@@ -67,8 +60,7 @@ data Formatting = Formatting
 noFormatting :: Formatting
 noFormatting =
   Formatting
-    { foUnwanted = [('/', UnRemove)],
-      foSpaces = SpKeep,
+    { foCharActions = [('/', ChRemove)],
       foPadTrackNumbers = Pad 0
     }
 
@@ -111,28 +103,21 @@ placeholderAsText :: Placeholder -> Text
 placeholderAsText (PlTag tag) = "{" <> Tag.asText tag <> "}"
 placeholderAsText PlAlbumArtist = "{albumartist_}"
 
-unwantedAsText :: Unwanted -> Text
-unwantedAsText UnRemove = "remove"
-unwantedAsText UnToUnderscore = "to_underscore"
+charActionAsText :: CharAction -> Text
+charActionAsText ChRemove = "remove"
+charActionAsText (ChReplace c) = "replace:" <> Text.singleton c
 
-parseUnwanted :: Text -> Either Text Unwanted
-parseUnwanted "remove" = Right UnRemove
-parseUnwanted "to_underscore" = Right UnToUnderscore
-parseUnwanted _ = Left "Should be one of 'remove' or 'to_underscore'"
+charActionParser :: Parser CharAction
+charActionParser =
+  ChRemove
+    <$ Megaparsec.string "remove"
+      <|> ChReplace
+    <$> (Megaparsec.string "replace:" *> Megaparsec.anySingle)
 
-addSlashIfNeeded :: [(Char, Unwanted)] -> [(Char, Unwanted)]
-addSlashIfNeeded charToUnwanted
-  | any ((== '/') . fst) charToUnwanted = charToUnwanted
-  | otherwise = ('/', UnRemove) : charToUnwanted
-
-spacesAsText :: Spaces -> Text
-spacesAsText SpKeep = "keep"
-spacesAsText SpToUnderscore = "to_underscore"
-
-parseSpaces :: Text -> Either Text Spaces
-parseSpaces "keep" = Right SpKeep
-parseSpaces "to_underscore" = Right SpToUnderscore
-parseSpaces _ = Left "Should be one of 'keep' or 'to_underscore'"
+addSlashIfNeeded :: [(Char, CharAction)] -> [(Char, CharAction)]
+addSlashIfNeeded charToCharActions
+  | any ((== '/') . fst) charToCharActions = charToCharActions
+  | otherwise = ('/', ChRemove) : charToCharActions
 
 paddingAsText :: Padding -> Text
 paddingAsText Ignore = "ignore"
@@ -184,17 +169,15 @@ formatTag formatting AudioTrack.AudioTrack {..} Tag.Track =
   maybe "" (trackNumberFormat formatting . HTagLib.unTrackNumber) atTrack
 
 textFormatter :: Formatting -> Text -> Text
-textFormatter Formatting {..} = spaces foSpaces . applyUnwanted
+textFormatter Formatting {..} = applyUnwanted
   where
-    applyUnwanted = foldr ((.) . unwanted) id foUnwanted
-    spaces SpKeep = id
-    spaces SpToUnderscore = Text.map $ toUnderscore ' '
-    unwanted :: (Char, Unwanted) -> Text -> Text
-    unwanted (char, UnRemove) = Text.filter (/= char)
-    unwanted (char, UnToUnderscore) = Text.map (toUnderscore char)
-    toUnderscore char other
-      | other == char = '_'
-      | otherwise = other
+    applyUnwanted = foldr ((.) . unwanted) id foCharActions
+    unwanted :: (Char, CharAction) -> Text -> Text
+    unwanted (char, ChRemove) = Text.filter (/= char)
+    unwanted (char, ChReplace with) = Text.map (replace char with)
+    replace char with current
+      | current == char = with
+      | otherwise = current
 
 trackNumberFormat :: Formatting -> Int -> Text
 trackNumberFormat Formatting {..} =

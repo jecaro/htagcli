@@ -230,7 +230,7 @@ test =
             filenameMatches
               trackDashTitle
               ( Pattern.noFormatting
-                  { Pattern.foUnwanted = [('/', Pattern.UnToUnderscore)]
+                  { Pattern.foCharActions = [('/', Pattern.ChReplace '_')]
                   }
               )
               ( trackWithTitleAndFile "title/with/slashes" $
@@ -241,9 +241,9 @@ test =
             filenameMatches
               trackDashTitle
               ( Pattern.noFormatting
-                  { Pattern.foUnwanted =
-                      [ ('/', Pattern.UnRemove),
-                        (':', Pattern.UnToUnderscore)
+                  { Pattern.foCharActions =
+                      [ ('/', Pattern.ChRemove),
+                        (':', Pattern.ChReplace '_')
                       ]
                   }
               )
@@ -257,7 +257,7 @@ test =
         [ testCase "keep" $
             filenameMatches
               trackDashTitle
-              (Pattern.noFormatting {Pattern.foSpaces = Pattern.SpKeep})
+              Pattern.noFormatting
               ( trackWithTitleAndFile "title with spaces" $
                   Path.Rel [relfile|./1-title with spaces.mp3|]
               )
@@ -265,7 +265,10 @@ test =
           testCase "to underscore" $
             filenameMatches
               trackDashTitle
-              (Pattern.noFormatting {Pattern.foSpaces = Pattern.SpToUnderscore})
+              ( Pattern.noFormatting
+                  { Pattern.foCharActions = [(' ', Pattern.ChReplace '_')]
+                  }
+              )
               ( trackWithTitleAndFile "title with spaces" $
                   Path.Rel [relfile|./1-title_with_spaces.mp3|]
               )
