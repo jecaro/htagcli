@@ -146,11 +146,12 @@ formattingP =
           <> Options.value Pattern.SpToUnderscore
       )
     <*> Options.option
-      Options.auto
+      (Options.eitherReader $ first toString . Pattern.parsePadding . toText)
       ( Options.long "padtrack"
           <> Options.metavar "N"
-          <> Options.help "Number of digits to pad track numbers to (default: 0)"
-          <> Options.value 0
+          <> Options.help
+            "Number of digits to pad track numbers to (default: ignore)"
+          <> Options.value Pattern.Ignore
       )
 
 editOptionsP :: Options.Parser EditOptions

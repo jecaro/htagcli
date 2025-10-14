@@ -105,6 +105,24 @@ test =
 test :: TestTree
 test =
   testGroup
+    "Other patterns"
+    [ testCase
+        "fail if the filename is smaller than the pattern"
+        $ ( filenameMatchesNoFormatting $
+              NonEmpty.fromList
+                [ NonEmpty.fromList [Pattern.Text "some-path"],
+                  NonEmpty.fromList [Pattern.Placeholder Tag.Title]
+                ]
+          )
+          ( trackWithFile $
+              Path.Rel [relfile|./1-title.mp3|]
+          )
+          `shouldBe` False
+    ]
+
+test :: TestTree
+test =
+  testGroup
     "Pattern parser"
     [ testCase "single text" $
         Megaparsec.parse Pattern.parser "" "sometext"
@@ -199,7 +217,13 @@ test =
       testCase "zero padding" $
         filenameMatches
           trackDashTitle
-          (Pattern.noFormatting {Pattern.foPadTrackNumbers = 3})
+          (Pattern.noFormatting {Pattern.foPadTrackNumbers = Pattern.Pad 3})
+          (trackWithTitleAndFile "title" $ Path.Rel [relfile|./001-title.mp3|])
+          `shouldBe` True,
+      testCase "ignore padding" $
+        filenameMatches
+          trackDashTitle
+          (Pattern.noFormatting {Pattern.foPadTrackNumbers = Pattern.Ignore})
           ( trackWithTitleAndFile "title" $
               Path.Rel [relfile|./001-title.mp3|]
           )

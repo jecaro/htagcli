@@ -41,7 +41,7 @@ test =
                 [NonEmpty.fromList [Pattern.Placeholder Tag.Album]]
           )
           track
-          `shouldBe` Left (Check.FilenameMismatch "album" "title"),
+          `shouldBe` Left (Check.FilenameMismatch "album"),
       testCase
         "succeed if the file matches the pattern"
         $ Check.check

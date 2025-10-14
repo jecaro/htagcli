@@ -1,5 +1,8 @@
 module Pattern
   ( Formatting (..),
+    Padding (..),
+    parsePadding,
+    paddingAsText,
     Fragment (..),
     Slashes (..),
     slashesAsText,
@@ -13,6 +16,7 @@ module Pattern
     noFormatting,
     format,
     tags,
+    match,
   )
 where
 
@@ -22,6 +26,7 @@ import Data.List.NonEmpty qualified as NonEmpty
 import Data.Text qualified as Text
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
+import System.FilePath qualified as FilePath
 import Tag qualified
 import Text.Megaparsec qualified as Megaparsec
 import Text.Megaparsec.Char qualified as Megaparsec
@@ -42,10 +47,15 @@ data Slashes = SlRemove | SlToUnderscore
 data Spaces = SpKeep | SpToUnderscore
   deriving (Show, Eq, Enum, Bounded)
 
+data Padding
+  = Ignore
+  | Pad Int
+  deriving (Show, Eq)
+
 data Formatting = Formatting
   { foSlashes :: Slashes,
     foSpaces :: Spaces,
-    foPadTrackNumbers :: Int
+    foPadTrackNumbers :: Padding
   }
   deriving (Show, Eq)
 
@@ -54,7 +64,7 @@ noFormatting =
   Formatting
     { foSlashes = SlRemove,
       foSpaces = SpKeep,
-      foPadTrackNumbers = 0
+      foPadTrackNumbers = Pad 0
     }
 
 parser :: Parser Pattern
@@ -106,6 +116,17 @@ parseSpaces "keep" = Right SpKeep
 parseSpaces "to_underscore" = Right SpToUnderscore
 parseSpaces _ = Left "Should be one of 'keep' or 'to_underscore'"
 
+paddingAsText :: Padding -> Text
+paddingAsText Ignore = "ignore"
+paddingAsText (Pad n) = show n
+
+parsePadding :: Text -> Either Text Padding
+parsePadding "ignore" = Right Ignore
+parsePadding text =
+  case readMaybe (Text.unpack text) of
+    Just n | n > 0 -> Right (Pad n)
+    _ -> Left "Should be 'none' or a positive integer"
+
 formatWith :: (Tag.Tag -> Text) -> Pattern -> Text
 formatWith formatter pattern =
   fold $ NonEmpty.intersperse "/" $ formatComponentWith formatter <$> pattern
@@ -147,4 +168,43 @@ textFormatter Formatting {..} = spaces foSpaces . slashes foSlashes
 
 trackNumberFormat :: Formatting -> Int -> Text
 trackNumberFormat Formatting {..} =
-  Text.pack . Text.printf ("%0" <> show foPadTrackNumbers <> "d")
+  Text.pack . Text.printf ("%0" <> show padding <> "d")
+  where
+    padding
+      | Pad n <- foPadTrackNumbers = n
+      | otherwise = 0
+
+match :: Formatting -> AudioTrack.AudioTrack -> Pattern -> FilePath -> Bool
+match formatting track pattern filename =
+  length allComponents >= length pattern
+    && all (uncurry $ matchComponent formatting track) patternAndPathComponents
+  where
+    withoutExtension = FilePath.dropExtension filename
+    allComponents = toText <$> FilePath.splitPath withoutExtension
+    components = drop (lengthComponents - lengthPattern) allComponents
+    lengthComponents = length allComponents
+    lengthPattern = length pattern
+    patternAndPathComponents = zip (NonEmpty.toList pattern) components
+
+matchComponent ::
+  Formatting -> AudioTrack.AudioTrack -> Component -> Text -> Bool
+matchComponent formatting track component text =
+  fst $ foldl' matchFragment' (True, text) component
+  where
+    matchFragment' (True, remaining) fragment =
+      case matchFragment formatting track fragment remaining of
+        Just rest -> (True, rest)
+        Nothing -> (False, remaining)
+    matchFragment' acc _ = acc
+
+matchFragment ::
+  Formatting -> AudioTrack.AudioTrack -> Fragment -> Text -> Maybe Text
+matchFragment formatting track fragment =
+  Text.stripPrefix formatted . ignoreLeadingZeros
+  where
+    formatted = formatFragmentWith (formatTag formatting track) fragment
+    ignoreLeadingZeros
+      | Placeholder Tag.Track <- fragment,
+        Ignore <- foPadTrackNumbers formatting =
+          Text.dropWhile (== '0')
+      | otherwise = id

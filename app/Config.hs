@@ -114,10 +114,13 @@ formattingC =
   Pattern.Formatting
     <$> slashesC "slashes" .= Pattern.foSlashes
     <*> spacesC "spaces" .= Pattern.foSpaces
-    <*> Toml.int "pad_track_numbers" .= Pattern.foPadTrackNumbers
+    <*> paddingC "pad_track_numbers" .= Pattern.foPadTrackNumbers
 
 slashesC :: Toml.Key -> Toml.TomlCodec Pattern.Slashes
 slashesC = Toml.textBy Pattern.slashesAsText Pattern.parseSlashes
 
 spacesC :: Toml.Key -> Toml.TomlCodec Pattern.Spaces
 spacesC = Toml.textBy Pattern.spacesAsText Pattern.parseSpaces
+
+paddingC :: Toml.Key -> Toml.TomlCodec Pattern.Padding
+paddingC = Toml.textBy Pattern.paddingAsText Pattern.parsePadding

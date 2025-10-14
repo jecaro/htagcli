@@ -6,7 +6,6 @@ import Data.Text qualified as Text
 import Path qualified
 import Pattern qualified
 import Sound.HTagLib qualified as HTagLib
-import System.FilePath qualified as FilePath
 import Tag qualified
 
 data Check
@@ -18,7 +17,7 @@ data Check
 data Error
   = MissingTags (NonEmpty Tag.Tag)
   | GenreMismatch (NonEmpty Text) Text
-  | FilenameMismatch Text Text
+  | FilenameMismatch Text
   deriving (Eq, Show)
 
 render :: Error -> Text
@@ -30,12 +29,8 @@ render (GenreMismatch expected genre) =
     <> Text.intercalate ", " (NonEmpty.toList expected)
     <> ", got "
     <> genre
-render (FilenameMismatch expected actual) =
-  "Filename does not match the expected pattern expected \""
-    <> expected
-    <> "\", got \""
-    <> actual
-    <> "\""
+render (FilenameMismatch expected) =
+  "Filename does not match the pattern, expected \"" <> expected <> "\""
 
 check :: Check -> AudioTrack.AudioTrack -> Either Error ()
 check (TagsExist tags) track =
@@ -54,10 +49,9 @@ check (GenreAmong genres) track
 check (FilenameMatches pattern formatting) track = do
   whenJust (nonEmpty $ Pattern.tags pattern) $ \tags ->
     check (TagsExist tags) track
-  whenNothing_ (Text.stripSuffix expected actual) $
-    Left $
-      FilenameMismatch expected actual
+  if Pattern.match formatting track pattern filename
+    then Right ()
+    else Left $ FilenameMismatch expected
   where
-    expected = Pattern.format formatting track pattern
-    actual = toText $ FilePath.dropExtension filename
     filename = Path.prjSomeBase Path.toFilePath $ AudioTrack.atFile track
+    expected = Pattern.format formatting track pattern
