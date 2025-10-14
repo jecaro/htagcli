@@ -112,10 +112,24 @@ patternC = Toml.textBy Pattern.asText parse "filename_matches"
 formattingC :: Toml.TomlCodec Pattern.Formatting
 formattingC =
   Pattern.Formatting
-    <$> unwantedC "slashes" .= Pattern.foSlashes
-    <*> unwantedC "colons" .= Pattern.foColons
+    <$> ( Pattern.addSlashIfNeeded
+            <$> Toml.list charAndUnwantedC "unwanted" .= Pattern.foUnwanted
+        )
     <*> spacesC "spaces" .= Pattern.foSpaces
     <*> paddingC "pad_track_numbers" .= Pattern.foPadTrackNumbers
+
+charAndUnwantedC :: Toml.TomlCodec (Char, Pattern.Unwanted)
+charAndUnwantedC = Toml.pair (charC "char") (unwantedC "action")
+
+charC :: Toml.Key -> Toml.TomlCodec Char
+charC = Toml.textBy Text.singleton parseChar
+  where
+    parseChar :: Text -> Either Text Char
+    parseChar text
+      | Just (c, rest) <- Text.uncons text,
+        Text.null rest =
+          Right c
+      | otherwise = Left "Should be a single character"
 
 unwantedC :: Toml.Key -> Toml.TomlCodec Pattern.Unwanted
 unwantedC = Toml.textBy Pattern.unwantedAsText Pattern.parseUnwanted

@@ -217,40 +217,38 @@ test =
           (trackWithTitleAndFile "title" $ Path.Rel [relfile|./1-title.mp3|])
           `shouldBe` True,
       testGroup
-        "tag with slashes"
-        [ testCase "remove" $
+        "unwanted char"
+        [ testCase "remove slashes" $
             filenameMatches
               trackDashTitle
-              (Pattern.noFormatting {Pattern.foSlashes = Pattern.UnRemove})
+              Pattern.noFormatting
               ( trackWithTitleAndFile "title/with/slashes" $
                   Path.Rel [relfile|./1-titlewithslashes.mp3|]
               )
               `shouldBe` True,
-          testCase "to underscore" $
+          testCase "slashes to underscore" $
             filenameMatches
               trackDashTitle
-              (Pattern.noFormatting {Pattern.foSlashes = Pattern.UnToUnderscore})
+              ( Pattern.noFormatting
+                  { Pattern.foUnwanted = [('/', Pattern.UnToUnderscore)]
+                  }
+              )
               ( trackWithTitleAndFile "title/with/slashes" $
                   Path.Rel [relfile|./1-title_with_slashes.mp3|]
               )
-              `shouldBe` True
-        ],
-      testGroup
-        "tag with colons"
-        [ testCase "remove" $
-            filenameMatches
-              trackDashTitle
-              (Pattern.noFormatting {Pattern.foColons = Pattern.UnRemove})
-              ( trackWithTitleAndFile "title:with:colons" $
-                  Path.Rel [relfile|./1-titlewithcolons.mp3|]
-              )
               `shouldBe` True,
-          testCase "to underscore" $
+          testCase "remove slashes, to underscore colons" $
             filenameMatches
               trackDashTitle
-              (Pattern.noFormatting {Pattern.foColons = Pattern.UnToUnderscore})
-              ( trackWithTitleAndFile "title:with:colons" $
-                  Path.Rel [relfile|./1-title_with_colons.mp3|]
+              ( Pattern.noFormatting
+                  { Pattern.foUnwanted =
+                      [ ('/', Pattern.UnRemove),
+                        (':', Pattern.UnToUnderscore)
+                      ]
+                  }
+              )
+              ( trackWithTitleAndFile "title:with:colons/and/slash" $
+                  Path.Rel [relfile|./1-title_with_colonsandslash.mp3|]
               )
               `shouldBe` True
         ],

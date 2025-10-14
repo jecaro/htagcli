@@ -127,24 +127,7 @@ filematchesP =
 formattingP :: Options.Parser Pattern.Formatting
 formattingP =
   Pattern.Formatting
-    <$> Options.option
-      (Options.eitherReader $ first toString . Pattern.parseUnwanted . toText)
-      ( Options.long "slashes"
-          <> Options.metavar "SLASHES"
-          <> Options.help
-            "When checking filenames, how to handle slashes in tag placeholders \
-            \ [remove|to_underscore] (default: remove)"
-          <> Options.value Pattern.UnRemove
-      )
-    <*> Options.option
-      (Options.eitherReader $ first toString . Pattern.parseUnwanted . toText)
-      ( Options.long "colons"
-          <> Options.metavar "COLONS"
-          <> Options.help
-            "When checking filenames, how to handle colons in tag placeholders \
-            \ [remove|to_underscore] (default: remove)"
-          <> Options.value Pattern.UnRemove
-      )
+    <$> unwantedP
     <*> Options.option
       (Options.eitherReader $ first toString . Pattern.parseSpaces . toText)
       ( Options.long "spaces"
@@ -161,6 +144,20 @@ formattingP =
           <> Options.help
             "Number of digits to pad track numbers to (default: ignore)"
           <> Options.value Pattern.Ignore
+      )
+
+unwantedP :: Options.Parser [(Char, Pattern.Unwanted)]
+unwantedP =
+  Pattern.addSlashIfNeeded
+    <$> Options.many
+      ( (,Pattern.UnRemove)
+          <$> Options.option
+            Options.auto
+            (Options.long "remove" <> Options.metavar "CHAR")
+            <|> (,Pattern.UnToUnderscore)
+          <$> Options.option
+            Options.auto
+            (Options.long "to_underscore" <> Options.metavar "CHAR")
       )
 
 editOptionsP :: Options.Parser EditOptions

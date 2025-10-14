@@ -8,6 +8,7 @@ module Pattern
     Unwanted (..),
     unwantedAsText,
     parseUnwanted,
+    addSlashIfNeeded,
     Spaces (..),
     spacesAsText,
     parseSpaces,
@@ -57,8 +58,7 @@ data Padding
   deriving (Show, Eq)
 
 data Formatting = Formatting
-  { foSlashes :: Unwanted,
-    foColons :: Unwanted,
+  { foUnwanted :: [(Char, Unwanted)],
     foSpaces :: Spaces,
     foPadTrackNumbers :: Padding
   }
@@ -67,8 +67,7 @@ data Formatting = Formatting
 noFormatting :: Formatting
 noFormatting =
   Formatting
-    { foSlashes = UnRemove,
-      foColons = UnRemove,
+    { foUnwanted = [('/', UnRemove)],
       foSpaces = SpKeep,
       foPadTrackNumbers = Pad 0
     }
@@ -120,6 +119,11 @@ parseUnwanted :: Text -> Either Text Unwanted
 parseUnwanted "remove" = Right UnRemove
 parseUnwanted "to_underscore" = Right UnToUnderscore
 parseUnwanted _ = Left "Should be one of 'remove' or 'to_underscore'"
+
+addSlashIfNeeded :: [(Char, Unwanted)] -> [(Char, Unwanted)]
+addSlashIfNeeded charToUnwanted
+  | any ((== '/') . fst) charToUnwanted = charToUnwanted
+  | otherwise = ('/', UnRemove) : charToUnwanted
 
 spacesAsText :: Spaces -> Text
 spacesAsText SpKeep = "keep"
@@ -180,13 +184,14 @@ formatTag formatting AudioTrack.AudioTrack {..} Tag.Track =
   maybe "" (trackNumberFormat formatting . HTagLib.unTrackNumber) atTrack
 
 textFormatter :: Formatting -> Text -> Text
-textFormatter Formatting {..} =
-  spaces foSpaces . unwanted '/' foSlashes . unwanted ':' foColons
+textFormatter Formatting {..} = spaces foSpaces . applyUnwanted
   where
+    applyUnwanted = foldr ((.) . unwanted) id foUnwanted
     spaces SpKeep = id
     spaces SpToUnderscore = Text.map $ toUnderscore ' '
-    unwanted char UnRemove = Text.filter (/= char)
-    unwanted char UnToUnderscore = Text.map (toUnderscore char)
+    unwanted :: (Char, Unwanted) -> Text -> Text
+    unwanted (char, UnRemove) = Text.filter (/= char)
+    unwanted (char, UnToUnderscore) = Text.map (toUnderscore char)
     toUnderscore char other
       | other == char = '_'
       | otherwise = other
