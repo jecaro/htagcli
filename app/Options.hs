@@ -128,14 +128,7 @@ formattingP :: Options.Parser Pattern.Formatting
 formattingP =
   Pattern.Formatting
     <$> charToCharActionP
-    <*> Options.option
-      (Options.eitherReader $ first toString . Pattern.parsePadding . toText)
-      ( Options.long "padtrack"
-          <> Options.metavar "N"
-          <> Options.help
-            "Number of digits to pad track numbers to (default: ignore)"
-          <> Options.value Pattern.Ignore
-      )
+    <*> paddingP
 
 charToCharActionP :: Options.Parser [(Char, Pattern.CharAction)]
 charToCharActionP =
@@ -154,6 +147,16 @@ charToCharActionP =
     parse :: String -> Either Text (Char, Char)
     parse [c1, ':', c2] = Right (c1, c2)
     parse _ = Left "Must be in the form 'x:y'"
+
+paddingP :: Options.Parser Pattern.Padding
+paddingP =
+  Options.option
+    (Options.eitherReader $ first toString . Pattern.parsePadding . toText)
+    ( Options.long "padtrack"
+        <> Options.metavar "N"
+        <> Options.help
+          "Number of digits to pad track numbers to (default: ignore)"
+    )
 
 editOptionsP :: Options.Parser EditOptions
 editOptionsP =
