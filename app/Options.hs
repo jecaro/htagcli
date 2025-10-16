@@ -7,6 +7,7 @@ module Options
     FilesOrDirectory (..),
     Options (..),
     SetOrRemove (..),
+    FixFilePathsOptions (..),
     optionsInfo,
   )
 where
@@ -63,7 +64,20 @@ data CheckOptions = CheckOptions
   }
   deriving (Show)
 
-data Options = Display DisplayOptions | Edit EditOptions | Check CheckOptions
+data FixFilePathsOptions = FixFilePathsOptions
+  { foFilesOrDirectory :: FilesOrDirectory,
+    foDryRun :: Bool,
+    foBaseDirectory :: Maybe (Path.SomeBase Path.Dir),
+    foFormatting :: Maybe Pattern.Formatting,
+    foPattern :: Maybe Pattern.Pattern
+  }
+  deriving (Show)
+
+data Options
+  = Display DisplayOptions
+  | Edit EditOptions
+  | Check CheckOptions
+  | FixFilePaths FixFilePathsOptions
   deriving (Show)
 
 optionsInfo :: Options.ParserInfo Options
@@ -74,6 +88,33 @@ displayOptionsP = DisplayOptions <$> filesOrDirectoryP
 
 checkOptionsP :: Options.Parser CheckOptions
 checkOptionsP = CheckOptions <$> filesOrDirectoryP <*> optional checksP
+
+fixFilePathsOptionsP :: Options.Parser FixFilePathsOptions
+fixFilePathsOptionsP =
+  FixFilePathsOptions
+    <$> filesOrDirectoryP
+    <*> dryRunP
+    <*> optional baseDirectoryP
+    <*> optional formattingP
+    <*> optional filematchesP
+
+dryRunP :: Options.Parser Bool
+dryRunP =
+  Options.switch
+    ( Options.long "dry-run"
+        <> Options.help
+          "Show what would be done, but don't actually rename files"
+    )
+
+baseDirectoryP :: Options.Parser (Path.SomeBase Path.Dir)
+baseDirectoryP =
+  Options.option
+    (Options.maybeReader Path.parseSomeDir)
+    ( Options.long "base-dir"
+        <> Options.metavar "DIRECTORY"
+        <> Options.help
+          "Base directory to use with the pattern to move files"
+    )
 
 checksP :: Options.Parser (NonEmpty Check.Check)
 checksP =
@@ -290,6 +331,12 @@ optionsP =
           "check"
           ( Options.info
               (Check <$> checkOptionsP)
-              (Options.progDesc "Check tags")
+              (Options.progDesc "Check various properties of files")
+          )
+        <> Options.command
+          "fix-paths"
+          ( Options.info
+              (FixFilePaths <$> fixFilePathsOptionsP)
+              (Options.progDesc "Fix file paths according to a pattern")
           )
     )

@@ -9,19 +9,24 @@ import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
 import Options qualified
 import Options.Applicative qualified as Options
+import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
+import Pattern qualified
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
 import UnliftIO.Exception qualified as Exception
 
-data Error = NoCheckInConfig
+data Error
+  = NoCheckInConfig
+  | UnableToFormatFile (Path.Path Path.Abs Path.File)
   deriving (Show)
 
 instance Exception.Exception Error
 
 render :: Error -> Text.Text
 render NoCheckInConfig = "No checks provided in the config file"
+render (UnableToFormatFile file) = "Unable to format file: " <> show file
 
 fileOrDirectoryC ::
   (Conduit.MonadResource m, Conduit.MonadThrow m) =>
@@ -75,6 +80,30 @@ main = do
               ( \filename -> do
                   track <- AudioTrack.getTags filename
                   traverse_ (checkPrintError filename track) checks
+              )
+      Options.FixFilePaths Options.FixFilePathsOptions {..} -> do
+        Config.Config {coFilename = Config.Filename {..}, ..} <- Config.readConfig
+        let formatting = fromMaybe fiFormatting foFormatting
+            pattern = fromMaybe fiPattern foPattern
+        -- Get the base directory from the cli and fallback to the config file
+        baseDir <- maybe (pure coFixPaths) Path.makeAbsolute foBaseDirectory
+
+        Conduit.runConduitRes $
+          fileOrDirectoryC foFilesOrDirectory
+            .| Conduit.mapM_C
+              ( \fromFile -> do
+                  track <- AudioTrack.getTags fromFile
+                  toFile <-
+                    Exception.fromEither $
+                      maybeToRight (UnableToFormatFile fromFile) $
+                        Pattern.toPath formatting track pattern
+                  let toFileAbs = baseDir </> toFile
+                  when (toFileAbs /= fromFile) $ do
+                    putTextLn $
+                      "Moving: " <> show fromFile <> " to " <> show toFileAbs
+                    when foDryRun $ do
+                      Path.createDirIfMissing True (Path.parent toFileAbs)
+                      Path.renameFile fromFile toFileAbs
               )
   where
     getChecksFromConfig = do

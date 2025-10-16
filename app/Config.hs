@@ -1,6 +1,14 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Config (Error (..), readConfig, checks, render) where
+module Config
+  ( Config (..),
+    Filename (..),
+    Error (..),
+    readConfig,
+    checks,
+    render,
+  )
+where
 
 import Check qualified
 import Data.Text qualified as Text
@@ -28,12 +36,13 @@ instance Exception.Exception Error
 
 data Config = Config
   { coFilename :: Filename,
+    coFixPaths :: Path.Path Path.Abs Path.Dir,
     coChecks :: Checks
   }
   deriving (Show)
 
 -- | General filename configuration, to be used by the check command and the
--- fix-files command in the future.
+-- fix-files command
 data Filename = Filename
   { fiPattern :: Pattern.Pattern,
     fiFormatting :: Pattern.Formatting
@@ -108,7 +117,17 @@ configC :: Toml.TomlCodec Config
 configC =
   Config
     <$> Toml.table filenameC "filename" .= coFilename
+    <*> Toml.table fixPathsC "fix_paths" .= coFixPaths
     <*> Toml.table checksC "checks" .= coChecks
+
+fixPathsC :: Toml.TomlCodec (Path.Path Path.Abs Path.Dir)
+fixPathsC =
+  Toml.textBy (toText . Path.toFilePath) parse "base_dir"
+  where
+    parse :: Text -> Either Text (Path.Path Path.Abs Path.Dir)
+    parse text = case Path.parseAbsDir (toString text) of
+      Nothing -> Left "Invalid absolute directory path"
+      Just directory -> Right directory
 
 filenameC :: Toml.TomlCodec Filename
 filenameC =
