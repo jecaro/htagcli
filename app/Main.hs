@@ -14,6 +14,14 @@ import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
 import UnliftIO.Exception qualified as Exception
 
+data Error = NoCheckInConfig
+  deriving (Show)
+
+instance Exception.Exception Error
+
+render :: Error -> Text.Text
+render NoCheckInConfig = "No checks provided in the config file"
+
 fileOrDirectoryC ::
   (Conduit.MonadResource m, Conduit.MonadThrow m) =>
   Options.FilesOrDirectory ->
@@ -58,7 +66,7 @@ main = do
               )
       Options.Check (Options.CheckOptions {..}) -> do
         -- Get the checks from the CLI and fallback to the config file
-        checks <- maybe Config.readChecks pure coChecks
+        checks <- maybe getChecksFromConfig pure coChecks
         Conduit.runConduitRes $
           fileOrDirectoryC coFilesOrDirectory
             .| Conduit.mapM_C
@@ -68,6 +76,11 @@ main = do
                   traverse_ (checkPrintError filename track) checks
               )
   where
+    getChecksFromConfig = do
+      config <- Config.readConfig
+      maybe (Exception.throwIO NoCheckInConfig) pure $
+        nonEmpty $
+          Config.checks config
     toSetter _ Nothing = Nothing
     toSetter setter (Just Options.Remove) = Just $ setter Nothing
     toSetter setter (Just (Options.Set v)) = Just . setter $ Just v
@@ -83,4 +96,6 @@ exceptions someException = do
     message
       | Just configException <- fromException someException =
           Config.render configException <> "\n"
+      | Just mainException <- fromException someException =
+          render mainException <> "\n"
       | otherwise = "Unknown exception: " <> show someException <> "\n"

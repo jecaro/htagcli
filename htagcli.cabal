@@ -66,6 +66,7 @@ executable htagcli
   other-modules:
     Config
     Options
+    Toml.Extra
 
   build-depends:
     conduit,
@@ -78,6 +79,7 @@ executable htagcli
     text,
     tomland,
     unliftio,
+    validation-selective,
 
 test-suite tests
   import:
