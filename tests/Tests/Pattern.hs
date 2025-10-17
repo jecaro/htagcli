@@ -26,119 +26,129 @@ test :: TestTree
 test =
   Tasty.testGroup
     "Static patterns"
-    [ Tasty.testCase "single file" $
-        filenameMatchesNoFormatting
-          (NonEmpty.fromList [NonEmpty.fromList [Pattern.FrText "some-path"]])
-          (trackWithFile $ Path.Rel [relfile|./some-path|])
-          `shouldBe` True,
-      Tasty.testCase "single file in fragments" $
-        filenameMatchesNoFormatting
-          ( NonEmpty.fromList
-              [ NonEmpty.fromList
-                  [ Pattern.FrText "some",
-                    Pattern.FrText "-splitted",
-                    Pattern.FrText "-path"
-                  ]
-              ]
-          )
-          (trackWithFile $ Path.Rel [relfile|./some-splitted-path|])
-          `shouldBe` True,
-      Tasty.testCase "file in a directory" $
-        filenameMatchesNoFormatting
-          ( NonEmpty.fromList
-              [ NonEmpty.fromList [Pattern.FrText "some-path"],
-                NonEmpty.fromList [Pattern.FrText "to-somewhere"]
-              ]
-          )
-          (trackWithFile $ Path.Rel [relfile|./some-path/to-somewhere|])
-          `shouldBe` True,
-      Tasty.testCase "file in a directory with an extension" $
-        filenameMatchesNoFormatting
-          ( NonEmpty.fromList
-              [ NonEmpty.fromList [Pattern.FrText "some-path"],
-                NonEmpty.fromList [Pattern.FrText "to-somewhere"],
-                NonEmpty.fromList [Pattern.FrText "audio"]
-              ]
-          )
-          (trackWithFile $ Path.Rel [relfile|./some-path/to-somewhere/audio.mp3|])
-          `shouldBe` True
+    [ testFileMatchesAndToPath
+        "single file"
+        (NonEmpty.fromList [NonEmpty.fromList [Pattern.FrText "some-path"]])
+        (trackWithFile $ Path.Rel [relfile|./some-path.mp3|]),
+      testFileMatchesAndToPath
+        "single file in fragments"
+        ( NonEmpty.fromList
+            [ NonEmpty.fromList
+                [ Pattern.FrText "some",
+                  Pattern.FrText "-splitted",
+                  Pattern.FrText "-path"
+                ]
+            ]
+        )
+        (trackWithFile $ Path.Rel [relfile|./some-splitted-path.mp3|]),
+      testFileMatchesAndToPath
+        "file in a directory"
+        ( NonEmpty.fromList
+            [ NonEmpty.fromList [Pattern.FrText "some-path"],
+              NonEmpty.fromList [Pattern.FrText "to-somewhere"]
+            ]
+        )
+        (trackWithFile $ Path.Rel [relfile|./some-path/to-somewhere.mp3|]),
+      testFileMatchesAndToPath
+        "file in a directory with an extension"
+        ( NonEmpty.fromList
+            [ NonEmpty.fromList [Pattern.FrText "some-path"],
+              NonEmpty.fromList [Pattern.FrText "to-somewhere"],
+              NonEmpty.fromList [Pattern.FrText "audio"]
+            ]
+        )
+        (trackWithFile $ Path.Rel [relfile|./some-path/to-somewhere/audio.mp3|])
     ]
 
 test :: TestTree
 test =
   Tasty.testGroup
     "Tag patterns"
-    [ Tasty.testCase "one fragment per component" $
+    [ testFileMatchesAndToPath
+        "one fragment per component"
+        ( NonEmpty.fromList
+            [ NonEmpty.fromList
+                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
+              NonEmpty.fromList
+                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist],
+              NonEmpty.fromList
+                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
+              NonEmpty.fromList
+                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
+            ]
+        )
+        $ trackWithFile
+        $ Path.Rel [relfile|./genre/artist/album/title.mp3|],
+      testFileMatchesAndToPath
+        "multiple fragments per component"
+        ( NonEmpty.fromList
+            [ NonEmpty.fromList
+                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
+              NonEmpty.fromList
+                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist],
+              NonEmpty.fromList
+                [ Pattern.FrPlaceholder $ Pattern.PlTag Tag.Year,
+                  Pattern.FrText "-",
+                  Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album
+                ],
+              NonEmpty.fromList
+                [ Pattern.FrPlaceholder $ Pattern.PlTag Tag.Track,
+                  Pattern.FrText "-",
+                  Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title
+                ]
+            ]
+        )
+        $ trackWithFile
+        $ Path.Rel [relfile|./genre/artist/2024-album/1-title.mp3|],
+      testFileMatchesAndToPath
+        "albumartist_ fallback to artist when albumartist is not present"
+        ( NonEmpty.fromList
+            [ NonEmpty.fromList
+                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
+              NonEmpty.fromList
+                [Pattern.FrPlaceholder Pattern.PlAlbumArtist],
+              NonEmpty.fromList
+                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
+              NonEmpty.fromList
+                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
+            ]
+        )
+        ( (trackWithFile $ Path.Rel [relfile|./genre/artist/album/title.mp3|])
+            { AudioTrack.atAlbumArtist = ""
+            }
+        ),
+      testFileMatchesAndToPath
+        "albumartist_ use albumartist when it is present"
+        ( NonEmpty.fromList
+            [ NonEmpty.fromList
+                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
+              NonEmpty.fromList
+                [Pattern.FrPlaceholder Pattern.PlAlbumArtist],
+              NonEmpty.fromList
+                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
+              NonEmpty.fromList
+                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
+            ]
+        )
+        (trackWithFile $ Path.Rel [relfile|./genre/albumartist/album/title.mp3|])
+    ]
+
+testFileMatchesAndToPath ::
+  Tasty.TestName ->
+  Pattern.Pattern ->
+  AudioTrack.AudioTrack ->
+  Tasty.TestTree
+testFileMatchesAndToPath text pattern track@AudioTrack.AudioTrack {..} =
+  Tasty.testGroup
+    text
+    [ Tasty.testCase "FileMatches" $
         filenameMatchesNoFormatting
-          ( NonEmpty.fromList
-              [ NonEmpty.fromList
-                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
-                NonEmpty.fromList
-                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist],
-                NonEmpty.fromList
-                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
-                NonEmpty.fromList
-                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
-              ]
-          )
-          (trackWithFile $ Path.Rel [relfile|./genre/artist/album/title.mp3|])
+          pattern
+          track
           `shouldBe` True,
-      Tasty.testCase "multiple fragment per component" $
-        filenameMatchesNoFormatting
-          ( NonEmpty.fromList
-              [ NonEmpty.fromList
-                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
-                NonEmpty.fromList
-                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist],
-                NonEmpty.fromList
-                  [ Pattern.FrPlaceholder $ Pattern.PlTag Tag.Year,
-                    Pattern.FrText "-",
-                    Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album
-                  ],
-                NonEmpty.fromList
-                  [ Pattern.FrPlaceholder $ Pattern.PlTag Tag.Track,
-                    Pattern.FrText "-",
-                    Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title
-                  ]
-              ]
-          )
-          ( trackWithFile $
-              Path.Rel [relfile|./genre/artist/2024-album/1-title.mp3|]
-          )
-          `shouldBe` True,
-      Tasty.testCase "albumartist_ fallback to artist when albumartist is not present" $
-        filenameMatchesNoFormatting
-          ( NonEmpty.fromList
-              [ NonEmpty.fromList
-                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
-                NonEmpty.fromList
-                  [Pattern.FrPlaceholder Pattern.PlAlbumArtist],
-                NonEmpty.fromList
-                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
-                NonEmpty.fromList
-                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
-              ]
-          )
-          ( (trackWithFile $ Path.Rel [relfile|./genre/artist/album/title.mp3|])
-              { AudioTrack.atAlbumArtist = ""
-              }
-          )
-          `shouldBe` True,
-      Tasty.testCase "albumartist_ use albumartist when it is present" $
-        filenameMatchesNoFormatting
-          ( NonEmpty.fromList
-              [ NonEmpty.fromList
-                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
-                NonEmpty.fromList
-                  [Pattern.FrPlaceholder Pattern.PlAlbumArtist],
-                NonEmpty.fromList
-                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
-                NonEmpty.fromList
-                  [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
-              ]
-          )
-          (trackWithFile $ Path.Rel [relfile|./genre/albumartist/album/title.mp3|])
-          `shouldBe` True
+      Tasty.testCase "toPath" $
+        Path.Rel <$> Pattern.toPath Pattern.noFormatting track pattern
+          `shouldBe` Just atFile
     ]
 
 test :: TestTree

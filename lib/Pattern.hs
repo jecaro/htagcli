@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 module Pattern
   ( Formatting (..),
     Padding (..),
@@ -16,13 +18,18 @@ module Pattern
     format,
     tags,
     match,
+    toPath,
   )
 where
 
 import AudioTrack qualified
 import Control.Applicative.Combinators.NonEmpty qualified as NonEmpty
+import Data.Foldable qualified as Foldable
 import Data.List.NonEmpty qualified as NonEmpty
+import Data.List.NonEmpty.Extra qualified as NonEmpty
 import Data.Text qualified as Text
+import Path ((</>))
+import Path qualified
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
 import System.FilePath qualified as FilePath
@@ -96,6 +103,28 @@ placeholderParser =
 format :: Formatting -> AudioTrack.AudioTrack -> Pattern -> Text
 format formatting = formatWith . formatPlaceholder formatting
 
+toPath ::
+  Formatting ->
+  AudioTrack.AudioTrack ->
+  Pattern ->
+  Maybe (Path.Path Path.Rel Path.File)
+toPath formatting track@AudioTrack.AudioTrack {..} pattern = do
+  formattedFile <- toPathWith (formatPlaceholder formatting track) pattern
+  -- We do not handle files without extensions
+  extension <- Path.prjSomeBase Path.fileExtension atFile
+  Path.addExtension extension formattedFile
+
+toPathWith ::
+  (Placeholder -> Text) -> Pattern -> Maybe (Path.Path Path.Rel Path.File)
+toPathWith formatter pattern = (</>) <$> mbFormattedDir <*> mbFormattedFile
+  where
+    (dirComponents, fileComponent) = NonEmpty.unsnoc pattern
+    mbFormattedDir =
+      Foldable.foldlM appendComponent [Path.reldir|.|] dirComponents
+    mbFormattedFile = componentToRelFile formatter fileComponent
+    appendComponent dir component =
+      (dir </>) <$> componentToRelDir formatter component
+
 asText :: Pattern -> Text
 asText = formatWith placeholderAsText
 
@@ -136,6 +165,16 @@ formatWith formatter pattern =
 
 formatComponentWith :: (Placeholder -> Text) -> Component -> Text
 formatComponentWith formatter = foldMap (formatFragmentWith formatter)
+
+componentToRelDir ::
+  (Placeholder -> Text) -> Component -> Maybe (Path.Path Path.Rel Path.Dir)
+componentToRelDir formatter =
+  Path.parseRelDir . (toString . formatComponentWith formatter)
+
+componentToRelFile ::
+  (Placeholder -> Text) -> Component -> Maybe (Path.Path Path.Rel Path.File)
+componentToRelFile formatter =
+  Path.parseRelFile . (toString . formatComponentWith formatter)
 
 formatFragmentWith :: (Placeholder -> Text) -> Fragment -> Text
 formatFragmentWith _ (FrText text) = text

@@ -42,6 +42,7 @@ library
   exposed-modules:
     AudioTrack
     Check
+    Data.List.NonEmpty.Extra
     Pattern
     Sound.HTagLib.Extra
     Tag
