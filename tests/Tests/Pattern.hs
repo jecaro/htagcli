@@ -18,20 +18,20 @@ import Sound.HTagLib.Extra qualified as HTagLib
 import Tag qualified
 import Test.Hspec.Expectations (shouldBe)
 import Test.Hspec.Megaparsec (shouldParse)
-import Test.Tasty (testGroup)
-import Test.Tasty.HUnit (testCase)
+import Test.Tasty qualified as Tasty
+import Test.Tasty.HUnit qualified as Tasty
 import Text.Megaparsec qualified as Megaparsec
 
 test :: TestTree
 test =
-  testGroup
+  Tasty.testGroup
     "Static patterns"
-    [ testCase "single file" $
+    [ Tasty.testCase "single file" $
         filenameMatchesNoFormatting
           (NonEmpty.fromList [NonEmpty.fromList [Pattern.FrText "some-path"]])
           (trackWithFile $ Path.Rel [relfile|./some-path|])
           `shouldBe` True,
-      testCase "single file in fragments" $
+      Tasty.testCase "single file in fragments" $
         filenameMatchesNoFormatting
           ( NonEmpty.fromList
               [ NonEmpty.fromList
@@ -43,7 +43,7 @@ test =
           )
           (trackWithFile $ Path.Rel [relfile|./some-splitted-path|])
           `shouldBe` True,
-      testCase "file in a directory" $
+      Tasty.testCase "file in a directory" $
         filenameMatchesNoFormatting
           ( NonEmpty.fromList
               [ NonEmpty.fromList [Pattern.FrText "some-path"],
@@ -52,7 +52,7 @@ test =
           )
           (trackWithFile $ Path.Rel [relfile|./some-path/to-somewhere|])
           `shouldBe` True,
-      testCase "file in a directory with an extension" $
+      Tasty.testCase "file in a directory with an extension" $
         filenameMatchesNoFormatting
           ( NonEmpty.fromList
               [ NonEmpty.fromList [Pattern.FrText "some-path"],
@@ -66,9 +66,9 @@ test =
 
 test :: TestTree
 test =
-  testGroup
+  Tasty.testGroup
     "Tag patterns"
-    [ testCase "one fragment per component" $
+    [ Tasty.testCase "one fragment per component" $
         filenameMatchesNoFormatting
           ( NonEmpty.fromList
               [ NonEmpty.fromList
@@ -83,7 +83,7 @@ test =
           )
           (trackWithFile $ Path.Rel [relfile|./genre/artist/album/title.mp3|])
           `shouldBe` True,
-      testCase "multiple fragment per component" $
+      Tasty.testCase "multiple fragment per component" $
         filenameMatchesNoFormatting
           ( NonEmpty.fromList
               [ NonEmpty.fromList
@@ -106,7 +106,7 @@ test =
               Path.Rel [relfile|./genre/artist/2024-album/1-title.mp3|]
           )
           `shouldBe` True,
-      testCase "albumartist_ fallback to artist when albumartist is not present" $
+      Tasty.testCase "albumartist_ fallback to artist when albumartist is not present" $
         filenameMatchesNoFormatting
           ( NonEmpty.fromList
               [ NonEmpty.fromList
@@ -124,7 +124,7 @@ test =
               }
           )
           `shouldBe` True,
-      testCase "albumartist_ use albumartist when it is present" $
+      Tasty.testCase "albumartist_ use albumartist when it is present" $
         filenameMatchesNoFormatting
           ( NonEmpty.fromList
               [ NonEmpty.fromList
@@ -143,9 +143,9 @@ test =
 
 test :: TestTree
 test =
-  testGroup
+  Tasty.testGroup
     "Other patterns"
-    [ testCase
+    [ Tasty.testCase
         "fail if the filename is smaller than the pattern"
         $ ( filenameMatchesNoFormatting $
               NonEmpty.fromList
@@ -162,13 +162,13 @@ test =
 
 test :: TestTree
 test =
-  testGroup
+  Tasty.testGroup
     "Pattern parser"
-    [ testCase "single text" $
+    [ Tasty.testCase "single text" $
         Megaparsec.parse Pattern.parser "" "sometext"
           `shouldParse` NonEmpty.fromList
             [NonEmpty.fromList [Pattern.FrText "sometext"]],
-      testCase "mixed text" $
+      Tasty.testCase "mixed text" $
         Megaparsec.parse Pattern.parser "" "sometext{artist}moretext"
           `shouldParse` NonEmpty.fromList
             [ NonEmpty.fromList
@@ -177,14 +177,14 @@ test =
                   Pattern.FrText "moretext"
                 ]
             ],
-      testCase "some text" $
+      Tasty.testCase "some text" $
         Megaparsec.parse Pattern.parser "" "sometext/with/slash"
           `shouldParse` NonEmpty.fromList
             [ NonEmpty.fromList [Pattern.FrText "sometext"],
               NonEmpty.fromList [Pattern.FrText "with"],
               NonEmpty.fromList [Pattern.FrText "slash"]
             ],
-      testCase "some mixed text" $
+      Tasty.testCase "some mixed text" $
         Megaparsec.parse
           Pattern.parser
           ""
@@ -208,17 +208,17 @@ test =
 
 test :: TestTree
 test =
-  testGroup
+  Tasty.testGroup
     "Formatting options"
-    [ testCase "no substitutions" $
+    [ Tasty.testCase "no substitutions" $
         filenameMatches
           trackDashTitle
           Pattern.noFormatting
           (trackWithTitleAndFile "title" $ Path.Rel [relfile|./1-title.mp3|])
           `shouldBe` True,
-      testGroup
+      Tasty.testGroup
         "unwanted char"
-        [ testCase "remove slashes" $
+        [ Tasty.testCase "remove slashes" $
             filenameMatches
               trackDashTitle
               Pattern.noFormatting
@@ -226,7 +226,7 @@ test =
                   Path.Rel [relfile|./1-titlewithslashes.mp3|]
               )
               `shouldBe` True,
-          testCase "slashes to underscore" $
+          Tasty.testCase "slashes to underscore" $
             filenameMatches
               trackDashTitle
               ( Pattern.noFormatting
@@ -237,7 +237,7 @@ test =
                   Path.Rel [relfile|./1-title_with_slashes.mp3|]
               )
               `shouldBe` True,
-          testCase "remove slashes, to underscore colons" $
+          Tasty.testCase "remove slashes, to underscore colons" $
             filenameMatches
               trackDashTitle
               ( Pattern.noFormatting
@@ -252,9 +252,9 @@ test =
               )
               `shouldBe` True
         ],
-      testGroup
+      Tasty.testGroup
         "tag with spaces"
-        [ testCase "keep" $
+        [ Tasty.testCase "keep" $
             filenameMatches
               trackDashTitle
               Pattern.noFormatting
@@ -262,7 +262,7 @@ test =
                   Path.Rel [relfile|./1-title with spaces.mp3|]
               )
               `shouldBe` True,
-          testCase "to underscore" $
+          Tasty.testCase "to underscore" $
             filenameMatches
               trackDashTitle
               ( Pattern.noFormatting
@@ -274,13 +274,13 @@ test =
               )
               `shouldBe` True
         ],
-      testCase "zero padding" $
+      Tasty.testCase "zero padding" $
         filenameMatches
           trackDashTitle
           (Pattern.noFormatting {Pattern.foPadTrackNumbers = Pattern.Pad 3})
           (trackWithTitleAndFile "title" $ Path.Rel [relfile|./001-title.mp3|])
           `shouldBe` True,
-      testCase "ignore padding" $
+      Tasty.testCase "ignore padding" $
         filenameMatches
           trackDashTitle
           (Pattern.noFormatting {Pattern.foPadTrackNumbers = Pattern.Ignore})

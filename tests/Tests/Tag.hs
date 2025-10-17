@@ -6,15 +6,15 @@ module Tests.Tag
   )
 where
 
-import Hedgehog (property, (===))
+import Hedgehog ((===))
 import Hedgehog qualified
 import Hedgehog.Gen qualified as Hedgehog
 import Tag qualified
-import Test.Tasty.Hedgehog (testPropertyNamed)
+import Test.Tasty.Hedgehog qualified as Tasty
 import Text.Megaparsec qualified as Megaparsec
 
 test :: TestTree
 test =
-  testPropertyNamed "roundtrip" "roundtrip" $ property $ do
+  Tasty.testPropertyNamed "roundtrip" "roundtrip" $ Hedgehog.property $ do
     tag <- Hedgehog.forAll Hedgehog.enumBounded
     Megaparsec.parse Tag.parser "" (Tag.asText tag) === Right tag

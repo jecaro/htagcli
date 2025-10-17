@@ -17,14 +17,14 @@ import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
 import Tag qualified
 import Test.Hspec.Expectations (shouldBe)
-import Test.Tasty (testGroup)
-import Test.Tasty.HUnit (testCase)
+import Test.Tasty qualified as Tasty
+import Test.Tasty.HUnit qualified as Tasty
 
 test :: TestTree
 test =
-  testGroup
+  Tasty.testGroup
     "FilenameMatches"
-    [ testCase
+    [ Tasty.testCase
         "fail with MissingTags if the file doesn't contain a placeholder tag"
         $ Check.check
           ( filenameMatchesNoFormatting $
@@ -35,7 +35,7 @@ test =
           )
           track
           `shouldBe` Left (Check.MissingTags (NonEmpty.fromList [Tag.Artist])),
-      testCase
+      Tasty.testCase
         "fail with FilenameMismatch if the file contains a placeholder tag"
         $ Check.check
           ( filenameMatchesNoFormatting $
@@ -46,7 +46,7 @@ test =
           )
           track
           `shouldBe` Left (Check.FilenameMismatch "album"),
-      testCase
+      Tasty.testCase
         "succeed if the file matches the pattern"
         $ Check.check
           ( filenameMatchesNoFormatting $
