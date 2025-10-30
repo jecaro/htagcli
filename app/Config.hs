@@ -27,7 +27,7 @@ import UnliftIO.Exception qualified as Exception
 import Validation qualified
 
 data Error
-  = ErToml Text.Text
+  = ErToml Text
   | ErNotFound Exception.IOException
   | ErUnicode UnicodeException
   deriving (Show)
@@ -54,7 +54,7 @@ data Checks = Checks
   { -- | If Nothing, the check is disabled
     chTags :: Maybe (NonEmpty Tag.Tag),
     -- | If Nothing, the check is disabled
-    chGenreAmong :: Maybe (NonEmpty Text.Text),
+    chGenreAmong :: Maybe (NonEmpty Text),
     -- | If True, the check is enabled, the padding optionally overrides the
     -- one given in the formatting section. This way it is possible to ignore
     -- the padding when checking the filename and still have it when fixing it.
@@ -82,7 +82,7 @@ checks (Config {coFilename = Filename {..}, coChecks = Checks {..}}) =
     setPadding formatting padding =
       formatting {Pattern.foPadTrackNumbers = padding}
 
-render :: Error -> Text.Text
+render :: Error -> Text
 render (ErToml err) = "TOML error: \n" <> err
 render (ErNotFound err) =
   "Config file not found: " <> maybe mempty fromString (Error.ioeGetFileName err)

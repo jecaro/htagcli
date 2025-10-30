@@ -10,22 +10,22 @@ where
 import Data.Text qualified as Text
 import Sound.HTagLib qualified as HTagLib
 
-newtype AlbumArtist = AlbumArtist Text.Text
+newtype AlbumArtist = AlbumArtist Text
   deriving (Show, Eq)
 
 instance IsString AlbumArtist where
   fromString = mkAlbumArtist . fromString
 
-unAlbumArtist :: AlbumArtist -> Text.Text
+unAlbumArtist :: AlbumArtist -> Text
 unAlbumArtist (AlbumArtist albumArtist) = albumArtist
 
-mkAlbumArtist :: Text.Text -> AlbumArtist
+mkAlbumArtist :: Text -> AlbumArtist
 mkAlbumArtist = AlbumArtist . Text.map nullToSpace
   where
     nullToSpace '\0' = ' '
     nullToSpace c = c
 
-albumArtistKey :: Text.Text
+albumArtistKey :: Text
 albumArtistKey = "ALBUMARTIST"
 
 albumArtistGetter :: HTagLib.TagGetter AlbumArtist

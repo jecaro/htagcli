@@ -17,7 +17,7 @@ data Error = NoCheckInConfig
 
 instance Exception.Exception Error
 
-render :: Error -> Text.Text
+render :: Error -> Text
 render NoCheckInConfig = "No checks provided in the config file"
 
 fileOrDirectoryC ::
