@@ -9,7 +9,6 @@ where
 
 import AudioTrack qualified
 import Check qualified
-import Data.List.NonEmpty qualified as NonEmpty
 import Path (absdir, absfile, (</>))
 import Path qualified
 import Pattern qualified
@@ -28,12 +27,12 @@ test =
     "Static patterns"
     [ testFileMatchesAndToPath
         "single file"
-        (NonEmpty.fromList [NonEmpty.fromList [Pattern.FrText "some-path"]])
+        (fromList [fromList [Pattern.FrText "some-path"]])
         (trackWithFile [absfile|/some-path.mp3|]),
       testFileMatchesAndToPath
         "single file in fragments"
-        ( NonEmpty.fromList
-            [ NonEmpty.fromList
+        ( fromList
+            [ fromList
                 [ Pattern.FrText "some",
                   Pattern.FrText "-splitted",
                   Pattern.FrText "-path"
@@ -43,18 +42,18 @@ test =
         (trackWithFile [absfile|/some-splitted-path.mp3|]),
       testFileMatchesAndToPath
         "file in a directory"
-        ( NonEmpty.fromList
-            [ NonEmpty.fromList [Pattern.FrText "some-path"],
-              NonEmpty.fromList [Pattern.FrText "to-somewhere"]
+        ( fromList
+            [ fromList [Pattern.FrText "some-path"],
+              fromList [Pattern.FrText "to-somewhere"]
             ]
         )
         (trackWithFile [absfile|/some-path/to-somewhere.mp3|]),
       testFileMatchesAndToPath
         "file in a directory with an extension"
-        ( NonEmpty.fromList
-            [ NonEmpty.fromList [Pattern.FrText "some-path"],
-              NonEmpty.fromList [Pattern.FrText "to-somewhere"],
-              NonEmpty.fromList [Pattern.FrText "audio"]
+        ( fromList
+            [ fromList [Pattern.FrText "some-path"],
+              fromList [Pattern.FrText "to-somewhere"],
+              fromList [Pattern.FrText "audio"]
             ]
         )
         (trackWithFile [absfile|/some-path/to-somewhere/audio.mp3|])
@@ -66,32 +65,26 @@ test =
     "Tag patterns"
     [ testFileMatchesAndToPath
         "one fragment per component"
-        ( NonEmpty.fromList
-            [ NonEmpty.fromList
-                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
-              NonEmpty.fromList
-                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist],
-              NonEmpty.fromList
-                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
-              NonEmpty.fromList
-                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
+        ( fromList
+            [ fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
+              fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist],
+              fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
+              fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
             ]
         )
         $ trackWithFile
           [absfile|/genre/artist/album/title.mp3|],
       testFileMatchesAndToPath
         "multiple fragments per component"
-        ( NonEmpty.fromList
-            [ NonEmpty.fromList
-                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
-              NonEmpty.fromList
-                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist],
-              NonEmpty.fromList
+        ( fromList
+            [ fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
+              fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist],
+              fromList
                 [ Pattern.FrPlaceholder $ Pattern.PlTag Tag.Year,
                   Pattern.FrText "-",
                   Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album
                 ],
-              NonEmpty.fromList
+              fromList
                 [ Pattern.FrPlaceholder $ Pattern.PlTag Tag.Track,
                   Pattern.FrText "-",
                   Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title
@@ -102,15 +95,11 @@ test =
           [absfile|/genre/artist/2024-album/1-title.mp3|],
       testFileMatchesAndToPath
         "albumartist_ fallback to artist when albumartist is not present"
-        ( NonEmpty.fromList
-            [ NonEmpty.fromList
-                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
-              NonEmpty.fromList
-                [Pattern.FrPlaceholder Pattern.PlAlbumArtist],
-              NonEmpty.fromList
-                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
-              NonEmpty.fromList
-                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
+        ( fromList
+            [ fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
+              fromList [Pattern.FrPlaceholder Pattern.PlAlbumArtist],
+              fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
+              fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
             ]
         )
         ( (trackWithFile [absfile|/genre/artist/album/title.mp3|])
@@ -119,15 +108,11 @@ test =
         ),
       testFileMatchesAndToPath
         "albumartist_ use albumartist when it is present"
-        ( NonEmpty.fromList
-            [ NonEmpty.fromList
-                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
-              NonEmpty.fromList
-                [Pattern.FrPlaceholder Pattern.PlAlbumArtist],
-              NonEmpty.fromList
-                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
-              NonEmpty.fromList
-                [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
+        ( fromList
+            [ fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
+              fromList [Pattern.FrPlaceholder Pattern.PlAlbumArtist],
+              fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
+              fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
             ]
         )
         (trackWithFile [absfile|/genre/albumartist/album/title.mp3|])
@@ -161,10 +146,9 @@ test =
     [ Tasty.testCase
         "fail if the filename is smaller than the pattern"
         $ ( filenameMatchesNoFormatting $
-              NonEmpty.fromList
-                [ NonEmpty.fromList [Pattern.FrText "some-path"],
-                  NonEmpty.fromList
-                    [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
+              fromList
+                [ fromList [Pattern.FrText "some-path"],
+                  fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
                 ]
           )
           (trackWithFile [absfile|/1-title.mp3|])
@@ -177,12 +161,12 @@ test =
     "Pattern parser"
     [ Tasty.testCase "single text" $
         Megaparsec.parse Pattern.parser "" "sometext"
-          `shouldParse` NonEmpty.fromList
-            [NonEmpty.fromList [Pattern.FrText "sometext"]],
+          `shouldParse` fromList
+            [fromList [Pattern.FrText "sometext"]],
       Tasty.testCase "mixed text" $
         Megaparsec.parse Pattern.parser "" "sometext{artist}moretext"
-          `shouldParse` NonEmpty.fromList
-            [ NonEmpty.fromList
+          `shouldParse` fromList
+            [ fromList
                 [ Pattern.FrText "sometext",
                   Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist,
                   Pattern.FrText "moretext"
@@ -190,26 +174,26 @@ test =
             ],
       Tasty.testCase "some text" $
         Megaparsec.parse Pattern.parser "" "sometext/with/slash"
-          `shouldParse` NonEmpty.fromList
-            [ NonEmpty.fromList [Pattern.FrText "sometext"],
-              NonEmpty.fromList [Pattern.FrText "with"],
-              NonEmpty.fromList [Pattern.FrText "slash"]
+          `shouldParse` fromList
+            [ fromList [Pattern.FrText "sometext"],
+              fromList [Pattern.FrText "with"],
+              fromList [Pattern.FrText "slash"]
             ],
       Tasty.testCase "some mixed text" $
         Megaparsec.parse
           Pattern.parser
           ""
           "prefix-{artist}/{album}-suffix/before-{title}-after"
-          `shouldParse` NonEmpty.fromList
-            [ NonEmpty.fromList
+          `shouldParse` fromList
+            [ fromList
                 [ Pattern.FrText "prefix-",
                   Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist
                 ],
-              NonEmpty.fromList
+              fromList
                 [ Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album,
                   Pattern.FrText "-suffix"
                 ],
-              NonEmpty.fromList
+              fromList
                 [ Pattern.FrText "before-",
                   Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title,
                   Pattern.FrText "-after"
@@ -308,8 +292,8 @@ test =
     ]
   where
     trackDashTitle =
-      NonEmpty.fromList
-        [ NonEmpty.fromList
+      fromList
+        [ fromList
             [ Pattern.FrPlaceholder $ Pattern.PlTag Tag.Track,
               Pattern.FrText "-",
               Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title

@@ -9,7 +9,6 @@ where
 
 import AudioTrack qualified
 import Check qualified
-import Data.List.NonEmpty qualified as NonEmpty
 import Path (absfile)
 import Pattern qualified
 import Sound.HTagLib qualified as HTagLib
@@ -27,21 +26,19 @@ test =
         "fail with MissingTags if the file doesn't contain a placeholder tag"
         $ Check.check
           ( filenameMatchesNoFormatting $
-              NonEmpty.fromList
-                [ NonEmpty.fromList
+              fromList
+                [ fromList
                     [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist]
                 ]
           )
           track
-          `shouldBe` Left (Check.MissingTags (NonEmpty.fromList [Tag.Artist])),
+          `shouldBe` Left (Check.MissingTags (fromList [Tag.Artist])),
       Tasty.testCase
         "fail with FilenameMismatch if the file contains a placeholder tag"
         $ Check.check
           ( filenameMatchesNoFormatting $
-              NonEmpty.fromList
-                [ NonEmpty.fromList
-                    [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album]
-                ]
+              fromList
+                [fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album]]
           )
           track
           `shouldBe` Left (Check.FilenameMismatch "album"),
@@ -49,10 +46,8 @@ test =
         "succeed if the file matches the pattern"
         $ Check.check
           ( filenameMatchesNoFormatting $
-              NonEmpty.fromList
-                [ NonEmpty.fromList
-                    [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
-                ]
+              fromList
+                [fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]]
           )
           track
           `shouldBe` Right ()
