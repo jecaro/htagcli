@@ -98,6 +98,6 @@ fixFilePaths FixFilePathsOptions {..} fromFile = do
   when (toFileAbs /= fromFile) $ do
     putTextLn $
       "Moving: " <> show fromFile <> " to " <> show toFileAbs
-    when fiDryRun $ do
+    unless fiDryRun $ do
       Path.createDirIfMissing True (Path.parent toFileAbs)
       Path.renameFile fromFile toFileAbs
