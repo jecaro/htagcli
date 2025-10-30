@@ -65,6 +65,7 @@ executable htagcli
     Main.hs
 
   other-modules:
+    Commands
     Config
     Options
     Toml.Extra
