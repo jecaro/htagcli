@@ -10,7 +10,7 @@ where
 import AudioTrack qualified
 import Check qualified
 import Data.List.NonEmpty qualified as NonEmpty
-import Path (relfile)
+import Path (absdir, absfile, (</>))
 import Path qualified
 import Pattern qualified
 import Sound.HTagLib qualified as HTagLib
@@ -29,7 +29,7 @@ test =
     [ testFileMatchesAndToPath
         "single file"
         (NonEmpty.fromList [NonEmpty.fromList [Pattern.FrText "some-path"]])
-        (trackWithFile $ Path.Rel [relfile|./some-path.mp3|]),
+        (trackWithFile [absfile|/some-path.mp3|]),
       testFileMatchesAndToPath
         "single file in fragments"
         ( NonEmpty.fromList
@@ -40,7 +40,7 @@ test =
                 ]
             ]
         )
-        (trackWithFile $ Path.Rel [relfile|./some-splitted-path.mp3|]),
+        (trackWithFile [absfile|/some-splitted-path.mp3|]),
       testFileMatchesAndToPath
         "file in a directory"
         ( NonEmpty.fromList
@@ -48,7 +48,7 @@ test =
               NonEmpty.fromList [Pattern.FrText "to-somewhere"]
             ]
         )
-        (trackWithFile $ Path.Rel [relfile|./some-path/to-somewhere.mp3|]),
+        (trackWithFile [absfile|/some-path/to-somewhere.mp3|]),
       testFileMatchesAndToPath
         "file in a directory with an extension"
         ( NonEmpty.fromList
@@ -57,7 +57,7 @@ test =
               NonEmpty.fromList [Pattern.FrText "audio"]
             ]
         )
-        (trackWithFile $ Path.Rel [relfile|./some-path/to-somewhere/audio.mp3|])
+        (trackWithFile [absfile|/some-path/to-somewhere/audio.mp3|])
     ]
 
 test :: TestTree
@@ -78,7 +78,7 @@ test =
             ]
         )
         $ trackWithFile
-        $ Path.Rel [relfile|./genre/artist/album/title.mp3|],
+          [absfile|/genre/artist/album/title.mp3|],
       testFileMatchesAndToPath
         "multiple fragments per component"
         ( NonEmpty.fromList
@@ -99,7 +99,7 @@ test =
             ]
         )
         $ trackWithFile
-        $ Path.Rel [relfile|./genre/artist/2024-album/1-title.mp3|],
+          [absfile|/genre/artist/2024-album/1-title.mp3|],
       testFileMatchesAndToPath
         "albumartist_ fallback to artist when albumartist is not present"
         ( NonEmpty.fromList
@@ -113,7 +113,7 @@ test =
                 [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
             ]
         )
-        ( (trackWithFile $ Path.Rel [relfile|./genre/artist/album/title.mp3|])
+        ( (trackWithFile [absfile|/genre/artist/album/title.mp3|])
             { AudioTrack.atAlbumArtist = ""
             }
         ),
@@ -130,7 +130,7 @@ test =
                 [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
             ]
         )
-        (trackWithFile $ Path.Rel [relfile|./genre/albumartist/album/title.mp3|])
+        (trackWithFile [absfile|/genre/albumartist/album/title.mp3|])
     ]
 
 testFileMatchesAndToPath ::
@@ -146,10 +146,13 @@ testFileMatchesAndToPath text pattern track@AudioTrack.AudioTrack {..} =
           pattern
           track
           `shouldBe` True,
-      Tasty.testCase "toPath" $
-        Path.Rel <$> Pattern.toPath Pattern.noFormatting track pattern
+      Tasty.testCase
+        "toPath"
+        $ ((root </>) <$> Pattern.toPath Pattern.noFormatting track pattern)
           `shouldBe` Just atFile
     ]
+  where
+    root = [absdir|/|]
 
 test :: TestTree
 test =
@@ -164,9 +167,7 @@ test =
                     [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
                 ]
           )
-          ( trackWithFile $
-              Path.Rel [relfile|./1-title.mp3|]
-          )
+          (trackWithFile [absfile|/1-title.mp3|])
           `shouldBe` False
     ]
 
@@ -224,7 +225,7 @@ test =
         filenameMatches
           trackDashTitle
           Pattern.noFormatting
-          (trackWithTitleAndFile "title" $ Path.Rel [relfile|./1-title.mp3|])
+          (trackWithTitleAndFile "title" [absfile|/1-title.mp3|])
           `shouldBe` True,
       Tasty.testGroup
         "unwanted char"
@@ -232,8 +233,9 @@ test =
             filenameMatches
               trackDashTitle
               Pattern.noFormatting
-              ( trackWithTitleAndFile "title/with/slashes" $
-                  Path.Rel [relfile|./1-titlewithslashes.mp3|]
+              ( trackWithTitleAndFile
+                  "title/with/slashes"
+                  [absfile|/1-titlewithslashes.mp3|]
               )
               `shouldBe` True,
           Tasty.testCase "slashes to underscore" $
@@ -243,8 +245,9 @@ test =
                   { Pattern.foCharActions = [('/', Pattern.ChReplace '_')]
                   }
               )
-              ( trackWithTitleAndFile "title/with/slashes" $
-                  Path.Rel [relfile|./1-title_with_slashes.mp3|]
+              ( trackWithTitleAndFile
+                  "title/with/slashes"
+                  [absfile|/1-title_with_slashes.mp3|]
               )
               `shouldBe` True,
           Tasty.testCase "remove slashes, to underscore colons" $
@@ -257,8 +260,9 @@ test =
                       ]
                   }
               )
-              ( trackWithTitleAndFile "title:with:colons/and/slash" $
-                  Path.Rel [relfile|./1-title_with_colonsandslash.mp3|]
+              ( trackWithTitleAndFile
+                  "title:with:colons/and/slash"
+                  [absfile|/1-title_with_colonsandslash.mp3|]
               )
               `shouldBe` True
         ],
@@ -268,8 +272,9 @@ test =
             filenameMatches
               trackDashTitle
               Pattern.noFormatting
-              ( trackWithTitleAndFile "title with spaces" $
-                  Path.Rel [relfile|./1-title with spaces.mp3|]
+              ( trackWithTitleAndFile
+                  "title with spaces"
+                  [absfile|/1-title with spaces.mp3|]
               )
               `shouldBe` True,
           Tasty.testCase "to underscore" $
@@ -279,8 +284,9 @@ test =
                   { Pattern.foCharActions = [(' ', Pattern.ChReplace '_')]
                   }
               )
-              ( trackWithTitleAndFile "title with spaces" $
-                  Path.Rel [relfile|./1-title_with_spaces.mp3|]
+              ( trackWithTitleAndFile
+                  "title with spaces"
+                  [absfile|/1-title_with_spaces.mp3|]
               )
               `shouldBe` True
         ],
@@ -288,13 +294,13 @@ test =
         filenameMatches
           trackDashTitle
           (Pattern.noFormatting {Pattern.foPadTrackNumbers = Pattern.Pad 3})
-          (trackWithTitleAndFile "title" $ Path.Rel [relfile|./001-title.mp3|])
+          (trackWithTitleAndFile "title" [absfile|/001-title.mp3|])
           `shouldBe` True,
       Tasty.testCase "ignore padding" $
         filenameMatches
           trackDashTitle
           (Pattern.noFormatting {Pattern.foPadTrackNumbers = Pattern.Ignore})
-          ( (trackWithTitleAndFile "title" $ Path.Rel [relfile|./001-title.mp3|])
+          ( (trackWithTitleAndFile "title" [absfile|/001-title.mp3|])
               { AudioTrack.atAlbumArtist = ""
               }
           )
@@ -318,7 +324,8 @@ filenameMatches ::
 filenameMatches pattern formatting =
   isRight . Check.check (Check.FilenameMatches pattern formatting)
 
-trackWithTitleAndFile :: Text -> Path.SomeBase Path.File -> AudioTrack.AudioTrack
+trackWithTitleAndFile ::
+  Text -> Path.Path Path.Abs Path.File -> AudioTrack.AudioTrack
 trackWithTitleAndFile title file =
   AudioTrack.AudioTrack
     { atFile = file,
@@ -331,5 +338,5 @@ trackWithTitleAndFile title file =
       atTrack = HTagLib.mkTrackNumber 1
     }
 
-trackWithFile :: Path.SomeBase Path.File -> AudioTrack.AudioTrack
+trackWithFile :: Path.Path Path.Abs Path.File -> AudioTrack.AudioTrack
 trackWithFile = trackWithTitleAndFile "title"

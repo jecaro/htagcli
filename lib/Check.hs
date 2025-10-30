@@ -53,5 +53,5 @@ check (FilenameMatches pattern formatting) track = do
     then Right ()
     else Left $ FilenameMismatch expected
   where
-    filename = Path.prjSomeBase Path.toFilePath $ AudioTrack.atFile track
+    filename = Path.toFilePath $ AudioTrack.atFile track
     expected = Pattern.format formatting track pattern

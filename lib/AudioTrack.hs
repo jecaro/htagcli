@@ -13,7 +13,7 @@ import Sound.HTagLib.Extra qualified as HTagLib
 import Tag qualified
 
 data AudioTrack = AudioTrack
-  { atFile :: Path.SomeBase Path.File,
+  { atFile :: Path.Path Path.Abs Path.File,
     atTitle :: HTagLib.Title,
     atArtist :: HTagLib.Artist,
     atAlbumArtist :: HTagLib.AlbumArtist,
@@ -27,7 +27,7 @@ data AudioTrack = AudioTrack
 asText :: AudioTrack -> Text
 asText AudioTrack {..} =
   unlines
-    [ "File: " <> toText (Path.prjSomeBase Path.toFilePath atFile),
+    [ "File: " <> toText (Path.toFilePath atFile),
       "Title: " <> HTagLib.unTitle atTitle,
       "Artist: " <> HTagLib.unArtist atArtist,
       "Album Artist: " <> HTagLib.unAlbumArtist atAlbumArtist,
@@ -41,12 +41,12 @@ withMissing :: (Show b) => (a -> b) -> Maybe a -> Text
 withMissing _ Nothing = "missing"
 withMissing f (Just x) = show . f $ x
 
-getTags :: (MonadIO m) => Path.SomeBase Path.File -> m AudioTrack
+getTags :: (MonadIO m) => Path.Path Path.Abs Path.File -> m AudioTrack
 getTags file = do
-  let fileStr = Path.prjSomeBase Path.toFilePath file
+  let fileStr = Path.toFilePath file
   HTagLib.getTags fileStr $ getter file
 
-getter :: Path.SomeBase Path.File -> HTagLib.TagGetter AudioTrack
+getter :: Path.Path Path.Abs Path.File -> HTagLib.TagGetter AudioTrack
 getter path =
   AudioTrack path
     <$> HTagLib.titleGetter

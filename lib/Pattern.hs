@@ -111,7 +111,7 @@ toPath ::
 toPath formatting track@AudioTrack.AudioTrack {..} pattern = do
   formattedFile <- toPathWith (formatPlaceholder formatting track) pattern
   -- We do not handle files without extensions
-  extension <- Path.prjSomeBase Path.fileExtension atFile
+  extension <- Path.fileExtension atFile
   Path.addExtension extension formattedFile
 
 toPathWith ::

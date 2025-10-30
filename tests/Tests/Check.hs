@@ -10,8 +10,7 @@ where
 import AudioTrack qualified
 import Check qualified
 import Data.List.NonEmpty qualified as NonEmpty
-import Path (relfile)
-import Path qualified
+import Path (absfile)
 import Pattern qualified
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
@@ -66,7 +65,7 @@ filenameMatchesNoFormatting pattern =
 track :: AudioTrack.AudioTrack
 track =
   AudioTrack.AudioTrack
-    { atFile = Path.Rel [relfile|./title.mp3|],
+    { atFile = [absfile|/title.mp3|],
       atTitle = HTagLib.mkTitle "title",
       atArtist = HTagLib.mkArtist "",
       atAlbum = HTagLib.mkAlbum "album",
