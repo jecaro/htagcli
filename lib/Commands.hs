@@ -1,16 +1,17 @@
 module Commands
-  ( FixFilePathsOptions (..),
-    display,
+  ( display,
+    SetOrRemove (..),
+    EditOptions (..),
     edit,
     check,
-    fixFilePath,
+    FixFilePathsOptions (..),
+    fixFilePaths,
     render,
   )
 where
 
 import AudioTrack qualified
 import Check qualified
-import Options qualified
 import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
@@ -30,9 +31,23 @@ render (UnableToFormatFile file) = "Unable to format file: " <> show file
 display :: (MonadIO m) => Path.Path Path.Abs Path.File -> m ()
 display = putTextLn . AudioTrack.asText <=< AudioTrack.getTags
 
+data SetOrRemove a = Set a | Remove
+  deriving (Show)
+
+data EditOptions = EditOptions
+  { eoTitle :: Maybe HTagLib.Title,
+    eoArtist :: Maybe HTagLib.Artist,
+    eoAlbum :: Maybe HTagLib.Album,
+    eoAlbumArtist :: Maybe HTagLib.AlbumArtist,
+    eoGenre :: Maybe HTagLib.Genre,
+    eoYear :: Maybe (SetOrRemove HTagLib.Year),
+    eoTrack :: Maybe (SetOrRemove HTagLib.TrackNumber)
+  }
+  deriving (Show)
+
 edit ::
-  (MonadIO m) => Options.EditOptions -> Path.Path Path.Abs Path.File -> m ()
-edit Options.EditOptions {..} filename = do
+  (MonadIO m) => EditOptions -> Path.Path Path.Abs Path.File -> m ()
+edit EditOptions {..} filename = do
   let setter =
         fold $
           catMaybes
@@ -47,8 +62,8 @@ edit Options.EditOptions {..} filename = do
   HTagLib.setTags (Path.toFilePath filename) Nothing setter
   where
     toSetter _ Nothing = Nothing
-    toSetter setter (Just Options.Remove) = Just $ setter Nothing
-    toSetter setter (Just (Options.Set v)) = Just . setter $ Just v
+    toSetter setter (Just Remove) = Just $ setter Nothing
+    toSetter setter (Just (Set v)) = Just . setter $ Just v
 
 check ::
   (MonadIO m) => NonEmpty Check.Check -> Path.Path Path.Abs Path.File -> m ()
@@ -68,22 +83,21 @@ data FixFilePathsOptions = FixFilePathsOptions
   }
   deriving (Show)
 
-fixFilePath ::
+fixFilePaths ::
   (MonadIO m) =>
   FixFilePathsOptions ->
   Path.Path Path.Abs Path.File ->
   m ()
-fixFilePath FixFilePathsOptions {..} fromFile =
-  do
-    track <- AudioTrack.getTags fromFile
-    toFile <-
-      Exception.fromEither $
-        maybeToRight (UnableToFormatFile fromFile) $
-          Pattern.toPath fiFormatting track fiPattern
-    let toFileAbs = fiBaseDirectory </> toFile
-    when (toFileAbs /= fromFile) $ do
-      putTextLn $
-        "Moving: " <> show fromFile <> " to " <> show toFileAbs
-      when fiDryRun $ do
-        Path.createDirIfMissing True (Path.parent toFileAbs)
-        Path.renameFile fromFile toFileAbs
+fixFilePaths FixFilePathsOptions {..} fromFile = do
+  track <- AudioTrack.getTags fromFile
+  toFile <-
+    Exception.fromEither $
+      maybeToRight (UnableToFormatFile fromFile) $
+        Pattern.toPath fiFormatting track fiPattern
+  let toFileAbs = fiBaseDirectory </> toFile
+  when (toFileAbs /= fromFile) $ do
+    putTextLn $
+      "Moving: " <> show fromFile <> " to " <> show toFileAbs
+    when fiDryRun $ do
+      Path.createDirIfMissing True (Path.parent toFileAbs)
+      Path.renameFile fromFile toFileAbs

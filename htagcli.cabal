@@ -42,6 +42,7 @@ library
   exposed-modules:
     AudioTrack
     Check
+    Commands
     Data.List.NonEmpty.Extra
     Pattern
     Sound.HTagLib.Extra
@@ -53,6 +54,8 @@ library
     megaparsec,
     parser-combinators,
     path,
+    path-io,
+    unliftio,
 
 executable htagcli
   import:
@@ -65,7 +68,6 @@ executable htagcli
     Main.hs
 
   other-modules:
-    Commands
     Config
     Options
     Toml.Extra

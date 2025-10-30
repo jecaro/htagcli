@@ -70,7 +70,7 @@ main = do
 
         Conduit.runConduitRes $
           fileOrDirectoryC opFilesOrDirectory
-            .| Conduit.mapM_C (Commands.fixFilePath fixFilePathOptions)
+            .| Conduit.mapM_C (Commands.fixFilePaths fixFilePathOptions)
   where
     getChecksFromConfig = do
       config <- Config.readConfig

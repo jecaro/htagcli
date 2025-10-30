@@ -2,28 +2,23 @@ module Options
   ( CheckOptions (..),
     Command (..),
     Directory (..),
-    EditOptions (..),
     Files (..),
     FilesOrDirectory (..),
     Options (..),
-    SetOrRemove (..),
     FixFilePathsOptions (..),
     optionsInfo,
   )
 where
 
 import Check qualified
+import Commands qualified
 import Options.Applicative qualified as Options
 import Options.Applicative.NonEmpty qualified as Options
 import Path qualified
 import Pattern qualified
 import Sound.HTagLib qualified as HTagLib
-import Sound.HTagLib.Extra qualified as HTagLib
 import Tag qualified
 import Text.Megaparsec qualified as Megaparsec
-
-data SetOrRemove a = Set a | Remove
-  deriving (Show)
 
 data Directory = Directory
   { diPath :: Path.SomeBase Path.Dir,
@@ -39,17 +34,6 @@ newtype Files = Files
 data FilesOrDirectory
   = FDFiles Files
   | FDDirectory Directory
-  deriving (Show)
-
-data EditOptions = EditOptions
-  { eoTitle :: Maybe HTagLib.Title,
-    eoArtist :: Maybe HTagLib.Artist,
-    eoAlbum :: Maybe HTagLib.Album,
-    eoAlbumArtist :: Maybe HTagLib.AlbumArtist,
-    eoGenre :: Maybe HTagLib.Genre,
-    eoYear :: Maybe (SetOrRemove HTagLib.Year),
-    eoTrack :: Maybe (SetOrRemove HTagLib.TrackNumber)
-  }
   deriving (Show)
 
 newtype CheckOptions = CheckOptions
@@ -72,7 +56,7 @@ data Options = Options
 
 data Command
   = Display
-  | Edit EditOptions
+  | Edit Commands.EditOptions
   | Check CheckOptions
   | FixFilePaths FixFilePathsOptions
   deriving (Show)
@@ -192,9 +176,9 @@ paddingP =
           "Number of digits to pad track numbers to (default: ignore)"
     )
 
-editOptionsP :: Options.Parser EditOptions
+editOptionsP :: Options.Parser Commands.EditOptions
 editOptionsP =
-  EditOptions
+  Commands.EditOptions
     <$> optional
       ( Options.strOption
           ( Options.long "title"
@@ -238,7 +222,7 @@ editOptionsP =
               <> Options.help "Set the year"
           )
           <|> Options.flag'
-            Remove
+            Commands.Remove
             ( Options.long "noyear"
                 <> Options.help "Unset the year"
             )
@@ -251,14 +235,15 @@ editOptionsP =
               <> Options.help "Set the track number"
           )
           <|> Options.flag'
-            Remove
+            Commands.Remove
             (Options.long "notrack" <> Options.help "Unset the track")
       )
   where
-    strToYear :: String -> Maybe (SetOrRemove HTagLib.Year)
-    strToYear = fmap Set . HTagLib.mkYear <=< readMaybe
-    strToTrackNumber :: String -> Maybe (SetOrRemove HTagLib.TrackNumber)
-    strToTrackNumber = fmap Set . HTagLib.mkTrackNumber <=< readMaybe
+    strToYear :: String -> Maybe (Commands.SetOrRemove HTagLib.Year)
+    strToYear = fmap Commands.Set . HTagLib.mkYear <=< readMaybe
+    strToTrackNumber ::
+      String -> Maybe (Commands.SetOrRemove HTagLib.TrackNumber)
+    strToTrackNumber = fmap Commands.Set . HTagLib.mkTrackNumber <=< readMaybe
 
 filesOrDirectoryP :: Options.Parser FilesOrDirectory
 filesOrDirectoryP =
