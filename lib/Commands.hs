@@ -2,10 +2,12 @@ module Commands
   ( display,
     SetOrRemove (..),
     EditOptions (..),
+    noEditOptions,
     edit,
     check,
     FixFilePathsOptions (..),
     fixFilePaths,
+    fixFilePaths',
     render,
   )
 where
@@ -45,6 +47,18 @@ data EditOptions = EditOptions
   }
   deriving (Show)
 
+noEditOptions :: EditOptions
+noEditOptions =
+  EditOptions
+    { eoTitle = Nothing,
+      eoArtist = Nothing,
+      eoAlbum = Nothing,
+      eoAlbumArtist = Nothing,
+      eoGenre = Nothing,
+      eoYear = Nothing,
+      eoTrack = Nothing
+    }
+
 edit ::
   (MonadIO m) => EditOptions -> Path.Path Path.Abs Path.File -> m ()
 edit EditOptions {..} filename = do
@@ -83,21 +97,36 @@ data FixFilePathsOptions = FixFilePathsOptions
   }
   deriving (Show)
 
-fixFilePaths ::
+-- | Version for testing that returns the new path if changed
+fixFilePaths' ::
   (MonadIO m) =>
   FixFilePathsOptions ->
   Path.Path Path.Abs Path.File ->
-  m ()
-fixFilePaths FixFilePathsOptions {..} fromFile = do
+  m (Maybe (Path.Path Path.Abs Path.File))
+fixFilePaths' FixFilePathsOptions {..} fromFile = do
   track <- AudioTrack.getTags fromFile
   toFile <-
     Exception.fromEither $
       maybeToRight (UnableToFormatFile fromFile) $
         Pattern.toPath fiFormatting track fiPattern
   let toFileAbs = fiBaseDirectory </> toFile
-  when (toFileAbs /= fromFile) $ do
+  if toFileAbs == fromFile
+    then pure Nothing
+    else do
+      unless fiDryRun $ do
+        Path.ensureDir $ Path.parent toFileAbs
+        Path.renameFile fromFile toFileAbs
+      pure (Just toFileAbs)
+
+fixFilePaths ::
+  (MonadIO m) =>
+  FixFilePathsOptions ->
+  Path.Path Path.Abs Path.File ->
+  m ()
+fixFilePaths options fromFile = do
+  mbNewPath <- fixFilePaths' options fromFile
+  whenJust mbNewPath $ \toFile ->
     putTextLn $
-      "Moving: " <> show fromFile <> " to " <> show toFileAbs
-    unless fiDryRun $ do
-      Path.createDirIfMissing True (Path.parent toFileAbs)
-      Path.renameFile fromFile toFileAbs
+      fromString (Path.toFilePath fromFile)
+        <> " -> "
+        <> fromString (Path.toFilePath toFile)
