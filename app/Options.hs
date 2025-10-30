@@ -1,7 +1,7 @@
 module Options
   ( CheckOptions (..),
+    Command (..),
     Directory (..),
-    DisplayOptions (..),
     EditOptions (..),
     Files (..),
     FilesOrDirectory (..),
@@ -21,11 +21,6 @@ import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
 import Tag qualified
 import Text.Megaparsec qualified as Megaparsec
-
-newtype DisplayOptions = DisplayOptions
-  { doFilesOrDirectory :: FilesOrDirectory
-  }
-  deriving (Show)
 
 data SetOrRemove a = Set a | Remove
   deriving (Show)
@@ -47,8 +42,7 @@ data FilesOrDirectory
   deriving (Show)
 
 data EditOptions = EditOptions
-  { eoFilesOrDirectory :: FilesOrDirectory,
-    eoTitle :: Maybe HTagLib.Title,
+  { eoTitle :: Maybe HTagLib.Title,
     eoArtist :: Maybe HTagLib.Artist,
     eoAlbum :: Maybe HTagLib.Album,
     eoAlbumArtist :: Maybe HTagLib.AlbumArtist,
@@ -58,23 +52,26 @@ data EditOptions = EditOptions
   }
   deriving (Show)
 
-data CheckOptions = CheckOptions
-  { coFilesOrDirectory :: FilesOrDirectory,
-    coChecks :: Maybe (NonEmpty Check.Check)
+newtype CheckOptions = CheckOptions
+  { coChecks :: Maybe (NonEmpty Check.Check)
   }
   deriving (Show)
 
 data FixFilePathsOptions = FixFilePathsOptions
-  { foFilesOrDirectory :: FilesOrDirectory,
-    foDryRun :: Bool,
+  { foDryRun :: Bool,
     foBaseDirectory :: Maybe (Path.SomeBase Path.Dir),
     foFormatting :: Maybe Pattern.Formatting,
     foPattern :: Maybe Pattern.Pattern
   }
   deriving (Show)
 
-data Options
-  = Display DisplayOptions
+data Options = Options
+  { opFilesOrDirectory :: FilesOrDirectory,
+    opCommand :: Command
+  }
+
+data Command
+  = Display
   | Edit EditOptions
   | Check CheckOptions
   | FixFilePaths FixFilePathsOptions
@@ -83,17 +80,13 @@ data Options
 optionsInfo :: Options.ParserInfo Options
 optionsInfo = Options.info (optionsP <**> Options.helper) Options.idm
 
-displayOptionsP :: Options.Parser DisplayOptions
-displayOptionsP = DisplayOptions <$> filesOrDirectoryP
-
 checkOptionsP :: Options.Parser CheckOptions
-checkOptionsP = CheckOptions <$> filesOrDirectoryP <*> optional checksP
+checkOptionsP = CheckOptions <$> optional checksP
 
 fixFilePathsOptionsP :: Options.Parser FixFilePathsOptions
 fixFilePathsOptionsP =
   FixFilePathsOptions
-    <$> filesOrDirectoryP
-    <*> dryRunP
+    <$> dryRunP
     <*> optional baseDirectoryP
     <*> optional formattingP
     <*> optional filematchesP
@@ -202,8 +195,7 @@ paddingP =
 editOptionsP :: Options.Parser EditOptions
 editOptionsP =
   EditOptions
-    <$> filesOrDirectoryP
-    <*> optional
+    <$> optional
       ( Options.strOption
           ( Options.long "title"
               <> Options.metavar "TITLE"
@@ -321,22 +313,28 @@ optionsP =
     ( Options.command
         "display"
         ( Options.info
-            (Display <$> displayOptionsP)
+            (Options <$> filesOrDirectoryP <*> pure Display)
             (Options.progDesc "Show tags")
         )
         <> Options.command
           "edit"
-          (Options.info (Edit <$> editOptionsP) (Options.progDesc "Edit tags"))
+          ( Options.info
+              (Options <$> filesOrDirectoryP <*> (Edit <$> editOptionsP))
+              (Options.progDesc "Edit tags")
+          )
         <> Options.command
           "check"
           ( Options.info
-              (Check <$> checkOptionsP)
+              (Options <$> filesOrDirectoryP <*> (Check <$> checkOptionsP))
               (Options.progDesc "Check various properties of files")
           )
         <> Options.command
           "fix-paths"
           ( Options.info
-              (FixFilePaths <$> fixFilePathsOptionsP)
+              ( Options
+                  <$> filesOrDirectoryP
+                  <*> (FixFilePaths <$> fixFilePathsOptionsP)
+              )
               (Options.progDesc "Fix file paths according to a pattern")
           )
     )

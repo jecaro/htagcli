@@ -44,18 +44,18 @@ fileOrDirectoryC (Options.FDDirectory (Options.Directory {..})) = do
 
 main :: IO ()
 main = do
-  options <- Options.execParser Options.optionsInfo
+  Options.Options {..} <- Options.execParser Options.optionsInfo
 
   Exception.handleAny exceptions $ do
-    case options of
-      Options.Display Options.DisplayOptions {..} -> do
+    case opCommand of
+      Options.Display -> do
         Conduit.runConduitRes $
-          fileOrDirectoryC doFilesOrDirectory
+          fileOrDirectoryC opFilesOrDirectory
             .| Conduit.mapM_C
               (putTextLn . AudioTrack.asText <=< AudioTrack.getTags)
       Options.Edit Options.EditOptions {..} -> do
         Conduit.runConduitRes $
-          fileOrDirectoryC eoFilesOrDirectory
+          fileOrDirectoryC opFilesOrDirectory
             .| Conduit.mapM_C
               ( \filename -> do
                   let setter =
@@ -75,7 +75,7 @@ main = do
         -- Get the checks from the CLI and fallback to the config file
         checks <- maybe getChecksFromConfig pure coChecks
         Conduit.runConduitRes $
-          fileOrDirectoryC coFilesOrDirectory
+          fileOrDirectoryC opFilesOrDirectory
             .| Conduit.mapM_C
               ( \filename -> do
                   track <- AudioTrack.getTags filename
@@ -89,7 +89,7 @@ main = do
         baseDir <- maybe (pure coFixPaths) Path.makeAbsolute foBaseDirectory
 
         Conduit.runConduitRes $
-          fileOrDirectoryC foFilesOrDirectory
+          fileOrDirectoryC opFilesOrDirectory
             .| Conduit.mapM_C
               ( \fromFile -> do
                   track <- AudioTrack.getTags fromFile
