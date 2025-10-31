@@ -17,6 +17,7 @@ import Check qualified
 import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
+import Path.IO.Extra qualified as Path
 import Pattern qualified
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
@@ -116,6 +117,8 @@ fixFilePaths' FixFilePathsOptions {..} fromFile = do
       unless fiDryRun $ do
         Path.ensureDir $ Path.parent toFileAbs
         Path.renameFile fromFile toFileAbs
+        Path.removeDirAndParentsIfEmpty $ Path.parent fromFile
+
       pure (Just toFileAbs)
 
 fixFilePaths ::
