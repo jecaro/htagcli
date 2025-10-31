@@ -10,6 +10,7 @@ module Options
   )
 where
 
+import Check.Album qualified as Album
 import Check.File qualified as File
 import Commands qualified
 import Options.Applicative qualified as Options
@@ -36,8 +37,9 @@ data FilesOrDirectory
   | FDDirectory Directory
   deriving (Show)
 
-newtype CheckOptions = CheckOptions
-  { coFileChecks :: Maybe (NonEmpty File.Check)
+data CheckOptions = CheckOptions
+  { coFileChecks :: [File.Check],
+    coAlbumChecks :: [Album.Check]
   }
   deriving (Show)
 
@@ -53,6 +55,7 @@ data Options = Options
   { opFilesOrDirectory :: FilesOrDirectory,
     opCommand :: Command
   }
+  deriving (Show)
 
 data Command
   = Display
@@ -65,7 +68,7 @@ optionsInfo :: Options.ParserInfo Options
 optionsInfo = Options.info (optionsP <**> Options.helper) Options.idm
 
 checkOptionsP :: Options.Parser CheckOptions
-checkOptionsP = CheckOptions <$> optional checksP
+checkOptionsP = CheckOptions <$> checksP <*> albumChecksP
 
 fixFilePathsOptionsP :: Options.Parser FixFilePathsOptions
 fixFilePathsOptionsP =
@@ -93,9 +96,9 @@ baseDirectoryP =
           "Base directory to use with the pattern to move files"
     )
 
-checksP :: Options.Parser (NonEmpty File.Check)
+checksP :: Options.Parser [File.Check]
 checksP =
-  Options.some1
+  Options.many
     ( File.TagsExist
         <$> tagsP
           <|> File.GenreAmong
@@ -103,6 +106,24 @@ checksP =
           <|> File.FilenameMatches
         <$> filematchesP
         <*> formattingP
+    )
+
+albumChecksP :: Options.Parser [Album.Check]
+albumChecksP =
+  Options.many
+    ( Album.InSameDir
+        <$ Options.flag'
+          ()
+          ( Options.long "in-same-dir"
+              <> Options.help "Check that all tracks are in the same directory"
+          )
+          <|> Album.HaveCover
+        <$> Options.option
+          (Options.maybeReader Path.parseRelFile)
+          ( Options.long "have-cover"
+              <> Options.metavar "FILENAME"
+              <> Options.help "Check that the specified cover file exists"
+          )
     )
 
 tagsP :: Options.Parser (NonEmpty Tag.Tag)

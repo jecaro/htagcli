@@ -41,6 +41,7 @@ library
 
   exposed-modules:
     AudioTrack
+    Check.Album
     Check.File
     Commands
     Data.List.NonEmpty.Extra
@@ -50,6 +51,7 @@ library
     Tag
 
   build-depends:
+    extra,
     filepath,
     htaglib,
     megaparsec,
@@ -100,8 +102,10 @@ test-suite tests
     Main.hs
 
   other-modules:
+    Tests.Check.Album
     Tests.Check.File
     Tests.Commands
+    Tests.Common
     Tests.Pattern
     Tests.Tag
 
@@ -111,6 +115,7 @@ test-suite tests
 
   build-depends:
     hedgehog,
+    hspec,
     hspec-expectations,
     hspec-megaparsec,
     htagcli,
@@ -121,5 +126,6 @@ test-suite tests
     path-io,
     tasty,
     tasty-autocollect,
+    tasty-expected-failure,
     tasty-hedgehog,
     tasty-hunit-compat,

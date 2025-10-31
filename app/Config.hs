@@ -10,6 +10,7 @@ module Config
   )
 where
 
+import Check.Album qualified as Album
 import Check.File qualified as File
 import Data.Text qualified as Text
 import GHC.IO.Exception qualified as Exception
@@ -58,12 +59,16 @@ data Checks = Checks
     -- | If True, the check is enabled, the padding optionally overrides the
     -- one given in the formatting section. This way it is possible to ignore
     -- the padding when checking the filename and still have it when fixing it.
-    chFilenameMatches :: (Bool, Maybe Pattern.Padding)
+    chFilenameMatches :: (Bool, Maybe Pattern.Padding),
+    -- | The album have a cover file with the given name
+    chHaveCover :: Maybe (Path.Path Path.Rel Path.File),
+    -- | All the audio tracks of the album are in the same directory
+    chAlbumInSameDir :: Bool
   }
   deriving (Show)
 
-checks :: Config -> [File.Check]
-checks (Config {coFilename = Filename {..}, coChecks = Checks {..}}) =
+fileChecks :: Config -> [File.Check]
+fileChecks (Config {coFilename = Filename {..}, coChecks = Checks {..}}) =
   catMaybes
     [ File.TagsExist <$> chTags,
       File.GenreAmong <$> chGenreAmong,
@@ -81,6 +86,18 @@ checks (Config {coFilename = Filename {..}, coChecks = Checks {..}}) =
       Just $ maybe formatting (setPadding formatting) mbPadding
     setPadding formatting padding =
       formatting {Pattern.foPadTrackNumbers = padding}
+
+albumChecks :: Config -> [Album.Check]
+albumChecks (Config {coChecks = Checks {..}}) =
+  catMaybes
+    [ Album.HaveCover <$> chHaveCover,
+      if chAlbumInSameDir
+        then Just Album.InSameDir
+        else Nothing
+    ]
+
+checks :: Config -> ([File.Check], [Album.Check])
+checks = fileChecks &&& albumChecks
 
 render :: Error -> Text
 render (ErToml err) = "TOML error: \n" <> err
@@ -117,17 +134,26 @@ configC :: Toml.TomlCodec Config
 configC =
   Config
     <$> Toml.table filenameC "filename" .= coFilename
-    <*> Toml.table fixPathsC "fix_paths" .= coFixPaths
+    <*> Toml.table (absDirC "base_dir") "fix_paths" .= coFixPaths
     <*> Toml.table checksC "checks" .= coChecks
 
-fixPathsC :: Toml.TomlCodec (Path.Path Path.Abs Path.Dir)
-fixPathsC =
-  Toml.textBy (toText . Path.toFilePath) parse "base_dir"
+absDirC :: Toml.Key -> Toml.TomlCodec (Path.Path Path.Abs Path.Dir)
+absDirC =
+  Toml.textBy (toText . Path.toFilePath) parse
   where
     parse :: Text -> Either Text (Path.Path Path.Abs Path.Dir)
     parse text = case Path.parseAbsDir (toString text) of
       Nothing -> Left "Invalid absolute directory path"
       Just directory -> Right directory
+
+relFileC :: Toml.Key -> Toml.TomlCodec (Path.Path Path.Rel Path.File)
+relFileC =
+  Toml.textBy (toText . Path.toFilePath) parse
+  where
+    parse :: Text -> Either Text (Path.Path Path.Rel Path.File)
+    parse text = case Path.parseRelFile (toString text) of
+      Nothing -> Left "Invalid relative file path"
+      Just file -> Right file
 
 filenameC :: Toml.TomlCodec Filename
 filenameC =
@@ -142,6 +168,10 @@ checksC =
     <*> maybeValidatedC "check_genre" genreAmongC chGenreAmong
     <*> enableAndMaybeC (paddingC "pad_track_numbers") "check_files"
       .= chFilenameMatches
+    <*> maybeValidatedC "check_cover" (relFileC "cover_filename") chHaveCover
+    <*> albumInSameDirC .= chAlbumInSameDir
+  where
+    albumInSameDirC = Toml.table (Toml.bool "enable") "check_album_in_same_dir"
 
 -- | Unwrap the Maybe value according to the enable flag.
 maybeValidatedC ::

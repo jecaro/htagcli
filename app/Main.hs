@@ -1,9 +1,11 @@
 module Main where
 
+import AudioTrack qualified
 import Commands qualified
 import Conduit ((.|))
 import Conduit qualified
 import Config qualified
+import Data.Conduit.List qualified as Conduit
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
 import Options qualified
@@ -48,12 +50,22 @@ main = do
         Conduit.runConduitRes $
           fileOrDirectoryC opFilesOrDirectory
             .| Conduit.mapM_C (Commands.edit editOptions)
-      Options.Check (Options.CheckOptions {..}) -> do
+      Options.Check options -> do
+        config <- Config.readConfig
+
         -- Get the checks from the CLI and fallback to the config file
-        checks <- maybe getChecksFromConfig pure coFileChecks
+        let (fileChecks, albumChecks) =
+              withDefault (Config.checks config) options
+
+        when (null fileChecks && null albumChecks) $
+          Exception.throwIO NoCheckInConfig
+
         Conduit.runConduitRes $
           fileOrDirectoryC opFilesOrDirectory
-            .| Conduit.mapM_C (Commands.check checks)
+            .| Conduit.mapM AudioTrack.getTags
+            .| Conduit.iterM (Commands.checkFile fileChecks)
+            .| Conduit.groupOn AudioTrack.atAlbum
+            .| Conduit.mapM_C (Commands.checkAlbum albumChecks)
       Options.FixFilePaths Options.FixFilePathsOptions {..} -> do
         Config.Config {coFilename = Config.Filename {..}, ..} <- Config.readConfig
         let formatting = fromMaybe fiFormatting foFormatting
@@ -72,11 +84,8 @@ main = do
           fileOrDirectoryC opFilesOrDirectory
             .| Conduit.mapM_C (Commands.fixFilePaths fixFilePathOptions)
   where
-    getChecksFromConfig = do
-      config <- Config.readConfig
-      maybe (Exception.throwIO NoCheckInConfig) pure $
-        nonEmpty $
-          Config.checks config
+    withDefault def (Options.CheckOptions [] []) = def
+    withDefault _ (Options.CheckOptions files albums) = (files, albums)
 
 exceptions :: SomeException -> IO ()
 exceptions someException = do

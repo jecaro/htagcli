@@ -14,18 +14,18 @@ import Path (reldir, relfile, (</>))
 import Path qualified
 import Path.IO qualified as Path
 import Pattern qualified
-import Sound.HTagLib qualified as HTagLib
 import System.IO qualified as System
 import Tag qualified
 import Test.Hspec.Expectations (shouldBe)
 import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty
+import Tests.Common qualified as Common
 
 test :: TestTree
 test =
   Tasty.testGroup
     "fixFilePaths"
-    [ Tasty.testCase "dry run" $ withTenTracksFiles $ \dir -> do
+    [ Tasty.testCase "dry run" $ Common.withTenTracksFiles $ \dir -> do
         let inputDir = dir </> [reldir|input|]
         filenamesBefore <- snd <$> Path.listDir inputDir
 
@@ -41,7 +41,7 @@ test =
         filenamesAfter <- snd <$> Path.listDir inputDir
         filenamesAfter `shouldBe` filenamesBefore,
       Tasty.testCase "rename and delete empty dirs" $
-        withTenTracksFiles $ \dir -> do
+        Common.withTenTracksFiles $ \dir -> do
           let inputDir = dir </> [reldir|input|]
           filenamesInCurrentDirBefore <- snd <$> Path.listDir inputDir
           listMbPaths <-
@@ -63,7 +63,7 @@ test =
           lefts checkResults `shouldBe` mempty
           catMaybes listMbPaths `shouldBe` filenamesAfter,
       Tasty.testCase "rename but keep non-empty dirs" $
-        withTenTracksFiles $ \dir -> do
+        Common.withTenTracksFiles $ \dir -> do
           let inputDir = dir </> [reldir|input|]
               dummy = inputDir </> [relfile|dummy.txt|]
           System.writeFile (Path.toFilePath dummy) "dummy content"
@@ -111,20 +111,3 @@ fixFilePathsOptions dryRun baseDir =
       fiFormatting = Pattern.noFormatting,
       fiPattern = pattern
     }
-
--- | Create a temporary directory and put 10 audio files in the subdirectory
--- 'input'
-withTenTracksFiles :: (Path.Path Path.Abs Path.Dir -> IO ()) -> Tasty.Assertion
-withTenTracksFiles withTempDir = Path.withSystemTempDir "htagcli" $ \dir -> do
-  forM_ [1 .. 10] $ \i -> do
-    dstRelFile <- Path.parseRelFile $ "./input/" <> show i <> "-sample.mp3"
-    let dstAbsFile = dir </> dstRelFile
-    Path.ensureDir $ Path.parent dstAbsFile
-    Path.copyFile [relfile|./data/sample.mp3|] dstAbsFile
-    Commands.edit
-      ( Commands.noEditOptions
-          { Commands.eoTrack = Commands.Set <$> HTagLib.mkTrackNumber i
-          }
-      )
-      dstAbsFile
-  withTempDir dir

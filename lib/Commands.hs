@@ -4,7 +4,8 @@ module Commands
     EditOptions (..),
     noEditOptions,
     edit,
-    check,
+    checkFile,
+    checkAlbum,
     FixFilePathsOptions (..),
     fixFilePaths,
     fixFilePaths',
@@ -13,13 +14,16 @@ module Commands
 where
 
 import AudioTrack qualified
+import Check.Album qualified as Album
 import Check.File qualified as File
+import Data.List.NonEmpty qualified as NonEmpty
 import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
 import Path.IO.Extra qualified as Path
 import Pattern qualified
 import Sound.HTagLib qualified as HTagLib
+import Sound.HTagLib qualified as HTaglib
 import Sound.HTagLib.Extra qualified as HTagLib
 import UnliftIO.Exception qualified as Exception
 
@@ -80,15 +84,28 @@ edit EditOptions {..} filename = do
     toSetter setter (Just Remove) = Just $ setter Nothing
     toSetter setter (Just (Set v)) = Just . setter $ Just v
 
-check ::
-  (MonadIO m) => NonEmpty File.Check -> Path.Path Path.Abs Path.File -> m ()
-check checks filename = do
-  track <- AudioTrack.getTags filename
-  traverse_ (checkPrintError filename track) checks
+checkFile :: (MonadIO m) => [File.Check] -> AudioTrack.AudioTrack -> m ()
+checkFile checks track = do
+  traverse_ (checkPrintError track) checks
   where
-    checkPrintError file track check' =
-      whenLeft_ (File.check check' track) $ \err ->
-        putTextLn $ fromString (Path.toFilePath file) <> ": " <> File.render err
+    checkPrintError track' check =
+      whenLeft_ (File.check check track') $ \err ->
+        putTextLn $
+          "File "
+            <> fromString (Path.toFilePath file)
+            <> ": "
+            <> File.render err
+    file = AudioTrack.atFile track
+
+checkAlbum ::
+  (MonadIO m) => [Album.Check] -> NonEmpty AudioTrack.AudioTrack -> m ()
+checkAlbum checks tracks = do
+  traverse_ (checkPrintError tracks) checks
+  where
+    checkPrintError tracks' check =
+      whenLeftM_ (Album.check check tracks') $ \err ->
+        putTextLn $ "Album " <> HTaglib.unAlbum album <> ": " <> Album.render err
+    album = AudioTrack.atAlbum $ NonEmpty.head tracks
 
 data FixFilePathsOptions = FixFilePathsOptions
   { fiDryRun :: Bool,
