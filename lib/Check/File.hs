@@ -1,4 +1,4 @@
-module Check (Check (..), Error (..), check, render) where
+module Check.File (Check (..), Error (..), check, render) where
 
 import AudioTrack qualified
 import Data.List.NonEmpty qualified as NonEmpty

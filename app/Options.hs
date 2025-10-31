@@ -10,7 +10,7 @@ module Options
   )
 where
 
-import Check qualified
+import Check.File qualified as File
 import Commands qualified
 import Options.Applicative qualified as Options
 import Options.Applicative.NonEmpty qualified as Options
@@ -37,7 +37,7 @@ data FilesOrDirectory
   deriving (Show)
 
 newtype CheckOptions = CheckOptions
-  { coChecks :: Maybe (NonEmpty Check.Check)
+  { coFileChecks :: Maybe (NonEmpty File.Check)
   }
   deriving (Show)
 
@@ -93,14 +93,14 @@ baseDirectoryP =
           "Base directory to use with the pattern to move files"
     )
 
-checksP :: Options.Parser (NonEmpty Check.Check)
+checksP :: Options.Parser (NonEmpty File.Check)
 checksP =
   Options.some1
-    ( Check.TagsExist
+    ( File.TagsExist
         <$> tagsP
-          <|> Check.GenreAmong
+          <|> File.GenreAmong
         <$> genreAmongP
-          <|> Check.FilenameMatches
+          <|> File.FilenameMatches
         <$> filematchesP
         <*> formattingP
     )

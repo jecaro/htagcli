@@ -50,7 +50,7 @@ main = do
             .| Conduit.mapM_C (Commands.edit editOptions)
       Options.Check (Options.CheckOptions {..}) -> do
         -- Get the checks from the CLI and fallback to the config file
-        checks <- maybe getChecksFromConfig pure coChecks
+        checks <- maybe getChecksFromConfig pure coFileChecks
         Conduit.runConduitRes $
           fileOrDirectoryC opFilesOrDirectory
             .| Conduit.mapM_C (Commands.check checks)

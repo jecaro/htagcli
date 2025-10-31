@@ -41,7 +41,7 @@ library
 
   exposed-modules:
     AudioTrack
-    Check
+    Check.File
     Commands
     Data.List.NonEmpty.Extra
     Path.IO.Extra
@@ -100,7 +100,7 @@ test-suite tests
     Main.hs
 
   other-modules:
-    Tests.Check
+    Tests.Check.File
     Tests.Commands
     Tests.Pattern
     Tests.Tag

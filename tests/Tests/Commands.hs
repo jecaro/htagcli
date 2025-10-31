@@ -8,7 +8,7 @@ module Tests.Commands
 where
 
 import AudioTrack qualified
-import Check qualified
+import Check.File qualified as File
 import Commands qualified
 import Path (reldir, relfile, (</>))
 import Path qualified
@@ -83,12 +83,12 @@ test =
           exists `shouldBe` True
     ]
 
-check :: (MonadIO m) => Path.Path Path.Abs Path.File -> m (Either Check.Error ())
+check :: (MonadIO m) => Path.Path Path.Abs Path.File -> m (Either File.Error ())
 check filename = do
   track <- AudioTrack.getTags filename
   pure $
-    Check.check
-      (Check.FilenameMatches pattern Pattern.noFormatting)
+    File.check
+      (File.FilenameMatches pattern Pattern.noFormatting)
       track
 
 pattern :: Pattern.Pattern

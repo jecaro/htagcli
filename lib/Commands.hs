@@ -13,7 +13,7 @@ module Commands
 where
 
 import AudioTrack qualified
-import Check qualified
+import Check.File qualified as File
 import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
@@ -81,14 +81,14 @@ edit EditOptions {..} filename = do
     toSetter setter (Just (Set v)) = Just . setter $ Just v
 
 check ::
-  (MonadIO m) => NonEmpty Check.Check -> Path.Path Path.Abs Path.File -> m ()
+  (MonadIO m) => NonEmpty File.Check -> Path.Path Path.Abs Path.File -> m ()
 check checks filename = do
   track <- AudioTrack.getTags filename
   traverse_ (checkPrintError filename track) checks
   where
     checkPrintError file track check' =
-      whenLeft_ (Check.check check' track) $ \err ->
-        putTextLn $ fromString (Path.toFilePath file) <> ": " <> Check.render err
+      whenLeft_ (File.check check' track) $ \err ->
+        putTextLn $ fromString (Path.toFilePath file) <> ": " <> File.render err
 
 data FixFilePathsOptions = FixFilePathsOptions
   { fiDryRun :: Bool,

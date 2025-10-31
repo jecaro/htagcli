@@ -8,7 +8,7 @@ module Tests.Pattern
 where
 
 import AudioTrack qualified
-import Check qualified
+import Check.File qualified as File
 import Path (absdir, absfile, (</>))
 import Path qualified
 import Pattern qualified
@@ -306,7 +306,7 @@ filenameMatchesNoFormatting pattern = filenameMatches pattern Pattern.noFormatti
 filenameMatches ::
   Pattern.Pattern -> Pattern.Formatting -> AudioTrack.AudioTrack -> Bool
 filenameMatches pattern formatting =
-  isRight . Check.check (Check.FilenameMatches pattern formatting)
+  isRight . File.check (File.FilenameMatches pattern formatting)
 
 trackWithTitleAndFile ::
   Text -> Path.Path Path.Abs Path.File -> AudioTrack.AudioTrack

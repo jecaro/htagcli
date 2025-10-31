@@ -1,14 +1,14 @@
 {- AUTOCOLLECT.TEST -}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Tests.Check
+module Tests.Check.File
   (
   {- AUTOCOLLECT.TEST.export -}
   )
 where
 
 import AudioTrack qualified
-import Check qualified
+import Check.File qualified as File
 import Path (absfile)
 import Pattern qualified
 import Sound.HTagLib qualified as HTagLib
@@ -24,7 +24,7 @@ test =
     "FilenameMatches"
     [ Tasty.testCase
         "fail with MissingTags if the file doesn't contain a placeholder tag"
-        $ Check.check
+        $ File.check
           ( filenameMatchesNoFormatting $
               fromList
                 [ fromList
@@ -32,19 +32,19 @@ test =
                 ]
           )
           track
-          `shouldBe` Left (Check.MissingTags (fromList [Tag.Artist])),
+          `shouldBe` Left (File.MissingTags (fromList [Tag.Artist])),
       Tasty.testCase
         "fail with FilenameMismatch if the file contains a placeholder tag"
-        $ Check.check
+        $ File.check
           ( filenameMatchesNoFormatting $
               fromList
                 [fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album]]
           )
           track
-          `shouldBe` Left (Check.FilenameMismatch "album"),
+          `shouldBe` Left (File.FilenameMismatch "album"),
       Tasty.testCase
         "succeed if the file matches the pattern"
-        $ Check.check
+        $ File.check
           ( filenameMatchesNoFormatting $
               fromList
                 [fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]]
@@ -53,9 +53,9 @@ test =
           `shouldBe` Right ()
     ]
 
-filenameMatchesNoFormatting :: Pattern.Pattern -> Check.Check
+filenameMatchesNoFormatting :: Pattern.Pattern -> File.Check
 filenameMatchesNoFormatting pattern =
-  Check.FilenameMatches pattern Pattern.noFormatting
+  File.FilenameMatches pattern Pattern.noFormatting
 
 track :: AudioTrack.AudioTrack
 track =

@@ -10,7 +10,7 @@ module Config
   )
 where
 
-import Check qualified
+import Check.File qualified as File
 import Data.Text qualified as Text
 import GHC.IO.Exception qualified as Exception
 import Path ((</>))
@@ -62,12 +62,12 @@ data Checks = Checks
   }
   deriving (Show)
 
-checks :: Config -> [Check.Check]
+checks :: Config -> [File.Check]
 checks (Config {coFilename = Filename {..}, coChecks = Checks {..}}) =
   catMaybes
-    [ Check.TagsExist <$> chTags,
-      Check.GenreAmong <$> chGenreAmong,
-      Check.FilenameMatches fiPattern
+    [ File.TagsExist <$> chTags,
+      File.GenreAmong <$> chGenreAmong,
+      File.FilenameMatches fiPattern
         <$> withPadding fiFormatting chFilenameMatches
     ]
   where
