@@ -8,20 +8,20 @@ import Path.IO qualified as Path
 import "extra" Data.List.NonEmpty.Extra qualified as NonEmpty
 
 data Check
-  = HaveCover (Path.Path Path.Rel Path.File)
+  = HaveCover (NonEmpty (Path.Path Path.Rel Path.File))
   | InSameDir
   deriving (Eq, Show)
 
 data Error
   = NotInSameDir
-  | MissingCover (Path.Path Path.Abs Path.File)
+  | MissingCover (Path.Path Path.Abs Path.Dir)
   deriving (Eq, Show)
 
 render :: Error -> Text
 render NotInSameDir =
   "Audio tracks are not all in the same directory"
-render (MissingCover coverFilename) =
-  "Missing cover file: " <> Text.pack (Path.toFilePath coverFilename)
+render (MissingCover directory) =
+  "Missing cover in directory: " <> Text.pack (Path.toFilePath directory)
 
 getDirectories ::
   NonEmpty AudioTrack.AudioTrack -> NonEmpty (Path.Path Path.Abs Path.Dir)
@@ -36,11 +36,11 @@ check ::
 check InSameDir tracks
   | length (getDirectories tracks) == 1 = pure $ Right ()
   | otherwise = pure $ Left NotInSameDir
-check (HaveCover coverFilename) tracks
+check (HaveCover coverFilenames) tracks
   | dir :| [] <- getDirectories tracks = do
-      let absFile = dir </> coverFilename
+      let absFiles = (dir </>) <$> coverFilenames
       ifM
-        (Path.doesFileExist absFile)
+        (anyM Path.doesFileExist absFiles)
         (pure $ Right ())
-        (pure $ Left (MissingCover absFile))
+        (pure $ Left (MissingCover dir))
   | otherwise = pure $ Left NotInSameDir

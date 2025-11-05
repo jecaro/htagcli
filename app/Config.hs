@@ -60,8 +60,8 @@ data Checks = Checks
     -- one given in the formatting section. This way it is possible to ignore
     -- the padding when checking the filename and still have it when fixing it.
     chFilenameMatches :: (Bool, Maybe Pattern.Padding),
-    -- | The album have a cover file with the given name
-    chHaveCover :: Maybe (Path.Path Path.Rel Path.File),
+    -- | The album have a cover file with one of the given names
+    chHaveCover :: Maybe (NonEmpty (Path.Path Path.Rel Path.File)),
     -- | All the audio tracks of the album are in the same directory
     chAlbumInSameDir :: Bool
   }
@@ -146,9 +146,8 @@ absDirC =
       Nothing -> Left "Invalid absolute directory path"
       Just directory -> Right directory
 
-relFileC :: Toml.Key -> Toml.TomlCodec (Path.Path Path.Rel Path.File)
-relFileC =
-  Toml.textBy (toText . Path.toFilePath) parse
+relFileB :: Toml.TomlBiMap (Path.Path Path.Rel Path.File) Toml.AnyValue
+relFileB = Toml._TextBy (toText . Path.toFilePath) parse
   where
     parse :: Text -> Either Text (Path.Path Path.Rel Path.File)
     parse text = case Path.parseRelFile (toString text) of
@@ -168,9 +167,10 @@ checksC =
     <*> maybeValidatedC "check_genre" genreAmongC chGenreAmong
     <*> enableAndMaybeC (paddingC "pad_track_numbers") "check_files"
       .= chFilenameMatches
-    <*> maybeValidatedC "check_cover" (relFileC "cover_filename") chHaveCover
+    <*> maybeValidatedC "check_cover" checkCoverC chHaveCover
     <*> albumInSameDirC .= chAlbumInSameDir
   where
+    checkCoverC = Toml.arrayNonEmptyOf relFileB "cover_filename"
     albumInSameDirC = Toml.table (Toml.bool "enable") "check_album_in_same_dir"
 
 -- | Unwrap the Maybe value according to the enable flag.
@@ -213,10 +213,10 @@ enableAndMaybeC codec =
       (Toml.dioptional codec)
 
 tagsC :: Toml.TomlCodec (NonEmpty Tag.Tag)
-tagsC = Toml.arrayNonEmptyOf tagC "tags"
+tagsC = Toml.arrayNonEmptyOf tagB "tags"
 
-tagC :: Toml.TomlBiMap Tag.Tag Toml.AnyValue
-tagC = Toml._TextBy Tag.asText parse
+tagB :: Toml.TomlBiMap Tag.Tag Toml.AnyValue
+tagB = Toml._TextBy Tag.asText parse
   where
     parse :: Text -> Either Text Tag.Tag
     parse text = case Megaparsec.parseMaybe Tag.parser text of

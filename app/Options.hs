@@ -118,11 +118,13 @@ albumChecksP =
               <> Options.help "Check that all tracks are in the same directory"
           )
           <|> Album.HaveCover
-        <$> Options.option
-          (Options.maybeReader Path.parseRelFile)
-          ( Options.long "have-cover"
-              <> Options.metavar "FILENAME"
-              <> Options.help "Check that the specified cover file exists"
+        <$> Options.some1
+          ( Options.option
+              (Options.maybeReader Path.parseRelFile)
+              ( Options.long "have-cover"
+                  <> Options.metavar "FILENAME"
+                  <> Options.help "Check that the specified cover file exists"
+              )
           )
     )
 

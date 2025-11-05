@@ -10,6 +10,7 @@ where
 
 import AudioTrack qualified
 import Check.Album qualified as Album
+import Data.List.NonEmpty qualified as NonEmpty
 import Path (reldir, relfile, (</>))
 import Path qualified
 import Path.IO qualified as Path
@@ -26,19 +27,20 @@ test =
     [ Tasty.testCase "check an album without a cover.jpg" $
         withTenTracks $
           \dir tracks -> do
-            let cover = [relfile|cover.jpg|]
-
-            result <- Album.check (Album.HaveCover cover) tracks
-            result `shouldBe` Left (Album.MissingCover (dir </> cover)),
+            result <- Album.check (Album.HaveCover covers) tracks
+            result `shouldBe` Left (Album.MissingCover dir),
       Tasty.testCase "check an album with a cover.jpg" $
         withTenTracks $
           \dir tracks -> do
-            let cover = [relfile|cover.jpg|]
-            System.writeFile (Path.toFilePath $ dir </> cover) "dummy content"
+            System.writeFile
+              (Path.toFilePath $ dir </> (NonEmpty.head covers))
+              "dummy content"
 
-            result <- Album.check (Album.HaveCover cover) tracks
+            result <- Album.check (Album.HaveCover covers) tracks
             result `shouldBe` Right ()
     ]
+  where
+    covers = fromList [[relfile|cover.jpg|], [relfile|cover.png|]]
 
 test :: TestTree
 test =
