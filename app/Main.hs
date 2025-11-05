@@ -1,6 +1,7 @@
 module Main where
 
 import AudioTrack qualified
+import Check.File qualified as File
 import Commands qualified
 import Conduit ((.|))
 import Conduit qualified
@@ -12,6 +13,7 @@ import Options qualified
 import Options.Applicative qualified as Options
 import Path qualified
 import Path.IO qualified as Path
+import Pattern qualified
 import UnliftIO.Exception qualified as Exception
 
 data Error = NoCheckInConfig
@@ -54,8 +56,7 @@ main = do
         config <- Config.readConfig
 
         -- Get the checks from the CLI and fallback to the config file
-        let (fileChecks, albumChecks) =
-              withDefault (Config.checks config) options
+        let (fileChecks, albumChecks) = withDefaults config options
 
         when (null fileChecks && null albumChecks) $
           Exception.throwIO NoCheckInConfig
@@ -84,8 +85,24 @@ main = do
           fileOrDirectoryC opFilesOrDirectory
             .| Conduit.mapM_C (Commands.fixFilePaths fixFilePathOptions)
   where
-    withDefault def (Options.CheckOptions [] []) = def
-    withDefault _ (Options.CheckOptions files albums) = (files, albums)
+    -- When no check is given on the CLI, fallback to the config ones
+    withDefaults config (Options.CheckOptions [] []) = Config.checks config
+    -- If the formatting option is empty in the 'FileMatches' check, fallback
+    -- on the value in the config
+    withDefaults config (Options.CheckOptions files albums) =
+      (setCharActions foCharActions <$> files, albums)
+      where
+        Config.Config
+          { coFilename = Config.Filename {fiFormatting = Pattern.Formatting {..}}
+          } = config
+
+    setCharActions
+      charActions
+      (File.FilenameMatches pattern (Pattern.Formatting [] padding)) =
+        File.FilenameMatches
+          pattern
+          (Pattern.Formatting charActions padding)
+    setCharActions _ check = check
 
 exceptions :: SomeException -> IO ()
 exceptions someException = do
