@@ -73,9 +73,12 @@ executable htagcli
   other-modules:
     Config
     Options
+    Progress
+    Progress.Queue
     Toml.Extra
 
   build-depends:
+    ansi-terminal,
     conduit,
     htagcli,
     htaglib,

@@ -14,6 +14,7 @@ import Options.Applicative qualified as Options
 import Path qualified
 import Path.IO qualified as Path
 import Pattern qualified
+import Progress qualified
 import UnliftIO.Exception qualified as Exception
 
 data Error = NoCheckInConfig
@@ -24,34 +25,21 @@ instance Exception.Exception Error
 render :: Error -> Text
 render NoCheckInConfig = "No checks provided in the config file"
 
-fileOrDirectoryC ::
-  (Conduit.MonadResource m, Conduit.MonadThrow m) =>
-  Options.FilesOrDirectory ->
-  Conduit.ConduitT i (Path.Path Path.Abs Path.File) m ()
-fileOrDirectoryC (Options.FDFiles (Options.Files {..})) = do
-  absFiles <- traverse Path.makeAbsolute fiFiles
-  Conduit.yieldMany absFiles
-fileOrDirectoryC (Options.FDDirectory (Options.Directory {..})) = do
-  absDir <- Path.makeAbsolute diPath
-  Conduit.sourceDirectoryDeep False (Path.toFilePath absDir)
-    .| Conduit.filterC
-      (\filename -> any (`Text.isSuffixOf` fromString filename) diExtensions)
-    .| Conduit.mapMC Path.parseAbsFile
-
 main :: IO ()
 main = do
   Options.Options {..} <- Options.execParser Options.optionsInfo
 
   Exception.handleAny exceptions $ do
     case opCommand of
-      Options.Display -> do
-        Conduit.runConduitRes $
-          fileOrDirectoryC opFilesOrDirectory
-            .| Conduit.mapM_C Commands.display
-      Options.Edit editOptions -> do
-        Conduit.runConduitRes $
-          fileOrDirectoryC opFilesOrDirectory
-            .| Conduit.mapM_C (Commands.edit editOptions)
+      Options.Display ->
+        runConduitWithProgress
+          opFilesOrDirectory
+          $ Conduit.mapM_C Commands.display
+      Options.Edit editOptions ->
+        runConduitWithProgress
+          opFilesOrDirectory
+          $ Conduit.mapM_C
+          $ Commands.edit editOptions
       Options.Check options -> do
         config <- Config.readConfig
 
@@ -61,9 +49,9 @@ main = do
         when (null fileChecks && null albumChecks) $
           Exception.throwIO NoCheckInConfig
 
-        Conduit.runConduitRes $
-          fileOrDirectoryC opFilesOrDirectory
-            .| Conduit.mapM AudioTrack.getTags
+        runConduitWithProgress
+          opFilesOrDirectory
+          $ Conduit.mapM AudioTrack.getTags
             .| Conduit.iterM (Commands.checkFile fileChecks)
             .| Conduit.groupOn AudioTrack.atAlbum
             .| Conduit.mapM_C (Commands.checkAlbum albumChecks)
@@ -81,9 +69,10 @@ main = do
                   Commands.fiPattern = pattern
                 }
 
-        Conduit.runConduitRes $
-          fileOrDirectoryC opFilesOrDirectory
-            .| Conduit.mapM_C (Commands.fixFilePaths fixFilePathOptions)
+        runConduitWithProgress
+          opFilesOrDirectory
+          $ Conduit.mapM_C
+          $ Commands.fixFilePaths fixFilePathOptions
   where
     -- When no check is given on the CLI, fallback to the config ones
     withDefaults config (Options.CheckOptions [] []) = Config.checks config
@@ -103,6 +92,30 @@ main = do
           pattern
           (Pattern.Formatting charActions padding)
     setCharActions _ check = check
+
+runConduitWithProgress ::
+  Options.FilesOrDirectory ->
+  Conduit.ConduitT
+    (Path.Path Path.Abs Path.File)
+    Void
+    (Conduit.ResourceT IO)
+    a ->
+  IO a
+runConduitWithProgress = Progress.connectWithProgress . fileOrDirectoryC
+
+fileOrDirectoryC ::
+  (Conduit.MonadResource m, Conduit.MonadThrow m) =>
+  Options.FilesOrDirectory ->
+  Conduit.ConduitT i (Path.Path Path.Abs Path.File) m ()
+fileOrDirectoryC (Options.FDFiles (Options.Files {..})) = do
+  absFiles <- traverse Path.makeAbsolute fiFiles
+  Conduit.yieldMany absFiles
+fileOrDirectoryC (Options.FDDirectory (Options.Directory {..})) = do
+  absDir <- Path.makeAbsolute diPath
+  Conduit.sourceDirectoryDeep False (Path.toFilePath absDir)
+    .| Conduit.filterC
+      (\filename -> any (`Text.isSuffixOf` fromString filename) diExtensions)
+    .| Conduit.mapMC Path.parseAbsFile
 
 exceptions :: SomeException -> IO ()
 exceptions someException = do
