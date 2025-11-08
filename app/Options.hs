@@ -4,7 +4,6 @@ module Options
     Directory (..),
     Files (..),
     FilesOrDirectory (..),
-    Options (..),
     FixFilePathsOptions (..),
     optionsInfo,
   )
@@ -51,20 +50,14 @@ data FixFilePathsOptions = FixFilePathsOptions
   }
   deriving (Show)
 
-data Options = Options
-  { opFilesOrDirectory :: FilesOrDirectory,
-    opCommand :: Command
-  }
-  deriving (Show)
-
 data Command
-  = Display
-  | Edit Commands.EditOptions
-  | Check CheckOptions
-  | FixFilePaths FixFilePathsOptions
+  = Display FilesOrDirectory
+  | Edit Commands.EditOptions FilesOrDirectory
+  | Check CheckOptions FilesOrDirectory
+  | FixFilePaths FixFilePathsOptions FilesOrDirectory
   deriving (Show)
 
-optionsInfo :: Options.ParserInfo Options
+optionsInfo :: Options.ParserInfo Command
 optionsInfo = Options.info (optionsP <**> Options.helper) Options.idm
 
 checkOptionsP :: Options.Parser CheckOptions
@@ -315,34 +308,31 @@ someBaseDirP =
     (Options.maybeReader Path.parseSomeDir)
     (Options.metavar "DIRECTORY")
 
-optionsP :: Options.Parser Options
+optionsP :: Options.Parser Command
 optionsP =
   Options.hsubparser
     ( Options.command
         "display"
         ( Options.info
-            (Options <$> filesOrDirectoryP <*> pure Display)
+            (Display <$> filesOrDirectoryP)
             (Options.progDesc "Show tags")
         )
         <> Options.command
           "edit"
           ( Options.info
-              (Options <$> filesOrDirectoryP <*> (Edit <$> editOptionsP))
+              (Edit <$> editOptionsP <*> filesOrDirectoryP)
               (Options.progDesc "Edit tags")
           )
         <> Options.command
           "check"
           ( Options.info
-              (Options <$> filesOrDirectoryP <*> (Check <$> checkOptionsP))
+              (Check <$> checkOptionsP <*> filesOrDirectoryP)
               (Options.progDesc "Check various properties of files")
           )
         <> Options.command
           "fix-paths"
           ( Options.info
-              ( Options
-                  <$> filesOrDirectoryP
-                  <*> (FixFilePaths <$> fixFilePathsOptionsP)
-              )
+              (FixFilePaths <$> fixFilePathsOptionsP <*> filesOrDirectoryP)
               (Options.progDesc "Fix file paths according to a pattern")
           )
     )

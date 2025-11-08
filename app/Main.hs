@@ -27,20 +27,20 @@ render NoCheckInConfig = "No checks provided in the config file"
 
 main :: IO ()
 main = do
-  Options.Options {..} <- Options.execParser Options.optionsInfo
+  command <- Options.execParser Options.optionsInfo
 
   Exception.handleAny exceptions $ do
-    case opCommand of
-      Options.Display ->
+    case command of
+      Options.Display filesOrDirectory ->
         runConduitWithProgress
-          opFilesOrDirectory
+          filesOrDirectory
           $ Conduit.mapM_C Commands.display
-      Options.Edit editOptions ->
+      Options.Edit editOptions filesOrDirectory ->
         runConduitWithProgress
-          opFilesOrDirectory
+          filesOrDirectory
           $ Conduit.mapM_C
           $ Commands.edit editOptions
-      Options.Check options -> do
+      Options.Check options filesOrDirectory -> do
         config <- Config.readConfig
 
         -- Get the checks from the CLI and fallback to the config file
@@ -50,12 +50,12 @@ main = do
           Exception.throwIO NoCheckInConfig
 
         runConduitWithProgress
-          opFilesOrDirectory
+          filesOrDirectory
           $ Conduit.mapM AudioTrack.getTags
             .| Conduit.iterM (Commands.checkFile fileChecks)
             .| Conduit.groupOn AudioTrack.atAlbum
             .| Conduit.mapM_C (Commands.checkAlbum albumChecks)
-      Options.FixFilePaths Options.FixFilePathsOptions {..} -> do
+      Options.FixFilePaths Options.FixFilePathsOptions {..} filesOrDirectory -> do
         Config.Config {coFilename = Config.Filename {..}, ..} <- Config.readConfig
         let formatting = fromMaybe fiFormatting foFormatting
             pattern = fromMaybe fiPattern foPattern
@@ -70,7 +70,7 @@ main = do
                 }
 
         runConduitWithProgress
-          opFilesOrDirectory
+          filesOrDirectory
           $ Conduit.mapM_C
           $ Commands.fixFilePaths fixFilePathOptions
   where
