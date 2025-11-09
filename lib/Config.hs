@@ -5,19 +5,25 @@ module Config
     Filename (..),
     Error (..),
     readConfig,
+    createConfig,
     checks,
     render,
+    defaultConfigContent,
+    parseByteString,
   )
 where
 
 import Check.Album qualified as Album
 import Check.File qualified as File
+import Data.ByteString qualified as ByteString
+import Data.FileEmbed qualified as FileEmbed
 import Data.Text qualified as Text
 import GHC.IO.Exception qualified as Exception
 import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
 import Pattern qualified
+import System.IO qualified as System
 import System.IO.Error qualified as Error
 import Tag qualified
 import Text.Megaparsec qualified as Megaparsec
@@ -31,6 +37,7 @@ data Error
   = ErToml Text
   | ErNotFound Exception.IOException
   | ErUnicode UnicodeException
+  | ErConfigFileExists
   deriving (Show)
 
 instance Exception.Exception Error
@@ -102,16 +109,26 @@ checks = fileChecks &&& albumChecks
 render :: Error -> Text
 render (ErToml err) = "TOML error: \n" <> err
 render (ErNotFound err) =
-  "Config file not found: " <> maybe mempty fromString (Error.ioeGetFileName err)
+  unlines
+    [ "Config file not found: "
+        <> maybe mempty fromString (Error.ioeGetFileName err),
+      "Please create a config file using the 'create-config' command."
+    ]
 render (ErUnicode err) = "Unicode error: " <> show err
+render ErConfigFileExists = "Config file already exists, not overwriting it"
+
+defaultConfigContent :: ByteString.ByteString
+defaultConfigContent = $(FileEmbed.embedFileRelative "data/htagcli.toml")
 
 readConfig :: IO Config
 readConfig = do
-  configFile <- getFileInConfigDir $(Path.mkRelFile "htagcli.toml")
+  configFile <- getConfigFile
   bytestring <-
-    Exception.mapExceptionM ErNotFound $
-      readFileBS $
-        Path.toFilePath configFile
+    Exception.mapExceptionM ErNotFound $ readFileBS $ Path.toFilePath configFile
+  parseByteString bytestring
+
+parseByteString :: ByteString.ByteString -> IO Config
+parseByteString bytestring = do
   text <- Exception.fromEither $ first ErUnicode $ decodeUtf8Strict bytestring
   Exception.fromEither $ decode' configC text
 
@@ -120,9 +137,24 @@ getFileInConfigDir ::
   (MonadIO m) => Path.Path Path.Rel t -> m (Path.Path Path.Abs t)
 getFileInConfigDir file = flip (</>) file <$> getConfigDir
 
+getConfigFile ::
+  (MonadIO m) => m (Path.Path Path.Abs Path.File)
+getConfigFile = getFileInConfigDir $(Path.mkRelFile "htagcli.toml")
+
 -- | Get the configuration directory
 getConfigDir :: (MonadIO m) => m (Path.Path Path.Abs Path.Dir)
 getConfigDir = Path.getXdgDir Path.XdgConfig $ Just $(Path.mkRelDir "htagcli")
+
+createConfig :: IO ()
+createConfig = do
+  getConfigDir >>= Path.ensureDir
+  configFile <- getConfigFile
+  whenM (Path.doesFileExist configFile) $
+    Exception.throwIO ErConfigFileExists
+  System.withFile (Path.toFilePath configFile) System.WriteMode $
+    flip ByteString.hPut defaultConfigContent
+  putTextLn $
+    "Created default config file at: " <> toText (Path.toFilePath configFile)
 
 -- | Variant of 'Toml.decode' that returns our custom 'Error' type
 decode' :: Toml.TomlCodec c -> Text -> Either Error c

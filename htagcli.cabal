@@ -44,21 +44,26 @@ library
     Check.Album
     Check.File
     Commands
+    Config
     Data.List.NonEmpty.Extra
     Path.IO.Extra
     Pattern
     Sound.HTagLib.Extra
     Tag
+    Toml.Extra
 
   build-depends:
     extra,
+    file-embed,
     filepath,
     htaglib,
     megaparsec,
     parser-combinators,
     path,
     path-io,
+    tomland,
     unliftio,
+    validation-selective,
 
 executable htagcli
   import:
@@ -71,11 +76,9 @@ executable htagcli
     Main.hs
 
   other-modules:
-    Config
     Options
     Progress
     Progress.Queue
-    Toml.Extra
 
   build-depends:
     ansi-terminal,
@@ -87,9 +90,7 @@ executable htagcli
     path,
     path-io,
     text,
-    tomland,
     unliftio,
-    validation-selective,
 
 test-suite tests
   import:
@@ -109,6 +110,7 @@ test-suite tests
     Tests.Check.File
     Tests.Commands
     Tests.Common
+    Tests.Config
     Tests.Pattern
     Tests.Tag
 
@@ -132,3 +134,4 @@ test-suite tests
     tasty-expected-failure,
     tasty-hedgehog,
     tasty-hunit-compat,
+    unliftio,

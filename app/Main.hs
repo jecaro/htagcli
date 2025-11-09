@@ -31,6 +31,7 @@ main = do
 
   Exception.handleAny exceptions $ do
     case command of
+      Options.CreateConfig -> Config.createConfig
       Options.Display filesOrDirectory ->
         runConduitWithProgress
           filesOrDirectory

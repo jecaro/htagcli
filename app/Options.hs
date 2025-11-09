@@ -51,7 +51,8 @@ data FixFilePathsOptions = FixFilePathsOptions
   deriving (Show)
 
 data Command
-  = Display FilesOrDirectory
+  = CreateConfig
+  | Display FilesOrDirectory
   | Edit Commands.EditOptions FilesOrDirectory
   | Check CheckOptions FilesOrDirectory
   | FixFilePaths FixFilePathsOptions FilesOrDirectory
@@ -312,11 +313,17 @@ optionsP :: Options.Parser Command
 optionsP =
   Options.hsubparser
     ( Options.command
-        "display"
+        "create-config"
         ( Options.info
-            (Display <$> filesOrDirectoryP)
-            (Options.progDesc "Show tags")
+            (pure CreateConfig)
+            (Options.progDesc "Create a default configuration file")
         )
+        <> Options.command
+          "display"
+          ( Options.info
+              (Display <$> filesOrDirectoryP)
+              (Options.progDesc "Show tags")
+          )
         <> Options.command
           "edit"
           ( Options.info

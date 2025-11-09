@@ -1,0 +1,87 @@
+# Default configuration
+
+# Settings under [filename] are used by:
+# - the `fix-path` command
+# - the `check` command’s `filematches` check (see also [checks.check_files])
+[filename]
+
+# Pattern used to generate or validate file paths
+# Available placeholders:
+# - {artist}: artist tag
+# - {albumartist}: album artist tag
+# - {albumartist_}: album artist tag if available, otherwise artist
+# - {album}: album tag
+# - {title}: title tag
+# - {track}: track number (see `pad_track_numbers`)
+# - {year}: year tag
+# - {genre}: genre tag
+filename_matches = "{albumartist_}/{album}/{track}-{title}"
+
+# Characters to sanitize in file paths and how to handle them
+# Each entry defines:
+# - `char`: the character to match
+# - `action`: one of:
+#   - "remove": delete the character
+#   - "replace:<new_char>": replace it with `<new_char>`
+unwanted = [
+  { char = " ", action = "replace:_" },
+  { char = "/", action = "remove" },
+  { char = "?", action = "remove" },
+  { char = ":", action = "remove" },
+  { char = "\"", action = "remove" },
+  { char = "*", action = "remove" },
+  { char = ">", action = "remove" },
+]
+
+# How to pad track numbers in the {track} placeholder
+# Accepted values:
+# - "ignore": ignore padding when checking; no padding when fixing
+# - "1": no padding
+# - "2": pad to 2 digits (01, 02, ..., 10, 11, ...)
+# - "3", "4", ...: pad to N digits
+pad_track_numbers = "2"
+
+# Settings for the `fix-path` command
+[fix_paths]
+
+# Directory where music files are moved when fixing their paths
+base_dir = "/absolute/path/to/your/Music"
+
+# Configuration for validation checks
+[checks]
+
+# Ensure required tags are present
+[checks.check_tags]
+enable = true
+tags = ["title", "artist", "album", "genre", "year", "track"]
+
+# Ensure the genre tag matches one of the allowed values
+[checks.check_genre]
+enable = true
+genre_among = [
+  "Pop/Rock",
+  "Jazz",
+  "Country",
+  "Blues",
+  "Latin",
+  "International",
+  "Classical",
+  "Hip-Hop",
+]
+
+# Verify that file paths match the expected naming pattern
+[checks.check_files]
+enable = true
+# Optional: override the global `pad_track_numbers` setting
+pad_track_numbers = "ignore"
+
+# Verify that each album directory contains a cover image
+[checks.check_cover]
+enable = true
+cover_filename = ["cover.jpg", "cover.png", "cover.gif"]
+
+# Verify that all tracks from the same album reside in a single directory
+# Note: htagcli groups files by album while scanning input paths recursively.
+[checks.check_album_in_same_dir]
+enable = true
+
