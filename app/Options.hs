@@ -52,8 +52,8 @@ data FixFilePathsOptions = FixFilePathsOptions
 
 data Command
   = CreateConfig
-  | Display FilesOrDirectory
-  | Edit Commands.EditOptions FilesOrDirectory
+  | GetTags FilesOrDirectory
+  | SetTags Commands.SetTagsOptions FilesOrDirectory
   | Check CheckOptions FilesOrDirectory
   | FixFilePaths FixFilePathsOptions FilesOrDirectory
   deriving (Show)
@@ -193,9 +193,9 @@ paddingP =
           "Number of digits to pad track numbers to (default: ignore)"
     )
 
-editOptionsP :: Options.Parser Commands.EditOptions
-editOptionsP =
-  Commands.EditOptions
+setTagsOptionsP :: Options.Parser Commands.SetTagsOptions
+setTagsOptionsP =
+  Commands.SetTagsOptions
     <$> optional
       ( Options.strOption
           ( Options.long "title"
@@ -301,7 +301,7 @@ extensionsP =
           )
     )
     -- Default to a sensitive set of common audio file extensions
-    <|> pure ("m4a" :| ["mp3", "flac", "ogg", "wma"])
+    <|> pure (fromList ["m4a", "mp3", "flac", "ogg", "wma"])
 
 someBaseDirP :: Options.Parser (Path.SomeBase Path.Dir)
 someBaseDirP =
@@ -319,16 +319,16 @@ optionsP =
             (Options.progDesc "Create a default configuration file")
         )
         <> Options.command
-          "display"
+          "get"
           ( Options.info
-              (Display <$> filesOrDirectoryP)
-              (Options.progDesc "Show tags")
+              (GetTags <$> filesOrDirectoryP)
+              (Options.progDesc "Get tags")
           )
         <> Options.command
-          "edit"
+          "set"
           ( Options.info
-              (Edit <$> editOptionsP <*> filesOrDirectoryP)
-              (Options.progDesc "Edit tags")
+              (SetTags <$> setTagsOptionsP <*> filesOrDirectoryP)
+              (Options.progDesc "Set tags")
           )
         <> Options.command
           "check"

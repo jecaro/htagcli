@@ -32,15 +32,15 @@ main = do
   Exception.handleAny exceptions $ do
     case command of
       Options.CreateConfig -> Config.createConfig
-      Options.Display filesOrDirectory ->
+      Options.GetTags filesOrDirectory ->
         runConduitWithProgress
           filesOrDirectory
-          $ Conduit.mapM_C Commands.display
-      Options.Edit editOptions filesOrDirectory ->
+          $ Conduit.mapM_C Commands.getTags
+      Options.SetTags setTagsOptions filesOrDirectory ->
         runConduitWithProgress
           filesOrDirectory
           $ Conduit.mapM_C
-          $ Commands.edit editOptions
+          $ Commands.setTags setTagsOptions
       Options.Check options filesOrDirectory -> do
         config <- Config.readConfig
 

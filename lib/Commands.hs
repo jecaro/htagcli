@@ -1,9 +1,9 @@
 module Commands
-  ( display,
+  ( getTags,
     SetOrRemove (..),
-    EditOptions (..),
-    noEditOptions,
-    edit,
+    SetTagsOptions (..),
+    noSetTagsOptions,
+    setTags,
     checkFile,
     checkAlbum,
     FixFilePathsOptions (..),
@@ -35,48 +35,48 @@ instance Exception.Exception Error
 render :: Error -> Text
 render (UnableToFormatFile file) = "Unable to format file: " <> show file
 
-display :: (MonadIO m) => Path.Path Path.Abs Path.File -> m ()
-display = putTextLn . AudioTrack.asText <=< AudioTrack.getTags
+getTags :: (MonadIO m) => Path.Path Path.Abs Path.File -> m ()
+getTags = putTextLn . AudioTrack.asText <=< AudioTrack.getTags
 
 data SetOrRemove a = Set a | Remove
   deriving (Show)
 
-data EditOptions = EditOptions
-  { eoTitle :: Maybe HTagLib.Title,
-    eoArtist :: Maybe HTagLib.Artist,
-    eoAlbum :: Maybe HTagLib.Album,
-    eoAlbumArtist :: Maybe HTagLib.AlbumArtist,
-    eoGenre :: Maybe HTagLib.Genre,
-    eoYear :: Maybe (SetOrRemove HTagLib.Year),
-    eoTrack :: Maybe (SetOrRemove HTagLib.TrackNumber)
+data SetTagsOptions = SetTagsOptions
+  { seTitle :: Maybe HTagLib.Title,
+    seArtist :: Maybe HTagLib.Artist,
+    seAlbum :: Maybe HTagLib.Album,
+    seAlbumArtist :: Maybe HTagLib.AlbumArtist,
+    seGenre :: Maybe HTagLib.Genre,
+    seYear :: Maybe (SetOrRemove HTagLib.Year),
+    seTrack :: Maybe (SetOrRemove HTagLib.TrackNumber)
   }
   deriving (Show)
 
-noEditOptions :: EditOptions
-noEditOptions =
-  EditOptions
-    { eoTitle = Nothing,
-      eoArtist = Nothing,
-      eoAlbum = Nothing,
-      eoAlbumArtist = Nothing,
-      eoGenre = Nothing,
-      eoYear = Nothing,
-      eoTrack = Nothing
+noSetTagsOptions :: SetTagsOptions
+noSetTagsOptions =
+  SetTagsOptions
+    { seTitle = Nothing,
+      seArtist = Nothing,
+      seAlbum = Nothing,
+      seAlbumArtist = Nothing,
+      seGenre = Nothing,
+      seYear = Nothing,
+      seTrack = Nothing
     }
 
-edit ::
-  (MonadIO m) => EditOptions -> Path.Path Path.Abs Path.File -> m ()
-edit EditOptions {..} filename = do
+setTags ::
+  (MonadIO m) => SetTagsOptions -> Path.Path Path.Abs Path.File -> m ()
+setTags SetTagsOptions {..} filename = do
   let setter =
         fold $
           catMaybes
-            [ HTagLib.titleSetter <$> eoTitle,
-              HTagLib.artistSetter <$> eoArtist,
-              HTagLib.albumSetter <$> eoAlbum,
-              HTagLib.albumArtistSetter <$> eoAlbumArtist,
-              HTagLib.genreSetter <$> eoGenre,
-              toSetter HTagLib.yearSetter eoYear,
-              toSetter HTagLib.trackNumberSetter eoTrack
+            [ HTagLib.titleSetter <$> seTitle,
+              HTagLib.artistSetter <$> seArtist,
+              HTagLib.albumSetter <$> seAlbum,
+              HTagLib.albumArtistSetter <$> seAlbumArtist,
+              HTagLib.genreSetter <$> seGenre,
+              toSetter HTagLib.yearSetter seYear,
+              toSetter HTagLib.trackNumberSetter seTrack
             ]
   HTagLib.setTags (Path.toFilePath filename) Nothing setter
   where

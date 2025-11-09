@@ -18,9 +18,9 @@ withTenTracksFiles withTempDir = Path.withSystemTempDir "htagcli" $ \dir -> do
     let dstAbsFile = dir </> dstRelFile
     Path.ensureDir $ Path.parent dstAbsFile
     Path.copyFile [relfile|./data/sample.mp3|] dstAbsFile
-    Commands.edit
-      ( Commands.noEditOptions
-          { Commands.eoTrack = Commands.Set <$> HTagLib.mkTrackNumber i
+    Commands.setTags
+      ( Commands.noSetTagsOptions
+          { Commands.seTrack = Commands.Set <$> HTagLib.mkTrackNumber i
           }
       )
       dstAbsFile
