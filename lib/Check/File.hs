@@ -1,4 +1,10 @@
-module Check.File (Check (..), Error (..), check, render) where
+module Check.File
+  ( Check (..),
+    check,
+    Error (..),
+    errorToText,
+  )
+where
 
 import AudioTrack qualified
 import Data.List.NonEmpty qualified as NonEmpty
@@ -20,16 +26,16 @@ data Error
   | FilenameMismatch Text
   deriving (Eq, Show)
 
-render :: Error -> Text
-render (MissingTags tags) =
+errorToText :: Error -> Text
+errorToText (MissingTags tags) =
   "Missing tag(s): "
     <> Text.intercalate ", " (Tag.asText <$> NonEmpty.toList tags)
-render (GenreMismatch expected genre) =
+errorToText (GenreMismatch expected genre) =
   "Genre mismatch: expected one of "
     <> Text.intercalate ", " (NonEmpty.toList expected)
     <> ", got "
     <> genre
-render (FilenameMismatch expected) =
+errorToText (FilenameMismatch expected) =
   "Filename does not match the pattern, expected \"" <> expected <> "\""
 
 check :: Check -> AudioTrack.AudioTrack -> Either Error ()

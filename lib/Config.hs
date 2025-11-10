@@ -1,13 +1,13 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Config
-  ( Config (..),
+  ( Error (..),
+    errorToText,
+    Config (..),
     Filename (..),
-    Error (..),
     readConfig,
     createConfig,
     checks,
-    render,
     defaultConfigContent,
     parseByteString,
   )
@@ -96,16 +96,16 @@ albumChecks (Config {coChecks = Checks {..}}) =
 checks :: Config -> ([File.Check], [Album.Check])
 checks = fileChecks &&& albumChecks
 
-render :: Error -> Text
-render (ErToml err) = "TOML error: \n" <> err
-render (ErNotFound err) =
+errorToText :: Error -> Text
+errorToText (ErToml err) = "TOML error: \n" <> err
+errorToText (ErNotFound err) =
   unlines
     [ "Config file not found: "
         <> maybe mempty fromString (Error.ioeGetFileName err),
       "Please create a config file using the 'create-config' command."
     ]
-render (ErUnicode err) = "Unicode error: " <> show err
-render ErConfigFileExists = "Config file already exists, not overwriting it"
+errorToText (ErUnicode err) = "Unicode error: " <> show err
+errorToText ErConfigFileExists = "Config file already exists, not overwriting it"
 
 defaultConfigContent :: ByteString.ByteString
 defaultConfigContent = $(FileEmbed.embedFileRelative "data/htagcli.toml")

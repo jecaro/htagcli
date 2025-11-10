@@ -22,8 +22,8 @@ data Error = NoCheckInConfig
 
 instance Exception.Exception Error
 
-render :: Error -> Text
-render NoCheckInConfig = "No checks provided in the config file"
+errorToText :: Error -> Text
+errorToText NoCheckInConfig = "No checks provided in the config file"
 
 main :: IO ()
 main = do
@@ -125,9 +125,9 @@ exceptions someException = do
   where
     message
       | Just mainException <- fromException someException =
-          render mainException <> "\n"
+          errorToText mainException <> "\n"
       | Just configException <- fromException someException =
-          Config.render configException <> "\n"
+          Config.errorToText configException <> "\n"
       | Just commandsException <- fromException someException =
-          Commands.render commandsException <> "\n"
+          Commands.errorToText commandsException <> "\n"
       | otherwise = "Unknown exception: " <> show someException <> "\n"

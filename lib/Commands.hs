@@ -9,7 +9,7 @@ module Commands
     FixFilePathsOptions (..),
     fixFilePaths,
     fixFilePaths',
-    render,
+    errorToText,
   )
 where
 
@@ -32,8 +32,8 @@ newtype Error = UnableToFormatFile (Path.Path Path.Abs Path.File)
 
 instance Exception.Exception Error
 
-render :: Error -> Text
-render (UnableToFormatFile file) = "Unable to format file: " <> show file
+errorToText :: Error -> Text
+errorToText (UnableToFormatFile file) = "Unable to format file: " <> show file
 
 getTags :: (MonadIO m) => Path.Path Path.Abs Path.File -> m ()
 getTags = putTextLn . AudioTrack.asText <=< AudioTrack.getTags
@@ -94,7 +94,7 @@ checkFile checks track = do
           "File "
             <> fromString (Path.toFilePath file)
             <> ": "
-            <> File.render err
+            <> File.errorToText err
     file = AudioTrack.atFile track
 
 checkAlbum ::
@@ -104,7 +104,8 @@ checkAlbum checks tracks = do
   where
     checkPrintError tracks' check =
       whenLeftM_ (Album.check check tracks') $ \err ->
-        putTextLn $ "Album " <> HTaglib.unAlbum album <> ": " <> Album.render err
+        putTextLn $
+          "Album " <> HTaglib.unAlbum album <> ": " <> Album.errorToText err
     album = AudioTrack.atAlbum $ NonEmpty.head tracks
 
 data FixFilePathsOptions = FixFilePathsOptions

@@ -1,4 +1,10 @@
-module Check.Album (Check (..), Error (..), check, render) where
+module Check.Album
+  ( Check (..),
+    check,
+    Error (..),
+    errorToText,
+  )
+where
 
 import AudioTrack qualified
 import Data.Text qualified as Text
@@ -17,10 +23,10 @@ data Error
   | MissingCover (Path.Path Path.Abs Path.Dir)
   deriving (Eq, Show)
 
-render :: Error -> Text
-render NotInSameDir =
+errorToText :: Error -> Text
+errorToText NotInSameDir =
   "Audio tracks are not all in the same directory"
-render (MissingCover directory) =
+errorToText (MissingCover directory) =
   "Missing cover in directory: " <> Text.pack (Path.toFilePath directory)
 
 getDirectories ::
