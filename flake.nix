@@ -20,10 +20,11 @@
     in
     {
       overlay = (final: prev: {
-        htagcli = final.haskellPackages.callCabal2nix "htagcli" ./. { };
+        htagcli = import ./htagcli.nix final;
 
         haskellPackages = prev.haskellPackages.override {
           overrides = hfinal: hprev: {
+            # Use our fork of htaglib
             htaglib = prev.haskell.lib.addExtraLibrary
               (hprev.callCabal2nix "htaglib" htaglib-src { })
               final.taglib;
@@ -33,6 +34,7 @@
       });
       packages = forAllSystems (system: {
         htagcli = nixpkgsFor.${system}.htagcli;
+        htagcli-static = nixpkgsFor.${system}.pkgsMusl.htagcli;
       });
       defaultPackage = forAllSystems (system: self.packages.${system}.htagcli);
       checks = self.packages;

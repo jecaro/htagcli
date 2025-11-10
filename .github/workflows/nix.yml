@@ -20,4 +20,4 @@ jobs:
 
     - name: Build
       run: |
-        nix build .#htagcli
+        nix build .#htagcli .#htagcli-static
