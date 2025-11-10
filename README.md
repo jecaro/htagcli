@@ -6,6 +6,8 @@
 It also includes utilities to organize your music collection in various ways.
 All audio formats supported by [taglib] are supported.
 
+![demo][demo]
+
 ## Basic usage
 
 The basic syntax of `htagcli` is:
@@ -128,6 +130,7 @@ experience.
 
 This project uses [htaglib] as the underlying library to manipulate audio file.
 
+[demo]: ./demo.png
 [htaglib]: https://github.com/mrkkrp/htaglib
 [nix]: https://nixos.org/
 [status-nix-png]: https://github.com/jecaro/htagcli/workflows/nix/badge.svg
