@@ -69,11 +69,10 @@ genre_among = [
   "Hip-Hop",
 ]
 
-# Verify that file paths match the expected naming pattern
+# Verify that file paths match the expected naming pattern and formatting
+# options
 [checks.check_files]
 enable = true
-# Optional: override the global `pad_track_numbers` setting
-pad_track_numbers = "ignore"
 
 # Verify that each album directory contains a cover image
 [checks.check_cover]

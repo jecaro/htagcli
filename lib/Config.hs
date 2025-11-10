@@ -66,7 +66,7 @@ data Checks = Checks
     -- | If True, the check is enabled, the padding optionally overrides the
     -- one given in the formatting section. This way it is possible to ignore
     -- the padding when checking the filename and still have it when fixing it.
-    chFilenameMatches :: (Bool, Maybe Pattern.Padding),
+    chFilenameMatches :: Bool,
     -- | The album have a cover file with one of the given names
     chHaveCover :: Maybe (NonEmpty (Path.Path Path.Rel Path.File)),
     -- | All the audio tracks of the album are in the same directory
@@ -79,20 +79,10 @@ fileChecks (Config {coFilename = Filename {..}, coChecks = Checks {..}}) =
   catMaybes
     [ File.TagsExist <$> chTags,
       File.GenreAmong <$> chGenreAmong,
-      File.FilenameMatches fiPattern
-        <$> withPadding fiFormatting chFilenameMatches
+      if not chFilenameMatches
+        then Nothing
+        else Just $ File.FilenameMatches fiPattern fiFormatting
     ]
-  where
-    withPadding ::
-      Pattern.Formatting ->
-      (Bool, Maybe Pattern.Padding) ->
-      Maybe Pattern.Formatting
-    withPadding _ (False, _) = Nothing
-    -- Only return a Just when the check is enabled
-    withPadding formatting (True, mbPadding) =
-      Just $ maybe formatting (setPadding formatting) mbPadding
-    setPadding formatting padding =
-      formatting {Pattern.foPadTrackNumbers = padding}
 
 albumChecks :: Config -> [Album.Check]
 albumChecks (Config {coChecks = Checks {..}}) =
@@ -197,13 +187,13 @@ checksC =
   Checks
     <$> maybeValidatedC "check_tags" tagsC chTags
     <*> maybeValidatedC "check_genre" genreAmongC chGenreAmong
-    <*> enableAndMaybeC (paddingC "pad_track_numbers") "check_files"
-      .= chFilenameMatches
+    <*> checkFilesC .= chFilenameMatches
     <*> maybeValidatedC "check_cover" checkCoverC chHaveCover
     <*> albumInSameDirC .= chAlbumInSameDir
   where
     checkCoverC = Toml.arrayNonEmptyOf relFileB "cover_filename"
     albumInSameDirC = Toml.table (Toml.bool "enable") "check_album_in_same_dir"
+    checkFilesC = Toml.table (Toml.bool "enable") "check_files"
 
 -- | Unwrap the Maybe value according to the enable flag.
 maybeValidatedC ::
