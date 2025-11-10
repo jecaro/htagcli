@@ -88,6 +88,7 @@ collection clean and well-organized. Available checks include:
 - Album directory: Checks that all files from an album are stored in the same 
   directory
 - Cover file: Checks the presence of a cover image in the album directory
+- Album tags: Checks that the tags from all files in an album are the same
 
 For more information about available checks, run:
 

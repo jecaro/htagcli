@@ -65,9 +65,9 @@ checkAlbum checks tracks = do
   where
     checkPrintError tracks' check =
       whenLeftM_ (Album.check check tracks') $ \err ->
-        putTextLn $
-          "Album " <> HTagLib.unAlbum album <> ": " <> Album.errorToText err
-    album = AudioTrack.atAlbum $ NonEmpty.head tracks
+        putTextLn $ artist <> "/" <> album <> ": " <> Album.errorToText err
+    album = HTagLib.unAlbum . AudioTrack.atAlbum $ NonEmpty.head tracks
+    artist = HTagLib.unArtist . AudioTrack.atArtist $ NonEmpty.head tracks
 
 data FixFilePathsOptions = FixFilePathsOptions
   { fiDryRun :: Bool,

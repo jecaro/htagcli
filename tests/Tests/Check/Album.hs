@@ -9,11 +9,13 @@ where
 
 import AudioTrack qualified
 import Check.Album qualified as Album
+import Data.List.NonEmpty ((<|))
 import Data.List.NonEmpty qualified as NonEmpty
 import Path (reldir, relfile, (</>))
 import Path qualified
 import Path.IO qualified as Path
 import System.IO qualified as System
+import Tag qualified
 import Test.Hspec.Expectations (shouldBe)
 import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty
@@ -71,6 +73,22 @@ test =
           result <- Album.check Album.InSameDir $ fromList trackList
           result `shouldBe` Left Album.NotInSameDir
     ]
+
+test :: TestTree
+test =
+  Tasty.testGroup
+    "check same tags"
+    [ Tasty.testCase "check all tracks have the same tags" $
+        withTenTracks $ \_ tracks -> do
+          result <- Album.check (Album.SameTag commonTags) tracks
+          result `shouldBe` Right (),
+      Tasty.testCase "check some tracks have a different tag" $
+        withTenTracks $ \_ tracks -> do
+          result <- Album.check (Album.SameTag $ Tag.Track <| commonTags) tracks
+          result `shouldBe` Left (Album.SameTagError $ fromList [Tag.Track])
+    ]
+  where
+    commonTags = fromList [Tag.Genre, Tag.Year, Tag.Artist, Tag.AlbumArtist]
 
 moveFileIn ::
   Path.Path Path.Abs Path.Dir -> Path.Path Path.Abs Path.File -> IO ()

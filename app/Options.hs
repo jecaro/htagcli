@@ -121,21 +121,35 @@ albumChecksP =
                   <> Options.help "Check that the specified cover file exists"
               )
           )
+          <|> Album.SameTag
+        <$> Options.some1
+          ( Options.option
+              tagR
+              ( Options.long "album-tag"
+                  <> Options.metavar "TAG"
+                  <> Options.help
+                    "Check that all tracks in the album have the same value for \
+                    \the specified tag (title, artist, album, albumartist, \
+                    \genre, year, track)"
+              )
+          )
     )
+
+tagR :: Options.ReadM Tag.Tag
+tagR = Options.maybeReader $ Megaparsec.parseMaybe Tag.parser . toText
 
 tagsP :: Options.Parser (NonEmpty Tag.Tag)
 tagsP =
   Options.some1
     ( Options.option
-        (Options.maybeReader $ parse . toText)
+        tagR
         ( Options.long "tag"
             <> Options.metavar "TAG"
             <> Options.help
-              "Specify a tag to check (title, artist, album, genre, year, track)"
+              "Specify a tag to check (title, artist, album, albumartist, \
+              \genre, year, track)"
         )
     )
-  where
-    parse = Megaparsec.parseMaybe Tag.parser
 
 genreAmongP :: Options.Parser (NonEmpty Text)
 genreAmongP =

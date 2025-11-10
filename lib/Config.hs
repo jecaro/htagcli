@@ -70,7 +70,10 @@ data Checks = Checks
     -- | The album have a cover file with one of the given names
     chHaveCover :: Maybe (NonEmpty (Path.Path Path.Rel Path.File)),
     -- | All the audio tracks of the album are in the same directory
-    chAlbumInSameDir :: Bool
+    chAlbumInSameDir :: Bool,
+    -- | All the audio tracks of the album have the same value for the given
+    -- tags
+    chAlbumSameTags :: Maybe (NonEmpty Tag.Tag)
   }
   deriving (Show)
 
@@ -88,9 +91,8 @@ albumChecks :: Config -> [Album.Check]
 albumChecks (Config {coChecks = Checks {..}}) =
   catMaybes
     [ Album.HaveCover <$> chHaveCover,
-      if chAlbumInSameDir
-        then Just Album.InSameDir
-        else Nothing
+      guarded (const chAlbumInSameDir) Album.InSameDir,
+      Album.SameTag <$> chAlbumSameTags
     ]
 
 checks :: Config -> ([File.Check], [Album.Check])
@@ -189,11 +191,13 @@ checksC =
     <*> maybeValidatedC "check_genre" genreAmongC chGenreAmong
     <*> checkFilesC .= chFilenameMatches
     <*> maybeValidatedC "check_cover" checkCoverC chHaveCover
-    <*> albumInSameDirC .= chAlbumInSameDir
+    <*> checkAlbumInSameDirC .= chAlbumInSameDir
+    <*> maybeValidatedC "check_album_tags" checkAlbumSameTagsC chAlbumSameTags
   where
-    checkCoverC = Toml.arrayNonEmptyOf relFileB "cover_filename"
-    albumInSameDirC = Toml.table (Toml.bool "enable") "check_album_in_same_dir"
     checkFilesC = Toml.table (Toml.bool "enable") "check_files"
+    checkCoverC = Toml.arrayNonEmptyOf relFileB "cover_filename"
+    checkAlbumInSameDirC = Toml.table (Toml.bool "enable") "check_album_in_same_dir"
+    checkAlbumSameTagsC = Toml.arrayNonEmptyOf tagB "tags"
 
 -- | Unwrap the Maybe value according to the enable flag.
 maybeValidatedC ::
