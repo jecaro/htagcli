@@ -6,8 +6,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
-    - uses: cachix/install-nix-action@v31
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install nix
+      uses: cachix/install-nix-action@v31
+
+    - name: Install cachix
+      uses: cachix/cachix-action@v16
       with:
-        github_access_token: ${{ secrets.GITHUB_TOKEN }}
-    - run: nix build
+        name: jecaro
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+    - name: Build
+      run: |
+        nix build .#htagcli
