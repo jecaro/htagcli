@@ -11,11 +11,11 @@ where
 
 import Check.Album qualified as Album
 import Check.File qualified as File
-import Commands qualified
 import Options.Applicative qualified as Options
 import Options.Applicative.NonEmpty qualified as Options
 import Path qualified
 import Pattern qualified
+import SetTagsOptions qualified
 import Sound.HTagLib qualified as HTagLib
 import Tag qualified
 import Text.Megaparsec qualified as Megaparsec
@@ -53,7 +53,7 @@ data FixFilePathsOptions = FixFilePathsOptions
 data Command
   = CreateConfig
   | GetTags FilesOrDirectory
-  | SetTags Commands.SetTagsOptions FilesOrDirectory
+  | SetTags SetTagsOptions.SetTagsOptions FilesOrDirectory
   | Check CheckOptions FilesOrDirectory
   | FixFilePaths FixFilePathsOptions FilesOrDirectory
   deriving (Show)
@@ -193,9 +193,9 @@ paddingP =
           "Number of digits to pad track numbers to (default: ignore)"
     )
 
-setTagsOptionsP :: Options.Parser Commands.SetTagsOptions
+setTagsOptionsP :: Options.Parser SetTagsOptions.SetTagsOptions
 setTagsOptionsP =
-  Commands.SetTagsOptions
+  SetTagsOptions.SetTagsOptions
     <$> optional
       ( Options.strOption
           ( Options.long "title"
@@ -239,7 +239,7 @@ setTagsOptionsP =
               <> Options.help "Set the year"
           )
           <|> Options.flag'
-            Commands.Remove
+            SetTagsOptions.Remove
             ( Options.long "noyear"
                 <> Options.help "Unset the year"
             )
@@ -252,15 +252,16 @@ setTagsOptionsP =
               <> Options.help "Set the track number"
           )
           <|> Options.flag'
-            Commands.Remove
+            SetTagsOptions.Remove
             (Options.long "notrack" <> Options.help "Unset the track")
       )
   where
-    strToYear :: String -> Maybe (Commands.SetOrRemove HTagLib.Year)
-    strToYear = fmap Commands.Set . HTagLib.mkYear <=< readMaybe
+    strToYear :: String -> Maybe (SetTagsOptions.SetOrRemove HTagLib.Year)
+    strToYear = fmap SetTagsOptions.Set . HTagLib.mkYear <=< readMaybe
     strToTrackNumber ::
-      String -> Maybe (Commands.SetOrRemove HTagLib.TrackNumber)
-    strToTrackNumber = fmap Commands.Set . HTagLib.mkTrackNumber <=< readMaybe
+      String -> Maybe (SetTagsOptions.SetOrRemove HTagLib.TrackNumber)
+    strToTrackNumber =
+      fmap SetTagsOptions.Set . HTagLib.mkTrackNumber <=< readMaybe
 
 filesOrDirectoryP :: Options.Parser FilesOrDirectory
 filesOrDirectoryP =

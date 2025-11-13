@@ -6,6 +6,7 @@ import Commands qualified
 import Path (relfile, (</>))
 import Path qualified
 import Path.IO qualified as Path
+import SetTagsOptions qualified
 import Sound.HTagLib qualified as HTagLib
 import Test.Tasty.HUnit qualified as Tasty
 
@@ -19,8 +20,9 @@ withTenTracksFiles withTempDir = Path.withSystemTempDir "htagcli" $ \dir -> do
     Path.ensureDir $ Path.parent dstAbsFile
     Path.copyFile [relfile|./data/sample.mp3|] dstAbsFile
     Commands.setTags
-      ( Commands.noSetTagsOptions
-          { Commands.seTrack = Commands.Set <$> HTagLib.mkTrackNumber i
+      ( SetTagsOptions.noSetTagsOptions
+          { SetTagsOptions.seTrack =
+              SetTagsOptions.Set <$> HTagLib.mkTrackNumber i
           }
       )
       dstAbsFile

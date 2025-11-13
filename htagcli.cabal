@@ -48,6 +48,7 @@ library
     Data.List.NonEmpty.Extra
     Path.IO.Extra
     Pattern
+    SetTagsOptions
     Sound.HTagLib.Extra
     Tag
     Toml.Extra

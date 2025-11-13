@@ -1,8 +1,5 @@
 module Commands
   ( getTags,
-    SetOrRemove (..),
-    SetTagsOptions (..),
-    noSetTagsOptions,
     setTags,
     checkFile,
     checkAlbum,
@@ -22,9 +19,8 @@ import Path qualified
 import Path.IO qualified as Path
 import Path.IO.Extra qualified as Path
 import Pattern qualified
+import SetTagsOptions qualified
 import Sound.HTagLib qualified as HTagLib
-import Sound.HTagLib qualified as HTaglib
-import Sound.HTagLib.Extra qualified as HTagLib
 import UnliftIO.Exception qualified as Exception
 
 newtype Error = UnableToFormatFile (Path.Path Path.Abs Path.File)
@@ -38,51 +34,16 @@ errorToText (UnableToFormatFile file) = "Unable to format file: " <> show file
 getTags :: (MonadIO m) => Path.Path Path.Abs Path.File -> m ()
 getTags = putTextLn . AudioTrack.asText <=< AudioTrack.getTags
 
-data SetOrRemove a = Set a | Remove
-  deriving (Show)
-
-data SetTagsOptions = SetTagsOptions
-  { seTitle :: Maybe HTagLib.Title,
-    seArtist :: Maybe HTagLib.Artist,
-    seAlbum :: Maybe HTagLib.Album,
-    seAlbumArtist :: Maybe HTagLib.AlbumArtist,
-    seGenre :: Maybe HTagLib.Genre,
-    seYear :: Maybe (SetOrRemove HTagLib.Year),
-    seTrack :: Maybe (SetOrRemove HTagLib.TrackNumber)
-  }
-  deriving (Show)
-
-noSetTagsOptions :: SetTagsOptions
-noSetTagsOptions =
-  SetTagsOptions
-    { seTitle = Nothing,
-      seArtist = Nothing,
-      seAlbum = Nothing,
-      seAlbumArtist = Nothing,
-      seGenre = Nothing,
-      seYear = Nothing,
-      seTrack = Nothing
-    }
-
 setTags ::
-  (MonadIO m) => SetTagsOptions -> Path.Path Path.Abs Path.File -> m ()
-setTags SetTagsOptions {..} filename = do
-  let setter =
-        fold $
-          catMaybes
-            [ HTagLib.titleSetter <$> seTitle,
-              HTagLib.artistSetter <$> seArtist,
-              HTagLib.albumSetter <$> seAlbum,
-              HTagLib.albumArtistSetter <$> seAlbumArtist,
-              HTagLib.genreSetter <$> seGenre,
-              toSetter HTagLib.yearSetter seYear,
-              toSetter HTagLib.trackNumberSetter seTrack
-            ]
-  HTagLib.setTags (Path.toFilePath filename) Nothing setter
-  where
-    toSetter _ Nothing = Nothing
-    toSetter setter (Just Remove) = Just $ setter Nothing
-    toSetter setter (Just (Set v)) = Just . setter $ Just v
+  (MonadIO m) =>
+  SetTagsOptions.SetTagsOptions ->
+  Path.Path Path.Abs Path.File ->
+  m ()
+setTags options filename =
+  HTagLib.setTags
+    (Path.toFilePath filename)
+    Nothing
+    (SetTagsOptions.setter options)
 
 checkFile :: (MonadIO m) => [File.Check] -> AudioTrack.AudioTrack -> m ()
 checkFile checks track = do
@@ -105,7 +66,7 @@ checkAlbum checks tracks = do
     checkPrintError tracks' check =
       whenLeftM_ (Album.check check tracks') $ \err ->
         putTextLn $
-          "Album " <> HTaglib.unAlbum album <> ": " <> Album.errorToText err
+          "Album " <> HTagLib.unAlbum album <> ": " <> Album.errorToText err
     album = AudioTrack.atAlbum $ NonEmpty.head tracks
 
 data FixFilePathsOptions = FixFilePathsOptions
