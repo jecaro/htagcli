@@ -7,6 +7,7 @@ import Conduit ((.|))
 import Conduit qualified
 import Config qualified
 import Data.Conduit.List qualified as Conduit
+import Data.Either.Extra qualified as Either
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
 import Options qualified
@@ -15,15 +16,26 @@ import Path qualified
 import Path.IO qualified as Path
 import Pattern qualified
 import Progress qualified
+import System.Process.Typed qualified as Process
+import Text.Megaparsec qualified as Megaparsec
 import UnliftIO.Exception qualified as Exception
+import UnliftIO.IO qualified as IO
+import UnliftIO.Temporary qualified as Temporary
 
-data Error = NoCheckInConfig
+data Error
+  = NoCheckInConfig
+  | EditorExitError
+  | ParseError (Megaparsec.ParseErrorBundle Text.Text Void)
   deriving (Show)
 
 instance Exception.Exception Error
 
 errorToText :: Error -> Text
 errorToText NoCheckInConfig = "No checks provided in the config file"
+errorToText EditorExitError = "The editor process exited with an error"
+errorToText (ParseError parseError) =
+  "Failed to parse the edited tags:\n"
+    <> Text.pack (Megaparsec.errorBundlePretty parseError)
 
 main :: IO ()
 main = do
@@ -41,6 +53,41 @@ main = do
           filesOrDirectory
           $ Conduit.mapM_C
           $ Commands.setTags setTagsOptions
+      Options.Edit filesOrDirectory -> do
+        (editedContent, tempFilename) <- Temporary.withSystemTempFile "htagcli-edit-temp" $
+          \tempFilename tempHandle -> do
+            -- Write all input tags into a temporary file
+            runConduitWithProgress
+              filesOrDirectory
+              $ Conduit.mapM getTagsAsText
+                .| Conduit.sinkHandle tempHandle
+            IO.hClose tempHandle
+
+            -- Launch the editor
+            editor <- liftIO $ fromMaybe "vim" <$> lookupEnv "EDITOR"
+            let config = Process.proc editor [tempFilename]
+            exitCode <- liftIO $ Process.runProcess config
+            when
+              (exitCode /= Process.ExitSuccess)
+              (Exception.throwIO EditorExitError)
+
+            -- Return the edited content
+            content <- liftIO $ Text.readFile tempFilename
+            pure (content, tempFilename)
+
+        -- Parse the edited tags
+        audioTracks <-
+          Exception.fromEither $
+            Either.mapLeft ParseError $
+              Megaparsec.parse
+                AudioTrack.audioTracksP
+                tempFilename
+                editedContent
+
+        -- Set the new tags
+        Progress.connectWithProgress
+          (Conduit.yieldMany audioTracks)
+          (Conduit.mapM_C AudioTrack.setTags)
       Options.Check options filesOrDirectory -> do
         config <- Config.readConfig
 
@@ -75,6 +122,10 @@ main = do
           $ Conduit.mapM_C
           $ Commands.fixFilePaths fixFilePathOptions
   where
+    getTagsAsText filename = do
+      content <- encodeUtf8 . AudioTrack.asText <$> AudioTrack.getTags filename
+      pure $ content <> "\n"
+
     -- When no check is given on the CLI, fallback to the config ones
     withDefaults config (Options.CheckOptions [] []) = Config.checks config
     -- If the formatting option is empty in the 'FileMatches' check, fallback

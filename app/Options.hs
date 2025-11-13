@@ -54,6 +54,7 @@ data Command
   = CreateConfig
   | GetTags FilesOrDirectory
   | SetTags SetTagsOptions.SetTagsOptions FilesOrDirectory
+  | Edit FilesOrDirectory
   | Check CheckOptions FilesOrDirectory
   | FixFilePaths FixFilePathsOptions FilesOrDirectory
   deriving (Show)
@@ -330,6 +331,12 @@ optionsP =
           ( Options.info
               (SetTags <$> setTagsOptionsP <*> filesOrDirectoryP)
               (Options.progDesc "Set tags")
+          )
+        <> Options.command
+          "edit"
+          ( Options.info
+              (Edit <$> filesOrDirectoryP)
+              (Options.progDesc "Edit tags in $EDITOR")
           )
         <> Options.command
           "check"

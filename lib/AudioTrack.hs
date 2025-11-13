@@ -2,15 +2,24 @@ module AudioTrack
   ( AudioTrack (..),
     haveTag,
     getTags,
+    setTags,
     asText,
+    parser,
+    audioTracksP,
   )
 where
 
 import Data.Text qualified as Text
 import Path qualified
+import SetTagsOptions qualified
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
 import Tag qualified
+import Text.Megaparsec qualified as Megaparsec
+import Text.Megaparsec.Char qualified as Megaparsec
+import Text.Megaparsec.Char.Lexer qualified as Megaparsec
+
+type Parser = Megaparsec.Parsec Void Text
 
 data AudioTrack = AudioTrack
   { atFile :: Path.Path Path.Abs Path.File,
@@ -22,7 +31,44 @@ data AudioTrack = AudioTrack
     atYear :: Maybe HTagLib.Year,
     atTrack :: Maybe HTagLib.TrackNumber
   }
-  deriving (Show)
+  deriving (Eq, Show)
+
+parser :: Parser AudioTrack
+parser = do
+  void $ Megaparsec.string "File: "
+  fileText <- Megaparsec.takeWhileP Nothing (/= '\n')
+  atFile <- case Path.parseAbsFile (toString fileText) of
+    Left err -> fail $ "Failed to parse file path: " <> show err
+    Right path -> pure path
+
+  void Megaparsec.newline
+  atTitle <- lineP "Title: " notEol HTagLib.mkTitle
+  atArtist <- lineP "Artist: " notEol HTagLib.mkArtist
+  atAlbumArtist <- lineP "Album Artist: " notEol HTagLib.mkAlbumArtist
+  atAlbum <- lineP "Album: " notEol HTagLib.mkAlbum
+  atGenre <- lineP "Genre: " notEol HTagLib.mkGenre
+  atYear <-
+    lineP "Year: " (Megaparsec.optional Megaparsec.decimal) (HTagLib.mkYear =<<)
+  atTrack <-
+    lineP
+      "Track: "
+      (Megaparsec.optional Megaparsec.decimal)
+      (HTagLib.mkTrackNumber =<<)
+
+  pure AudioTrack {..}
+
+audioTracksP :: Parser [AudioTrack]
+audioTracksP = Megaparsec.sepEndBy parser Megaparsec.newline <* Megaparsec.eof
+
+notEol :: Parser Text
+notEol = Megaparsec.takeWhileP Nothing (/= '\n')
+
+lineP :: Text -> Parser b -> (b -> a) -> Parser a
+lineP prefix inner constructor = do
+  void $ Megaparsec.string prefix
+  value <- inner
+  void Megaparsec.newline
+  pure $ constructor value
 
 asText :: AudioTrack -> Text
 asText AudioTrack {..} =
@@ -38,7 +84,7 @@ asText AudioTrack {..} =
     ]
 
 withMissing :: (Show b) => (a -> b) -> Maybe a -> Text
-withMissing _ Nothing = "missing"
+withMissing _ Nothing = ""
 withMissing f (Just x) = show . f $ x
 
 getTags :: (MonadIO m) => Path.Path Path.Abs Path.File -> m AudioTrack
@@ -56,6 +102,25 @@ getter path =
     <*> HTagLib.genreGetter
     <*> HTagLib.yearGetter
     <*> HTagLib.trackNumberGetter
+
+setTags :: (MonadIO m) => AudioTrack -> m ()
+setTags track@AudioTrack {..} =
+  HTagLib.setTags (Path.toFilePath atFile) Nothing $ setter track
+
+setter :: AudioTrack -> HTagLib.TagSetter
+setter AudioTrack {..} =
+  SetTagsOptions.setter $
+    SetTagsOptions.SetTagsOptions
+      { seTitle = Just atTitle,
+        seArtist = Just atArtist,
+        seAlbum = Just atAlbum,
+        seAlbumArtist = Just atAlbumArtist,
+        seGenre = Just atGenre,
+        seYear = setOrRemove atYear,
+        seTrack = setOrRemove atTrack
+      }
+  where
+    setOrRemove = Just . maybe SetTagsOptions.Remove SetTagsOptions.Set
 
 haveTag :: Tag.Tag -> AudioTrack -> Bool
 haveTag Tag.Title = not . Text.null . HTagLib.unTitle . atTitle

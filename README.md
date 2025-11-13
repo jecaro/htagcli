@@ -48,6 +48,19 @@ files in an album:
 $ htagcli set --genre "Avant-garde" directory ./data
 ```
 
+It is also possible, to edit the tags in your `$EDITOR` with the `edit` 
+command:
+
+```
+$ htagcli edit files ./data/sample.mp3
+```
+
+This opens the tags of the specified files in your default text editor. Edit
+the tags as needed, then save and quit the editor. The changes will be applied
+accordingly.
+
+Delete the whole file content before quitting to cancel the operation.
+
 ## Configuration
 
 The next commands require a configuration file. You can generate [a default 

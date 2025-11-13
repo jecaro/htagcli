@@ -84,6 +84,7 @@ executable htagcli
   build-depends:
     ansi-terminal,
     conduit,
+    extra,
     htagcli,
     htaglib,
     megaparsec,
@@ -91,6 +92,7 @@ executable htagcli
     path,
     path-io,
     text,
+    typed-process,
     unliftio,
 
 test-suite tests
@@ -107,6 +109,7 @@ test-suite tests
     Main.hs
 
   other-modules:
+    Tests.AudioTrack
     Tests.Check.Album
     Tests.Check.File
     Tests.Commands
