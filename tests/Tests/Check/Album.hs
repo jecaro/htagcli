@@ -1,6 +1,5 @@
 {- AUTOCOLLECT.TEST -}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Tests.Check.Album
   (
@@ -33,7 +32,7 @@ test =
         withTenTracks $
           \dir tracks -> do
             System.writeFile
-              (Path.toFilePath $ dir </> (NonEmpty.head covers))
+              (Path.toFilePath $ dir </> NonEmpty.head covers)
               "dummy content"
 
             result <- Album.check (Album.HaveCover covers) tracks
@@ -56,7 +55,7 @@ test =
 
           -- Take half of the input files
           filenamesBefore <- snd <$> Path.listDir inputDir
-          let secondHalf = snd $ splitAt 5 filenamesBefore
+          let secondHalf = drop 5 filenamesBefore
 
           let newDir = dir </> [reldir|other|]
           Path.ensureDir newDir
