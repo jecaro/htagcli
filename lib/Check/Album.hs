@@ -11,6 +11,7 @@ import Data.Text qualified as Text
 import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
+import Sound.HTagLib qualified as HTagLib
 import Tag qualified
 import "extra" Data.List.NonEmpty.Extra qualified as NonEmpty
 
@@ -18,12 +19,14 @@ data Check
   = HaveCover (NonEmpty (Path.Path Path.Rel Path.File))
   | InSameDir
   | SameTag (NonEmpty Tag.Tag)
+  | TracksSequential
   deriving (Eq, Show)
 
 data Error
   = NotInSameDir
   | MissingCover (Path.Path Path.Abs Path.Dir)
   | SameTagError (NonEmpty Tag.Tag)
+  | TracksNotSequential
   deriving (Eq, Show)
 
 errorToText :: Error -> Text
@@ -34,6 +37,7 @@ errorToText (MissingCover directory) =
 errorToText (SameTagError tags) =
   "These tags are not the same for all tracks in the album: "
     <> Text.intercalate ", " (Tag.asText <$> NonEmpty.toList tags)
+errorToText TracksNotSequential = "Track numbers are not sequential"
 
 getDirectories ::
   NonEmpty AudioTrack.AudioTrack -> NonEmpty (Path.Path Path.Abs Path.Dir)
@@ -61,6 +65,15 @@ check (SameTag tagsToCheck) tracks = pure $ case checkedTags of
   (tag : tags) -> Left (SameTagError (tag :| tags))
   where
     checkedTags = mapMaybe (haveSameTag' tracks) (toList tagsToCheck)
+check TracksSequential tracks = pure $ case mbNumbers of
+  Nothing -> Left TracksNotSequential
+  Just numbers ->
+    if sequential $ toList $ HTagLib.unTrackNumber <$> numbers
+      then Right ()
+      else Left TracksNotSequential
+  where
+    mbNumbers = traverse AudioTrack.atTrack tracks
+    sequential list = and $ zipWith (==) (sort list) [1 ..]
 
 haveSameTag' :: NonEmpty AudioTrack.AudioTrack -> Tag.Tag -> Maybe Tag.Tag
 haveSameTag' tracks = guarded (not . haveSameTag tracks)

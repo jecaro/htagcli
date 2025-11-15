@@ -73,7 +73,9 @@ data Checks = Checks
     chAlbumInSameDir :: Bool,
     -- | All the audio tracks of the album have the same value for the given
     -- tags
-    chAlbumSameTags :: Maybe (NonEmpty Tag.Tag)
+    chAlbumSameTags :: Maybe (NonEmpty Tag.Tag),
+    -- | The tracks of the album have sequential track numbers
+    chAlbumTracksSequential :: Bool
   }
   deriving (Show)
 
@@ -92,7 +94,8 @@ albumChecks (Config {coChecks = Checks {..}}) =
   catMaybes
     [ Album.HaveCover <$> chHaveCover,
       guarded (const chAlbumInSameDir) Album.InSameDir,
-      Album.SameTag <$> chAlbumSameTags
+      Album.SameTag <$> chAlbumSameTags,
+      guarded (const chAlbumTracksSequential) Album.TracksSequential
     ]
 
 checks :: Config -> ([File.Check], [Album.Check])
@@ -193,11 +196,14 @@ checksC =
     <*> maybeValidatedC "check_cover" checkCoverC chHaveCover
     <*> checkAlbumInSameDirC .= chAlbumInSameDir
     <*> maybeValidatedC "check_album_tags" checkAlbumSameTagsC chAlbumSameTags
+    <*> checkAlbumTracksSequentialC .= chAlbumTracksSequential
   where
     checkFilesC = Toml.table (Toml.bool "enable") "check_files"
     checkCoverC = Toml.arrayNonEmptyOf relFileB "cover_filename"
     checkAlbumInSameDirC = Toml.table (Toml.bool "enable") "check_album_in_same_dir"
     checkAlbumSameTagsC = Toml.arrayNonEmptyOf tagB "tags"
+    checkAlbumTracksSequentialC =
+      Toml.table (Toml.bool "enable") "check_album_tracks_sequential"
 
 -- | Unwrap the Maybe value according to the enable flag.
 maybeValidatedC ::

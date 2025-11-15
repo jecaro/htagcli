@@ -96,3 +96,6 @@ enable = true
 enable = true
 tags = ["albumartist", "album", "year", "genre"]
 
+# Verify that track numbers in each album are sequential starting from 1
+[checks.check_album_tracks_sequential]
+enable = true

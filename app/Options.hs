@@ -136,6 +136,13 @@ albumChecksP =
                     \genre, year, track)"
               )
           )
+          <|> Album.TracksSequential
+        <$ Options.flag'
+          ()
+          ( Options.long "tracks-sequential"
+              <> Options.help
+                "Check that track numbers are sequential within the album"
+          )
     )
 
 tagR :: Options.ReadM Tag.Tag
