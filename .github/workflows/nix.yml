@@ -2,6 +2,8 @@ name: "nix"
 on:
   pull_request:
   push:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,3 +23,14 @@ jobs:
     - name: Build
       run: |
         nix build .#htagcli .#htagcli-static
+
+    - name: Compress
+      if: startsWith(github.ref, 'refs/tags/')
+      run: tar -czf htagcli.tar.gz -C result-1/bin htagcli
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        draft: true
+        files: htagcli.tar.gz
