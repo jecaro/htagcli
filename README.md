@@ -8,6 +8,12 @@ All audio formats supported by [taglib] are supported.
 
 ![demo][demo]
 
+## Installation
+
+A static binary is available in the [releases][releases] page. It should work 
+on any linux distribution. For nix users, an overlay is available in [the flake 
+file](./flake.nix).
+
 ## Basic usage
 
 The basic syntax of `htagcli` is:
@@ -147,6 +153,7 @@ This project uses [htaglib] as the underlying library to manipulate audio file.
 [demo]: ./demo.png
 [htaglib]: https://github.com/mrkkrp/htaglib
 [nix]: https://nixos.org/
+[releases]: https://github.com/jecaro/htagcli/releases
 [status-nix-png]: https://github.com/jecaro/htagcli/workflows/nix/badge.svg
 [status-nix]: https://github.com/jecaro/htagcli/actions/workflows/nix.yml
 [taglib]: https://taglib.org/
