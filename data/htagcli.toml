@@ -84,6 +84,7 @@ cover_filename = ["cover.jpg", "cover.png", "cover.gif"]
 [checks.check_album_in_same_dir]
 enable = true
 
+# Verify that album-level tags are consistent across all tracks of an album
 [checks.check_album_tags]
 enable = true
 tags = ["albumartist", "album", "year", "genre"]
