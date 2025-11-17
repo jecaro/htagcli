@@ -109,7 +109,7 @@ the file path check passes. For example, to reorganize files by artist and
 album, use:
 
 ```
-$ htagcli fix-paths --base-dir ~/Music --pattern "{artist}/{album}/{track}-{title}" directory ./music-to-clean-up ```
+$ htagcli fix-paths --base-dir ~/Music --pattern "{artist}/{album}/{track}-{title}" directory ./music-to-clean-up
 ```
 
 This moves your files under `~/Music`, creating subdirectories for each artist
