@@ -9,14 +9,17 @@
 # Available placeholders:
 # - {artist}: artist tag
 # - {albumartist}: album artist tag
-# - {albumartist_}: album artist tag if available, otherwise artist
 # - {album}: album tag
 # - {title}: title tag
 # - {genre}: genre tag
 # - {track}: track number (see `pad_track_numbers`)
 # - {year}: year tag
 # - {disc}: disc number (see `pad_disc_numbers`)
-filename_matches = "{albumartist_}/{album}/{track}-{title}"
+# Additional syntax:
+# - {albumartist|artist}: use albumartist tag; if missing, fall back to artist
+# - {prefix-?disc?-suffix}: if the disc tag is present, include it with the
+# given prefix and suffix; otherwise, omit everything between the braces
+filename_matches = "{albumartist|artist}/{album}/{Disc-?disc?}/{track}-{title}"
 
 # Characters to sanitize in file paths and how to handle them
 # Each entry defines:

@@ -3,6 +3,7 @@
 module Pattern
   ( Formatting (..),
     Padding (..),
+    Component,
     parsePadding,
     paddingAsText,
     Fragment (..),
@@ -38,7 +39,10 @@ import Text.Megaparsec qualified as Megaparsec
 import Text.Megaparsec.Char qualified as Megaparsec
 import Text.Printf qualified as Text
 
-data Placeholder = PlTag Tag.Tag | PlAlbumArtist
+data Placeholder
+  = PlTag Tag.Tag
+  | PlTagOr Tag.Tag Tag.Tag
+  | PlOptional Text Tag.Tag Text
   deriving (Eq, Show)
 
 data Fragment = FrText Text | FrPlaceholder Placeholder
@@ -81,8 +85,8 @@ tags :: Pattern -> [Tag.Tag]
 tags = foldMap $ foldMap tagList
   where
     tagList (FrPlaceholder (PlTag tag)) = [tag]
-    tagList (FrPlaceholder PlAlbumArtist) = [Tag.Artist]
-    tagList (FrText _) = []
+    tagList (FrPlaceholder (PlTagOr _ fallback)) = [fallback]
+    tagList _ = []
 
 componentParser :: Parser Component
 componentParser = NonEmpty.some fragmentParser
@@ -100,7 +104,21 @@ placeholderParser =
   Megaparsec.between
     (Megaparsec.char '{')
     (Megaparsec.char '}')
-    (PlAlbumArtist <$ Megaparsec.string "albumartist_" <|> PlTag <$> Tag.parser)
+    (Megaparsec.try optionalTag <|> Megaparsec.try tagOr <|> tag)
+  where
+    tag = PlTag <$> Tag.parser
+    tagOr =
+      PlTagOr
+        <$> (Tag.parser <* Megaparsec.char '|')
+        <*> Tag.parser
+    optionalTag =
+      PlOptional
+        <$> Megaparsec.takeWhileP Nothing (\c -> c /= '?' && c /= '}')
+        <*> Megaparsec.between
+          (Megaparsec.char '?')
+          (Megaparsec.char '?')
+          Tag.parser
+        <*> Megaparsec.takeWhileP Nothing (/= '}')
 
 format :: Formatting -> AudioTrack.AudioTrack -> Pattern -> Text
 format formatting = formatWith . formatPlaceholder formatting
@@ -125,14 +143,21 @@ toPathWith formatter pattern = (</>) <$> mbFormattedDir <*> mbFormattedFile
       Foldable.foldlM appendComponent [Path.reldir|.|] dirComponents
     mbFormattedFile = componentToRelFile formatter fileComponent
     appendComponent dir component =
-      (dir </>) <$> componentToRelDir formatter component
+      -- If the formatted component is empty, we skip it, that can happen if
+      -- tags are not presents
+      case formatComponentWith formatter component of
+        "" -> Just dir
+        nonEmptyText -> (dir </>) <$> Path.parseRelDir (toString nonEmptyText)
 
 asText :: Pattern -> Text
 asText = formatWith placeholderAsText
 
 placeholderAsText :: Placeholder -> Text
 placeholderAsText (PlTag tag) = "{" <> Tag.asText tag <> "}"
-placeholderAsText PlAlbumArtist = "{albumartist_}"
+placeholderAsText (PlTagOr tag fallback) =
+  "{" <> Tag.asText tag <> "|" <> Tag.asText fallback <> "}"
+placeholderAsText (PlOptional before tag after) =
+  "{" <> before <> "?" <> Tag.asText tag <> "?" <> after <> "}"
 
 charActionAsText :: CharAction -> Text
 charActionAsText ChRemove = "remove"
@@ -168,11 +193,6 @@ formatWith formatter pattern =
 formatComponentWith :: (Placeholder -> Text) -> Component -> Text
 formatComponentWith formatter = foldMap (formatFragmentWith formatter)
 
-componentToRelDir ::
-  (Placeholder -> Text) -> Component -> Maybe (Path.Path Path.Rel Path.Dir)
-componentToRelDir formatter =
-  Path.parseRelDir . (toString . formatComponentWith formatter)
-
 componentToRelFile ::
   (Placeholder -> Text) -> Component -> Maybe (Path.Path Path.Rel Path.File)
 componentToRelFile formatter =
@@ -184,14 +204,13 @@ formatFragmentWith formatter (FrPlaceholder placeholder) = formatter placeholder
 
 formatPlaceholder :: Formatting -> AudioTrack.AudioTrack -> Placeholder -> Text
 formatPlaceholder formatting track (PlTag tag) = formatTag formatting track tag
-formatPlaceholder formatting track PlAlbumArtist = formatTag formatting track tag
-  where
-    tag
-      | not $
-          Text.null $
-            HTagLib.unAlbumArtist (AudioTrack.atAlbumArtist track) =
-          Tag.AlbumArtist
-      | otherwise = Tag.Artist
+formatPlaceholder formatting track (PlTagOr tag fallback)
+  | AudioTrack.haveTag tag track = formatTag formatting track tag
+  | otherwise = formatTag formatting track fallback
+formatPlaceholder formatting track (PlOptional before tag after)
+  | AudioTrack.haveTag tag track =
+      before <> formatTag formatting track tag <> after
+  | otherwise = ""
 
 formatTag :: Formatting -> AudioTrack.AudioTrack -> Tag.Tag -> Text
 formatTag formatting AudioTrack.AudioTrack {..} Tag.Title =
@@ -233,30 +252,48 @@ numberFormat padding =
 match :: Formatting -> AudioTrack.AudioTrack -> Pattern -> FilePath -> Bool
 match formatting track pattern filename =
   length allComponents >= length pattern
-    && all (uncurry $ matchComponent formatting track) patternAndPathComponents
+    -- We start from the right to make it easier to handle the case where the
+    -- pattern has not the same number of components as the path
+    && fst (foldr walk (True, reverse allComponents) pattern)
   where
+    walk :: Component -> (Bool, [Text]) -> (Bool, [Text])
+    walk _ (True, []) = (False, [])
+    walk component (True, path : paths) =
+      case matchComponent formatting track component path of
+        -- If the formatted component is empty we don't consume a path component
+        (Just "") -> (True, path : paths)
+        (Just _) -> (True, paths)
+        _ -> (False, path : paths)
+    walk _ acc = acc
     withoutExtension = FilePath.dropExtension filename
     allComponents = toText <$> FilePath.splitPath withoutExtension
-    components = drop (lengthComponents - lengthPattern) allComponents
-    lengthComponents = length allComponents
-    lengthPattern = length pattern
-    patternAndPathComponents = zip (NonEmpty.toList pattern) components
 
 matchComponent ::
-  Formatting -> AudioTrack.AudioTrack -> Component -> Text -> Bool
+  Formatting ->
+  AudioTrack.AudioTrack ->
+  Component ->
+  Text ->
+  -- | If matched, return the formatted component
+  Maybe Text
 matchComponent formatting track component text =
-  fst $ foldl' matchFragment' (True, text) component
+  fst $ foldl' matchFragment' (Just "", text) component
   where
-    matchFragment' (True, remaining) fragment =
+    matchFragment' :: (Maybe Text, Text) -> Fragment -> (Maybe Text, Text)
+    matchFragment' (Just formatted, remaining) fragment =
       case matchFragment formatting track fragment remaining of
-        Just rest -> (True, rest)
-        Nothing -> (False, remaining)
+        (formatted', Just rest) -> (Just (formatted <> formatted'), rest)
+        (_, Nothing) -> (Nothing, remaining)
     matchFragment' acc _ = acc
 
 matchFragment ::
-  Formatting -> AudioTrack.AudioTrack -> Fragment -> Text -> Maybe Text
-matchFragment formatting track fragment =
-  Text.stripPrefix formatted . ignoreLeadingZeros
+  Formatting ->
+  AudioTrack.AudioTrack ->
+  Fragment ->
+  Text ->
+  -- | Return the formatted fragment and the remaining text if matched
+  (Text, Maybe Text)
+matchFragment formatting track fragment txt =
+  (formatted, Text.stripPrefix formatted $ ignoreLeadingZeros txt)
   where
     formatted = formatFragmentWith (formatPlaceholder formatting track) fragment
     ignoreLeadingZeros
