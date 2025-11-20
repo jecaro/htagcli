@@ -19,7 +19,8 @@ data SetTagsOptions = SetTagsOptions
     seAlbumArtist :: Maybe HTagLib.AlbumArtist,
     seGenre :: Maybe HTagLib.Genre,
     seYear :: Maybe (SetOrRemove HTagLib.Year),
-    seTrack :: Maybe (SetOrRemove HTagLib.TrackNumber)
+    seTrack :: Maybe (SetOrRemove HTagLib.TrackNumber),
+    seDisc :: Maybe (SetOrRemove HTagLib.DiscNumber)
   }
   deriving (Show)
 
@@ -32,7 +33,8 @@ noSetTagsOptions =
       seAlbumArtist = Nothing,
       seGenre = Nothing,
       seYear = Nothing,
-      seTrack = Nothing
+      seTrack = Nothing,
+      seDisc = Nothing
     }
 
 setter :: SetTagsOptions -> HTagLib.TagSetter
@@ -45,9 +47,10 @@ setter SetTagsOptions {..} =
         HTagLib.albumArtistSetter <$> seAlbumArtist,
         HTagLib.genreSetter <$> seGenre,
         toSetter HTagLib.yearSetter seYear,
-        toSetter HTagLib.trackNumberSetter seTrack
+        toSetter HTagLib.trackNumberSetter seTrack,
+        toSetter HTagLib.discNumberSetter seDisc
       ]
   where
     toSetter _ Nothing = Nothing
     toSetter tagSetter (Just SetTagsOptions.Remove) = Just $ tagSetter Nothing
-    toSetter tagSetter (Just (SetTagsOptions.Set v)) = Just . tagSetter $ Just v
+    toSetter tagSetter (Just (SetTagsOptions.Set v)) = Just $ tagSetter $ Just v

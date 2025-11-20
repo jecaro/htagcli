@@ -267,6 +267,7 @@ formattingC =
             <$> Toml.list charAndCharActionC "unwanted" .= Pattern.foCharActions
         )
     <*> paddingC "pad_track_numbers" .= Pattern.foPadTrackNumbers
+    <*> paddingC "pad_disc_numbers" .= Pattern.foPadDiscNumbers
 
 charAndCharActionC :: Toml.TomlCodec (Char, Pattern.CharAction)
 charAndCharActionC = Toml.pair (charC "char") (charActionC "action")

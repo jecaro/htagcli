@@ -29,7 +29,8 @@ data AudioTrack = AudioTrack
     atAlbum :: HTagLib.Album,
     atGenre :: HTagLib.Genre,
     atYear :: Maybe HTagLib.Year,
-    atTrack :: Maybe HTagLib.TrackNumber
+    atTrack :: Maybe HTagLib.TrackNumber,
+    atDisc :: Maybe HTagLib.DiscNumber
   }
   deriving (Eq, Show)
 
@@ -54,6 +55,11 @@ parser = do
       "Track: "
       (Megaparsec.optional Megaparsec.decimal)
       (HTagLib.mkTrackNumber =<<)
+  atDisc <-
+    lineP
+      "Disc: "
+      (Megaparsec.optional Megaparsec.decimal)
+      (HTagLib.mkDiscNumber =<<)
 
   pure AudioTrack {..}
 
@@ -80,7 +86,8 @@ asText AudioTrack {..} =
       "Album: " <> HTagLib.unAlbum atAlbum,
       "Genre: " <> HTagLib.unGenre atGenre,
       "Year: " <> withMissing HTagLib.unYear atYear,
-      "Track: " <> withMissing HTagLib.unTrackNumber atTrack
+      "Track: " <> withMissing HTagLib.unTrackNumber atTrack,
+      "Disc: " <> withMissing HTagLib.unDiscNumber atDisc
     ]
 
 withMissing :: (Show b) => (a -> b) -> Maybe a -> Text
@@ -102,6 +109,7 @@ getter path =
     <*> HTagLib.genreGetter
     <*> HTagLib.yearGetter
     <*> HTagLib.trackNumberGetter
+    <*> HTagLib.discNumberGetter
 
 setTags :: (MonadIO m) => AudioTrack -> m ()
 setTags track@AudioTrack {..} =
@@ -117,7 +125,8 @@ setter AudioTrack {..} =
         seAlbumArtist = Just atAlbumArtist,
         seGenre = Just atGenre,
         seYear = setOrRemove atYear,
-        seTrack = setOrRemove atTrack
+        seTrack = setOrRemove atTrack,
+        seDisc = setOrRemove atDisc
       }
   where
     setOrRemove = Just . maybe SetTagsOptions.Remove SetTagsOptions.Set
@@ -130,3 +139,4 @@ haveTag Tag.AlbumArtist = not . Text.null . HTagLib.unAlbumArtist . atAlbumArtis
 haveTag Tag.Genre = not . Text.null . HTagLib.unGenre . atGenre
 haveTag Tag.Year = isJust . atYear
 haveTag Tag.Track = isJust . atTrack
+haveTag Tag.Disc = isJust . atDisc

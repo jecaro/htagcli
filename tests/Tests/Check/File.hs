@@ -67,5 +67,6 @@ track =
       atAlbumArtist = HTagLib.mkAlbumArtist "albumartist",
       atGenre = HTagLib.mkGenre "genre",
       atYear = HTagLib.mkYear 2024,
-      atTrack = HTagLib.mkTrackNumber 1
+      atTrack = HTagLib.mkTrackNumber 1,
+      atDisc = HTagLib.mkDiscNumber 1
     }
