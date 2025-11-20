@@ -69,11 +69,12 @@ test =
             [ fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
               fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist],
               fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
+              fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Disc],
               fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
             ]
         )
         $ trackWithFile
-          [absfile|/genre/artist/album/title.mp3|],
+          [absfile|/genre/artist/album/1/title.mp3|],
       testFileMatchesAndToPath
         "multiple fragments per component"
         ( fromList
@@ -81,6 +82,8 @@ test =
               fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist],
               fromList
                 [ Pattern.FrPlaceholder $ Pattern.PlTag Tag.Year,
+                  Pattern.FrText "-",
+                  Pattern.FrPlaceholder $ Pattern.PlTag Tag.Disc,
                   Pattern.FrText "-",
                   Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album
                 ],
@@ -92,7 +95,7 @@ test =
             ]
         )
         $ trackWithFile
-          [absfile|/genre/artist/2024-album/1-title.mp3|],
+          [absfile|/genre/artist/2024-1-album/1-title.mp3|],
       testFileMatchesAndToPath
         "albumartist_ fallback to artist when albumartist is not present"
         ( fromList
@@ -319,7 +322,8 @@ trackWithTitleAndFile title file =
       atAlbumArtist = HTagLib.mkAlbumArtist "albumartist",
       atGenre = HTagLib.mkGenre "genre",
       atYear = HTagLib.mkYear 2024,
-      atTrack = HTagLib.mkTrackNumber 1
+      atTrack = HTagLib.mkTrackNumber 1,
+      atDisc = HTagLib.mkDiscNumber 1
     }
 
 trackWithFile :: Path.Path Path.Abs Path.File -> AudioTrack.AudioTrack

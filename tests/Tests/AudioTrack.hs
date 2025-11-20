@@ -27,19 +27,17 @@ audioTrackGen = do
   atAlbumArtist <- HTagLib.mkAlbumArtist <$> textGen
   atAlbum <- HTagLib.mkAlbum <$> textGen
   atGenre <- HTagLib.mkGenre <$> textGen
-  atYear <-
-    HedgehogGen.choice
-      [ pure Nothing,
-        HTagLib.mkYear <$> HedgehogGen.int (HedgehogRange.linear 1900 2100)
-      ]
-  atTrack <-
-    HedgehogGen.choice
-      [ pure Nothing,
-        HTagLib.mkTrackNumber <$> HedgehogGen.int (HedgehogRange.linear 0 10)
-      ]
+  atYear <- choiceMaybeInt HTagLib.mkYear 1900 2100
+  atTrack <- choiceMaybeInt HTagLib.mkTrackNumber 1 10
+  atDisc <- choiceMaybeInt HTagLib.mkDiscNumber 1 5
   pure AudioTrack.AudioTrack {..}
   where
     textGen = HedgehogGen.text (HedgehogRange.linear 0 100) HedgehogGen.alphaNum
+    choiceMaybeInt mk from to =
+      HedgehogGen.choice
+        [ pure Nothing,
+          mk <$> HedgehogGen.int (HedgehogRange.linear from to)
+        ]
 
 absFileGen :: Hedgehog.Gen (Path.Path Path.Abs Path.File)
 absFileGen = do

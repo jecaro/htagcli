@@ -139,10 +139,10 @@ main = do
 
     setCharActions
       charActions
-      (File.FilenameMatches pattern (Pattern.Formatting [] padding)) =
+      (File.FilenameMatches pattern formatting@(Pattern.Formatting [] _ _)) =
         File.FilenameMatches
           pattern
-          (Pattern.Formatting charActions padding)
+          formatting {Pattern.foCharActions = charActions}
     setCharActions _ check = check
 
 runConduitWithProgress ::

@@ -12,9 +12,10 @@
 # - {albumartist_}: album artist tag if available, otherwise artist
 # - {album}: album tag
 # - {title}: title tag
+# - {genre}: genre tag
 # - {track}: track number (see `pad_track_numbers`)
 # - {year}: year tag
-# - {genre}: genre tag
+# - {disc}: disc number (see `pad_disc_numbers`)
 filename_matches = "{albumartist_}/{album}/{track}-{title}"
 
 # Characters to sanitize in file paths and how to handle them
@@ -40,6 +41,9 @@ unwanted = [
 # - "2": pad to 2 digits (01, 02, ..., 10, 11, ...)
 # - "3", "4", ...: pad to N digits
 pad_track_numbers = "2"
+
+# Same for disc numbers
+pad_disc_numbers = "ignore"
 
 # Settings for the `fix-path` command
 [fix_paths]

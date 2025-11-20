@@ -11,12 +11,14 @@ where
 
 import Check.Album qualified as Album
 import Check.File qualified as File
+import Data.List.Extra qualified as List
 import Options.Applicative qualified as Options
 import Options.Applicative.NonEmpty qualified as Options
 import Path qualified
 import Pattern qualified
 import SetTagsOptions qualified
 import Sound.HTagLib qualified as HTagLib
+import Sound.HTagLib.Extra qualified as HTagLib
 import Tag qualified
 import Text.Megaparsec qualified as Megaparsec
 
@@ -178,7 +180,8 @@ formattingP :: Options.Parser Pattern.Formatting
 formattingP =
   Pattern.Formatting
     <$> charToCharActionP
-    <*> paddingP
+    <*> paddingP "pad track"
+    <*> paddingP "pad disc"
 
 charToCharActionP :: Options.Parser [(Char, Pattern.CharAction)]
 charToCharActionP =
@@ -198,15 +201,17 @@ charToCharActionP =
     parse [c1, ':', c2] = Right (c1, c2)
     parse _ = Left "Must be in the form 'x:y'"
 
-paddingP :: Options.Parser Pattern.Padding
-paddingP =
+paddingP :: String -> Options.Parser Pattern.Padding
+paddingP label =
   Options.option
     (Options.eitherReader $ first toString . Pattern.parsePadding . toText)
-    ( Options.long "padtrack"
+    ( Options.long option
         <> Options.metavar "N"
         <> Options.help
-          "Number of digits to pad track numbers to (default: ignore)"
+          ("Number of digits to " <> label <> " numbers to (default: ignore)")
     )
+  where
+    option = List.replace " " "-" label
 
 setTagsOptionsP :: Options.Parser SetTagsOptions.SetTagsOptions
 setTagsOptionsP =
@@ -270,13 +275,22 @@ setTagsOptionsP =
             SetTagsOptions.Remove
             (Options.long "notrack" <> Options.help "Unset the track")
       )
+    <*> optional
+      ( Options.option
+          (Options.maybeReader strToDiscNumber)
+          ( Options.long "disc"
+              <> Options.metavar "DISC"
+              <> Options.help "Set the disc number"
+          )
+          <|> Options.flag'
+            SetTagsOptions.Remove
+            (Options.long "nodisc" <> Options.help "Unset the disc")
+      )
   where
-    strToYear :: String -> Maybe (SetTagsOptions.SetOrRemove HTagLib.Year)
-    strToYear = fmap SetTagsOptions.Set . HTagLib.mkYear <=< readMaybe
-    strToTrackNumber ::
-      String -> Maybe (SetTagsOptions.SetOrRemove HTagLib.TrackNumber)
-    strToTrackNumber =
-      fmap SetTagsOptions.Set . HTagLib.mkTrackNumber <=< readMaybe
+    strToYear = strTo HTagLib.mkYear
+    strToTrackNumber = strTo HTagLib.mkTrackNumber
+    strToDiscNumber = strTo HTagLib.mkDiscNumber
+    strTo mkData = fmap SetTagsOptions.Set . mkData <=< readMaybe
 
 filesOrDirectoryP :: Options.Parser FilesOrDirectory
 filesOrDirectoryP =

@@ -60,7 +60,8 @@ data Padding
 
 data Formatting = Formatting
   { foCharActions :: [(Char, CharAction)],
-    foPadTrackNumbers :: Padding
+    foPadTrackNumbers :: Padding,
+    foPadDiscNumbers :: Padding
   }
   deriving (Show, Eq)
 
@@ -68,7 +69,8 @@ noFormatting :: Formatting
 noFormatting =
   Formatting
     { foCharActions = [('/', ChRemove)],
-      foPadTrackNumbers = Pad 0
+      foPadTrackNumbers = Pad 0,
+      foPadDiscNumbers = Pad 0
     }
 
 parser :: Parser Pattern
@@ -204,8 +206,10 @@ formatTag formatting AudioTrack.AudioTrack {..} Tag.Genre =
   textFormatter formatting . HTagLib.unGenre $ atGenre
 formatTag _ AudioTrack.AudioTrack {..} Tag.Year =
   maybe "" (show . HTagLib.unYear) atYear
-formatTag formatting AudioTrack.AudioTrack {..} Tag.Track =
-  maybe "" (trackNumberFormat formatting . HTagLib.unTrackNumber) atTrack
+formatTag Pattern.Formatting {..} AudioTrack.AudioTrack {..} Tag.Track =
+  maybe "" (numberFormat foPadTrackNumbers . HTagLib.unTrackNumber) atTrack
+formatTag Pattern.Formatting {..} AudioTrack.AudioTrack {..} Tag.Disc =
+  maybe "" (numberFormat foPadDiscNumbers . HTagLib.unDiscNumber) atDisc
 
 textFormatter :: Formatting -> Text -> Text
 textFormatter Formatting {..} = applyUnwanted
@@ -218,12 +222,12 @@ textFormatter Formatting {..} = applyUnwanted
       | current == char = with
       | otherwise = current
 
-trackNumberFormat :: Formatting -> Int -> Text
-trackNumberFormat Formatting {..} =
-  Text.pack . Text.printf ("%0" <> show padding <> "d")
+numberFormat :: Padding -> Int -> Text
+numberFormat padding =
+  Text.pack . Text.printf ("%0" <> show paddingOrZero <> "d")
   where
-    padding
-      | Pad n <- foPadTrackNumbers = n
+    paddingOrZero
+      | Pad n <- padding = n
       | otherwise = 0
 
 match :: Formatting -> AudioTrack.AudioTrack -> Pattern -> FilePath -> Bool

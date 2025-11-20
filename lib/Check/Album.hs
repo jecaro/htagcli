@@ -74,6 +74,7 @@ haveSameTag tracks Tag.Album = haveSameTagWithGetter AudioTrack.atAlbum tracks
 haveSameTag tracks Tag.Genre = haveSameTagWithGetter AudioTrack.atGenre tracks
 haveSameTag tracks Tag.Year = haveSameTagWithGetter AudioTrack.atYear tracks
 haveSameTag tracks Tag.Track = haveSameTagWithGetter AudioTrack.atTrack tracks
+haveSameTag tracks Tag.Disc = haveSameTagWithGetter AudioTrack.atDisc tracks
 
 haveSameTagWithGetter ::
   (Eq a) =>
