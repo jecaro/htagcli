@@ -9,6 +9,11 @@ where
 
 import AudioTrack qualified
 import Check.File qualified as File
+import Data.List.NonEmpty qualified as NonEmpty
+import Hedgehog ((===))
+import Hedgehog qualified
+import Hedgehog.Gen qualified as HedgehogGen
+import Hedgehog.Range qualified as HedgehogRange
 import Path (absdir, absfile, (</>))
 import Path qualified
 import Pattern qualified
@@ -19,7 +24,51 @@ import Test.Hspec.Expectations (shouldBe)
 import Test.Hspec.Megaparsec (shouldParse)
 import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty
+import Test.Tasty.Hedgehog qualified as Tasty
 import Text.Megaparsec qualified as Megaparsec
+
+patternGen :: Hedgehog.Gen Pattern.Pattern
+patternGen = HedgehogGen.nonEmpty (HedgehogRange.linear 1 5) componentGen
+
+componentGen :: Hedgehog.Gen Pattern.Component
+componentGen =
+  concatConsecutiveTexts
+    <$> HedgehogGen.nonEmpty (HedgehogRange.linear 1 5) placeholderGen
+
+concatConsecutiveTexts :: NonEmpty Pattern.Fragment -> NonEmpty Pattern.Fragment
+concatConsecutiveTexts ((Pattern.FrText txt1) :| ((Pattern.FrText txt2) : xs)) =
+  concatConsecutiveTexts (Pattern.FrText (txt1 <> txt2) :| xs)
+concatConsecutiveTexts (fragments :| (x : xs)) =
+  fragments :| NonEmpty.toList (concatConsecutiveTexts $ x :| xs)
+concatConsecutiveTexts fragments = fragments
+
+placeholderGen :: Hedgehog.Gen Pattern.Fragment
+placeholderGen =
+  HedgehogGen.choice
+    [ Pattern.FrPlaceholder
+        <$> HedgehogGen.choice
+          [ Pattern.PlTag <$> HedgehogGen.enumBounded,
+            Pattern.PlTagOr
+              <$> HedgehogGen.enumBounded
+              <*> HedgehogGen.enumBounded,
+            Pattern.PlOptional
+              <$> textGen
+              <*> HedgehogGen.enumBounded
+              <*> textGen
+          ],
+      Pattern.FrText <$> textGen
+    ]
+
+textGen :: Hedgehog.Gen Text
+textGen =
+  HedgehogGen.text (HedgehogRange.linear 1 10) HedgehogGen.alphaNum
+
+test :: TestTree
+test =
+  Tasty.testPropertyNamed "parse" "test_parse_pattern" $ Hedgehog.property $ do
+    pattern <- Hedgehog.forAll patternGen
+    Megaparsec.parse Pattern.parser "" (Pattern.asText pattern)
+      === Right pattern
 
 test :: TestTree
 test =
@@ -97,10 +146,13 @@ test =
         $ trackWithFile
           [absfile|/genre/artist/2024-1-album/1-title.mp3|],
       testFileMatchesAndToPath
-        "albumartist_ fallback to artist when albumartist is not present"
+        "albumartist fallback to artist when albumartist is not present"
         ( fromList
             [ fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
-              fromList [Pattern.FrPlaceholder Pattern.PlAlbumArtist],
+              fromList
+                [ Pattern.FrPlaceholder $
+                    Pattern.PlTagOr Tag.AlbumArtist Tag.Artist
+                ],
               fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
               fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
             ]
@@ -110,15 +162,47 @@ test =
             }
         ),
       testFileMatchesAndToPath
-        "albumartist_ use albumartist when it is present"
+        "albumartist use albumartist when it is present"
         ( fromList
             [ fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
-              fromList [Pattern.FrPlaceholder Pattern.PlAlbumArtist],
+              fromList
+                [ Pattern.FrPlaceholder $
+                    Pattern.PlTagOr Tag.AlbumArtist Tag.Artist
+                ],
               fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
               fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
             ]
         )
-        (trackWithFile [absfile|/genre/albumartist/album/title.mp3|])
+        (trackWithFile [absfile|/genre/albumartist/album/title.mp3|]),
+      testFileMatchesAndToPath
+        "same with optional if albumartist is not present"
+        ( fromList
+            [ fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
+              fromList
+                [ Pattern.FrPlaceholder $
+                    Pattern.PlOptional "before-" Tag.AlbumArtist "-after"
+                ],
+              fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
+              fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
+            ]
+        )
+        ( (trackWithFile [absfile|/genre/album/title.mp3|])
+            { AudioTrack.atAlbumArtist = ""
+            }
+        ),
+      testFileMatchesAndToPath
+        "same with optional if albumartist is present"
+        ( fromList
+            [ fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Genre],
+              fromList
+                [ Pattern.FrPlaceholder $
+                    Pattern.PlOptional "before-" Tag.AlbumArtist "-after"
+                ],
+              fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album],
+              fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
+            ]
+        )
+        (trackWithFile [absfile|/genre/before-albumartist-after/album/title.mp3|])
     ]
 
 testFileMatchesAndToPath ::
