@@ -101,7 +101,7 @@ main = do
           filesOrDirectory
           $ Conduit.mapM AudioTrack.getTags
             .| Conduit.iterM (Commands.checkFile fileChecks)
-            .| Conduit.groupOn AudioTrack.atAlbum
+            .| Conduit.groupOn (AudioTrack.atAlbum &&& AudioTrack.atDisc)
             .| Conduit.mapM_C (Commands.checkAlbum albumChecks)
       Options.FixFilePaths Options.FixFilePathsOptions {..} filesOrDirectory -> do
         Config.Config {coFilename = Config.Filename {..}, ..} <- Config.readConfig
