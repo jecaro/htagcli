@@ -59,7 +59,8 @@ discNumberGetter :: HTagLib.TagGetter (Maybe DiscNumber)
 discNumberGetter =
   toDiscNumber . headOrMempty <$> HTagLib.propertyGetter discNumberKey
   where
-    toDiscNumber = mkDiscNumber <=< readMaybe . toString
+    toDiscNumber =
+      mkDiscNumber <=< readMaybe . toString . fst . Text.break (== '/')
 
 discNumberSetter :: Maybe DiscNumber -> HTagLib.TagSetter
 discNumberSetter =
