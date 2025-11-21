@@ -91,6 +91,7 @@ baseDirectoryP =
         <> Options.metavar "DIRECTORY"
         <> Options.help
           "Base directory to use with the pattern to move files"
+        <> Options.action "directory"
     )
 
 checksP :: Options.Parser [File.Check]
@@ -319,7 +320,7 @@ someBaseFilesP =
   Options.some1 $
     Options.argument
       (Options.maybeReader Path.parseSomeFile)
-      (Options.metavar "FILES")
+      (Options.metavar "FILES" <> Options.action "file")
 
 extensionsP :: Options.Parser (NonEmpty Text)
 extensionsP =
@@ -337,7 +338,7 @@ someBaseDirP :: Options.Parser (Path.SomeBase Path.Dir)
 someBaseDirP =
   Options.argument
     (Options.maybeReader Path.parseSomeDir)
-    (Options.metavar "DIRECTORY")
+    (Options.metavar "DIRECTORY" <> Options.action "directory")
 
 optionsP :: Options.Parser Command
 optionsP =
