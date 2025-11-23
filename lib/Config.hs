@@ -14,6 +14,7 @@ module Config
 where
 
 import Check.Album qualified as Album
+import Check.Artist qualified as Artist
 import Check.File qualified as File
 import Data.ByteString qualified as ByteString
 import Data.FileEmbed qualified as FileEmbed
@@ -75,7 +76,9 @@ data Checks = Checks
     -- tags
     chAlbumSameTags :: Maybe (NonEmpty Tag.Tag),
     -- | The tracks of the album have sequential track numbers
-    chAlbumTracksSequential :: Bool
+    chAlbumTracksSequential :: Bool,
+    -- | All the tracks from the artist have the same genre
+    chArtistSameGenre :: Bool
   }
   deriving (Show)
 
@@ -98,8 +101,12 @@ albumChecks (Config {coChecks = Checks {..}}) =
       guarded (const chAlbumTracksSequential) Album.TracksSequential
     ]
 
-checks :: Config -> ([File.Check], [Album.Check])
-checks = fileChecks &&& albumChecks
+artistCheck :: Config -> Maybe Artist.Check
+artistCheck (Config {coChecks = Checks {..}}) =
+  guarded (const chArtistSameGenre) Artist.SameGenre
+
+checks :: Config -> ([File.Check], [Album.Check], Maybe Artist.Check)
+checks config = (fileChecks config, albumChecks config, artistCheck config)
 
 errorToText :: Error -> Text
 errorToText (ErToml err) = "TOML error: \n" <> err
@@ -197,6 +204,7 @@ checksC =
     <*> checkAlbumInSameDirC .= chAlbumInSameDir
     <*> maybeValidatedC "check_album_tags" checkAlbumSameTagsC chAlbumSameTags
     <*> checkAlbumTracksSequentialC .= chAlbumTracksSequential
+    <*> checkArtistSameGenreC .= chArtistSameGenre
   where
     checkFilesC = Toml.table (Toml.bool "enable") "check_files"
     checkCoverC = Toml.arrayNonEmptyOf relFileB "cover_filename"
@@ -204,6 +212,8 @@ checksC =
     checkAlbumSameTagsC = Toml.arrayNonEmptyOf tagB "tags"
     checkAlbumTracksSequentialC =
       Toml.table (Toml.bool "enable") "check_album_tracks_sequential"
+    checkArtistSameGenreC =
+      Toml.table (Toml.bool "enable") "check_artist_same_genre"
 
 -- | Unwrap the Maybe value according to the enable flag.
 maybeValidatedC ::

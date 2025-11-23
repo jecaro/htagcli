@@ -1,12 +1,14 @@
 module Main where
 
+import Album qualified
 import AudioTrack qualified
 import Check.File qualified as File
 import Commands qualified
 import Conduit ((.|))
 import Conduit qualified
 import Config qualified
-import Data.Conduit.List qualified as Conduit
+import Data.Conduit.Combinators qualified as Conduit
+import Data.Conduit.List qualified as ConduitL
 import Data.Either.Extra qualified as Either
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
@@ -92,17 +94,19 @@ main = do
         config <- Config.readConfig
 
         -- Get the checks from the CLI and fallback to the config file
-        let (fileChecks, albumChecks) = withDefaults config options
+        let (fileChecks, albumChecks, mbArtistCheck) = withDefaults config options
 
-        when (null fileChecks && null albumChecks) $
+        when (null fileChecks && null albumChecks && null mbArtistCheck) $
           Exception.throwIO NoCheckInConfig
 
         runConduitWithProgress
           filesOrDirectory
           $ Conduit.mapM AudioTrack.getTags
             .| Conduit.iterM (Commands.checkFile fileChecks)
-            .| Conduit.groupOn (AudioTrack.atAlbum &&& AudioTrack.atDisc)
-            .| Conduit.mapM_C (Commands.checkAlbum albumChecks)
+            .| ConduitL.groupOn (AudioTrack.atAlbum &&& AudioTrack.atDisc)
+            .| Conduit.iterM (Commands.checkAlbum albumChecks)
+            .| ConduitL.groupOn Album.albumArtistOrArtist
+            .| Conduit.mapM_C (Commands.checkArtist mbArtistCheck)
       Options.FixFilePaths Options.FixFilePathsOptions {..} filesOrDirectory -> do
         Config.Config {coFilename = Config.Filename {..}, ..} <- Config.readConfig
         let formatting = fromMaybe fiFormatting foFormatting
@@ -127,11 +131,11 @@ main = do
       pure $ content <> "\n"
 
     -- When no check is given on the CLI, fallback to the config ones
-    withDefaults config (Options.CheckOptions [] []) = Config.checks config
+    withDefaults config (Options.CheckOptions [] [] Nothing) = Config.checks config
     -- If the formatting option is empty in the 'FileMatches' check, fallback
     -- on the value in the config
-    withDefaults config (Options.CheckOptions files albums) =
-      (setCharActions foCharActions <$> files, albums)
+    withDefaults config (Options.CheckOptions files albums mbArtist) =
+      (setCharActions foCharActions <$> files, albums, mbArtist)
       where
         Config.Config
           { coFilename = Config.Filename {fiFormatting = Pattern.Formatting {..}}

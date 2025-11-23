@@ -3,6 +3,7 @@ module Commands
     setTags,
     checkFile,
     checkAlbum,
+    checkArtist,
     FixFilePathsOptions (..),
     fixFilePaths,
     fixFilePaths',
@@ -10,11 +11,11 @@ module Commands
   )
 where
 
+import Album qualified
 import AudioTrack qualified
 import Check.Album qualified as Album
+import Check.Artist qualified as Artist
 import Check.File qualified as File
-import Data.List.NonEmpty qualified as NonEmpty
-import Data.Text qualified as Text
 import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
@@ -68,17 +69,30 @@ checkAlbum checks tracks = do
     checkPrintError tracks' check =
       whenLeftM_ (Album.check check tracks') $ \err ->
         putTextLn $
-          artist <> album <> disc <> ": " <> Album.errorToText err
-    firstTrack = head tracks
-    albumArtist = HTagLib.unAlbumArtist $ AudioTrack.atAlbumArtist firstTrack
-    artist
-      | not $ Text.null albumArtist = albumArtist
-      | otherwise = HTagLib.unArtist $ AudioTrack.atArtist firstTrack
-    album = "/" <> HTagLib.unAlbum (AudioTrack.atAlbum firstTrack)
+          "Album "
+            <> Album.albumArtistOrArtist tracks
+            <> album
+            <> disc
+            <> ": "
+            <> Album.errorToText err
+    album = "/" <> HTagLib.unAlbum (Album.album tracks)
     disc
-      | Just discNumber <- AudioTrack.atDisc firstTrack =
-          "/Disc " <> show (HTagLib.unDiscNumber discNumber)
+      | Just d <- Album.disc tracks = "/Disc " <> show (HTagLib.unDiscNumber d)
       | otherwise = ""
+
+checkArtist ::
+  (MonadIO m) =>
+  Maybe Artist.Check ->
+  NonEmpty (NonEmpty AudioTrack.AudioTrack) ->
+  m ()
+checkArtist Nothing _ = pure ()
+checkArtist (Just check) albums = do
+  whenLeft_ (Artist.check check albums) $ \err -> do
+    putTextLn $
+      "Artist "
+        <> Album.albumArtistOrArtist (join albums)
+        <> ": "
+        <> Artist.errorToText err
 
 data FixFilePathsOptions = FixFilePathsOptions
   { fiDryRun :: Bool,

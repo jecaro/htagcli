@@ -10,6 +10,7 @@ module Options
 where
 
 import Check.Album qualified as Album
+import Check.Artist qualified as Artist
 import Check.File qualified as File
 import Data.List.Extra qualified as List
 import Options.Applicative qualified as Options
@@ -40,7 +41,8 @@ data FilesOrDirectory
 
 data CheckOptions = CheckOptions
   { coFileChecks :: [File.Check],
-    coAlbumChecks :: [Album.Check]
+    coAlbumChecks :: [Album.Check],
+    coArtistChecks :: Maybe Artist.Check
   }
   deriving (Show)
 
@@ -65,7 +67,18 @@ optionsInfo :: Options.ParserInfo Command
 optionsInfo = Options.info (optionsP <**> Options.helper) Options.idm
 
 checkOptionsP :: Options.Parser CheckOptions
-checkOptionsP = CheckOptions <$> checksP <*> albumChecksP
+checkOptionsP =
+  CheckOptions <$> checksP <*> albumChecksP <*> optional artistCheckP
+
+artistCheckP :: Options.Parser Artist.Check
+artistCheckP =
+  Artist.SameGenre
+    <$ Options.flag'
+      ()
+      ( Options.long "artist-same-genre"
+          <> Options.help
+            "Check that all tracks by the same artist have the same genre"
+      )
 
 fixFilePathsOptionsP :: Options.Parser FixFilePathsOptions
 fixFilePathsOptionsP =
