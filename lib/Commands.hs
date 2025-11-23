@@ -14,6 +14,7 @@ import AudioTrack qualified
 import Check.Album qualified as Album
 import Check.File qualified as File
 import Data.List.NonEmpty qualified as NonEmpty
+import Data.Text qualified as Text
 import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
@@ -21,6 +22,7 @@ import Path.IO.Extra qualified as Path
 import Pattern qualified
 import SetTagsOptions qualified
 import Sound.HTagLib qualified as HTagLib
+import Sound.HTagLib.Extra qualified as HTagLib
 import UnliftIO.Exception qualified as Exception
 
 newtype Error = UnableToFormatFile (Path.Path Path.Abs Path.File)
@@ -65,9 +67,18 @@ checkAlbum checks tracks = do
   where
     checkPrintError tracks' check =
       whenLeftM_ (Album.check check tracks') $ \err ->
-        putTextLn $ artist <> "/" <> album <> ": " <> Album.errorToText err
-    album = HTagLib.unAlbum . AudioTrack.atAlbum $ NonEmpty.head tracks
-    artist = HTagLib.unArtist . AudioTrack.atArtist $ NonEmpty.head tracks
+        putTextLn $
+          artist <> album <> disc <> ": " <> Album.errorToText err
+    firstTrack = head tracks
+    albumArtist = HTagLib.unAlbumArtist $ AudioTrack.atAlbumArtist firstTrack
+    artist
+      | not $ Text.null albumArtist = albumArtist
+      | otherwise = HTagLib.unArtist $ AudioTrack.atArtist firstTrack
+    album = "/" <> HTagLib.unAlbum (AudioTrack.atAlbum firstTrack)
+    disc
+      | Just discNumber <- AudioTrack.atDisc firstTrack =
+          "/Disc " <> show (HTagLib.unDiscNumber discNumber)
+      | otherwise = ""
 
 data FixFilePathsOptions = FixFilePathsOptions
   { fiDryRun :: Bool,
