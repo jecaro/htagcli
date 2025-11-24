@@ -6,12 +6,14 @@ module Options
     FilesOrDirectory (..),
     FixFilePathsOptions (..),
     optionsInfo,
+    checks,
   )
 where
 
 import Check.Album qualified as Album
 import Check.Artist qualified as Artist
 import Check.File qualified as File
+import Config qualified
 import Data.List.Extra qualified as List
 import Options.Applicative qualified as Options
 import Options.Applicative.NonEmpty qualified as Options
@@ -40,9 +42,9 @@ data FilesOrDirectory
   deriving (Show)
 
 data CheckOptions = CheckOptions
-  { coFileChecks :: [File.Check],
-    coAlbumChecks :: [Album.Check],
-    coArtistChecks :: Maybe Artist.Check
+  { chChecks :: Config.Checks,
+    chFormatting :: Maybe Pattern.Formatting,
+    chFilematches :: Maybe Pattern.Pattern
   }
   deriving (Show)
 
@@ -63,22 +65,42 @@ data Command
   | FixFilePaths FixFilePathsOptions FilesOrDirectory
   deriving (Show)
 
+-- | Get checks from the CLI, and fall back to the config file if none are
+-- specified
+checks ::
+  Config.Config ->
+  CheckOptions ->
+  ([File.Check], [Album.Check], Maybe Artist.Check)
+checks
+  config@(Config.Config {coFilename = Config.Filename {..}})
+  (Options.CheckOptions {..})
+    | not $ Config.haveChecks chChecks = Config.factorChecks config
+    | otherwise = Config.factorChecks' pattern formatting chChecks
+    where
+      pattern = fromMaybe fiPattern chFilematches
+      formatting = fromMaybe fiFormatting chFormatting
+
 optionsInfo :: Options.ParserInfo Command
 optionsInfo = Options.info (optionsP <**> Options.helper) Options.idm
 
 checkOptionsP :: Options.Parser CheckOptions
 checkOptionsP =
-  CheckOptions <$> checksP <*> albumChecksP <*> optional artistCheckP
+  CheckOptions
+    <$> checksP
+    <*> Options.optional formattingP
+    <*> Options.optional filematchesP
 
-artistCheckP :: Options.Parser Artist.Check
-artistCheckP =
-  Artist.SameGenre
-    <$ Options.flag'
-      ()
-      ( Options.long "artist-same-genre"
-          <> Options.help
-            "Check that all tracks by the same artist have the same genre"
-      )
+checksP :: Options.Parser Config.Checks
+checksP =
+  Config.Checks
+    <$> optional tagsP
+    <*> optional genreAmongP
+    <*> filenameMatchesP
+    <*> optional haveCoverP
+    <*> albumInSameDirP
+    <*> optional albumSameTagsP
+    <*> albumTracksSequentialP
+    <*> artistSameGenreP
 
 fixFilePathsOptionsP :: Options.Parser FixFilePathsOptions
 fixFilePathsOptionsP =
@@ -107,55 +129,60 @@ baseDirectoryP =
         <> Options.action "directory"
     )
 
-checksP :: Options.Parser [File.Check]
-checksP =
-  Options.many
-    ( File.TagsExist
-        <$> tagsP
-          <|> File.GenreAmong
-        <$> genreAmongP
-          <|> File.FilenameMatches
-        <$> filematchesP
-        <*> formattingP
+filenameMatchesP :: Options.Parser Bool
+filenameMatchesP =
+  Options.switch
+    ( Options.long "filename"
+        <> Options.help
+          "Check that filenames match the specified pattern"
     )
 
-albumChecksP :: Options.Parser [Album.Check]
-albumChecksP =
-  Options.many
-    ( Album.InSameDir
-        <$ Options.flag'
-          ()
-          ( Options.long "in-same-dir"
-              <> Options.help "Check that all tracks are in the same directory"
-          )
-          <|> Album.HaveCover
-        <$> Options.some1
-          ( Options.option
-              (Options.maybeReader Path.parseRelFile)
-              ( Options.long "have-cover"
-                  <> Options.metavar "FILENAME"
-                  <> Options.help "Check that the specified cover file exists"
-              )
-          )
-          <|> Album.SameTag
-        <$> Options.some1
-          ( Options.option
-              tagR
-              ( Options.long "album-tag"
-                  <> Options.metavar "TAG"
-                  <> Options.help
-                    "Check that all tracks in the album have the same value for \
-                    \the specified tag (title, artist, album, albumartist, \
-                    \genre, year, track)"
-              )
-          )
-          <|> Album.TracksSequential
-        <$ Options.flag'
-          ()
-          ( Options.long "tracks-sequential"
-              <> Options.help
-                "Check that track numbers are sequential within the album"
-          )
+haveCoverP :: Options.Parser (NonEmpty (Path.Path Path.Rel Path.File))
+haveCoverP =
+  Options.some1
+    ( Options.option
+        (Options.maybeReader Path.parseRelFile)
+        ( Options.long "have-cover"
+            <> Options.metavar "FILENAME"
+            <> Options.help "Check that the specified cover file exists"
+        )
+    )
+
+albumInSameDirP :: Options.Parser Bool
+albumInSameDirP =
+  Options.switch
+    ( Options.long "in-same-dir"
+        <> Options.help "Check that all tracks are in the same directory"
+    )
+
+albumSameTagsP :: Options.Parser (NonEmpty Tag.Tag)
+albumSameTagsP =
+  Options.some1
+    ( Options.option
+        tagR
+        ( Options.long "album-same-tag"
+            <> Options.metavar "TAG"
+            <> Options.help
+              "Check that all tracks in the album have the same value for \
+              \the specified tag (title, artist, album, albumartist, genre, \
+              \year, track)"
+        )
+    )
+
+albumTracksSequentialP :: Options.Parser Bool
+albumTracksSequentialP =
+  Options.switch
+    ( Options.long "tracks-sequential"
+        <> Options.help
+          "Check that track numbers are sequential within the album"
+    )
+
+artistSameGenreP :: Options.Parser Bool
+artistSameGenreP =
+  Options.switch
+    ( Options.long "artist-same-genre"
+        <> Options.help
+          "Check that all tracks by the same artist have the same genre"
     )
 
 tagR :: Options.ReadM Tag.Tag
@@ -188,11 +215,11 @@ filematchesP :: Options.Parser Pattern.Pattern
 filematchesP =
   Options.option
     (Options.maybeReader $ parse . toText)
-    ( Options.long "filematches"
+    ( Options.long "pattern"
         <> Options.metavar "PATTERN"
         <> Options.help
-          "Specify a filename pattern to check against \
-          \(example: {genre}/{artist}/{album}/{tracknumber} - {title})"
+          "Specify a filename pattern to check against. See the default config \
+          \file for details."
     )
   where
     parse = Megaparsec.parseMaybe Pattern.parser
@@ -215,7 +242,7 @@ charToCharActionP =
             <|> second Pattern.ChReplace
           <$> Options.option
             (Options.eitherReader $ first toString . parse)
-            (Options.long "replace" <> Options.metavar "CHAR")
+            (Options.long "replace" <> Options.metavar "CHAR:CHAR")
       )
   where
     parse :: String -> Either Text (Char, Char)
@@ -229,7 +256,7 @@ paddingP label =
     ( Options.long option
         <> Options.metavar "N"
         <> Options.help
-          ("Number of digits to " <> label <> " numbers to (default: ignore)")
+          ("Number of digits to " <> label <> " numbers to")
     )
   where
     option = List.replace " " "-" label

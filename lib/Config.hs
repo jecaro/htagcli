@@ -4,10 +4,13 @@ module Config
   ( Error (..),
     errorToText,
     Config (..),
+    Checks (..),
     Filename (..),
+    haveChecks,
     readConfig,
     createConfig,
-    checks,
+    factorChecks,
+    factorChecks',
     defaultConfigContent,
     parseByteString,
   )
@@ -82,18 +85,31 @@ data Checks = Checks
   }
   deriving (Show)
 
-fileChecks :: Config -> [File.Check]
-fileChecks (Config {coFilename = Filename {..}, coChecks = Checks {..}}) =
+haveChecks :: Checks -> Bool
+haveChecks (Checks {..}) =
+  or
+    [ isJust chTags,
+      isJust chGenreAmong,
+      chFilenameMatches,
+      isJust chHaveCover,
+      chAlbumInSameDir,
+      isJust chAlbumSameTags,
+      chAlbumTracksSequential,
+      chArtistSameGenre
+    ]
+
+fileChecks :: Pattern.Pattern -> Pattern.Formatting -> Checks -> [File.Check]
+fileChecks pattern formatting Checks {..} =
   catMaybes
     [ File.TagsExist <$> chTags,
       File.GenreAmong <$> chGenreAmong,
       if not chFilenameMatches
         then Nothing
-        else Just $ File.FilenameMatches fiPattern fiFormatting
+        else Just $ File.FilenameMatches pattern formatting
     ]
 
-albumChecks :: Config -> [Album.Check]
-albumChecks (Config {coChecks = Checks {..}}) =
+albumChecks :: Checks -> [Album.Check]
+albumChecks (Checks {..}) =
   catMaybes
     [ Album.HaveCover <$> chHaveCover,
       guarded (const chAlbumInSameDir) Album.InSameDir,
@@ -101,12 +117,24 @@ albumChecks (Config {coChecks = Checks {..}}) =
       guarded (const chAlbumTracksSequential) Album.TracksSequential
     ]
 
-artistCheck :: Config -> Maybe Artist.Check
-artistCheck (Config {coChecks = Checks {..}}) =
+artistCheck :: Checks -> Maybe Artist.Check
+artistCheck (Checks {..}) =
   guarded (const chArtistSameGenre) Artist.SameGenre
 
-checks :: Config -> ([File.Check], [Album.Check], Maybe Artist.Check)
-checks config = (fileChecks config, albumChecks config, artistCheck config)
+factorChecks :: Config -> ([File.Check], [Album.Check], Maybe Artist.Check)
+factorChecks Config {coFilename = Filename {..}, ..} =
+  factorChecks' fiPattern fiFormatting coChecks
+
+factorChecks' ::
+  Pattern.Pattern ->
+  Pattern.Formatting ->
+  Checks ->
+  ([File.Check], [Album.Check], Maybe Artist.Check)
+factorChecks' pattern formatting checks =
+  ( fileChecks pattern formatting checks,
+    albumChecks checks,
+    artistCheck checks
+  )
 
 errorToText :: Error -> Text
 errorToText (ErToml err) = "TOML error: \n" <> err

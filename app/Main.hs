@@ -2,7 +2,6 @@ module Main where
 
 import Album qualified
 import AudioTrack qualified
-import Check.File qualified as File
 import Commands qualified
 import Conduit ((.|))
 import Conduit qualified
@@ -16,7 +15,6 @@ import Options qualified
 import Options.Applicative qualified as Options
 import Path qualified
 import Path.IO qualified as Path
-import Pattern qualified
 import Progress qualified
 import System.Process.Typed qualified as Process
 import Text.Megaparsec qualified as Megaparsec
@@ -94,7 +92,7 @@ main = do
         config <- Config.readConfig
 
         -- Get the checks from the CLI and fallback to the config file
-        let (fileChecks, albumChecks, mbArtistCheck) = withDefaults config options
+        let (fileChecks, albumChecks, mbArtistCheck) = Options.checks config options
 
         when (null fileChecks && null albumChecks && null mbArtistCheck) $
           Exception.throwIO NoCheckInConfig
@@ -129,25 +127,6 @@ main = do
     getTagsAsText filename = do
       content <- encodeUtf8 . AudioTrack.asText <$> AudioTrack.getTags filename
       pure $ content <> "\n"
-
-    -- When no check is given on the CLI, fallback to the config ones
-    withDefaults config (Options.CheckOptions [] [] Nothing) = Config.checks config
-    -- If the formatting option is empty in the 'FileMatches' check, fallback
-    -- on the value in the config
-    withDefaults config (Options.CheckOptions files albums mbArtist) =
-      (setCharActions foCharActions <$> files, albums, mbArtist)
-      where
-        Config.Config
-          { coFilename = Config.Filename {fiFormatting = Pattern.Formatting {..}}
-          } = config
-
-    setCharActions
-      charActions
-      (File.FilenameMatches pattern formatting@(Pattern.Formatting [] _ _)) =
-        File.FilenameMatches
-          pattern
-          formatting {Pattern.foCharActions = charActions}
-    setCharActions _ check = check
 
 runConduitWithProgress ::
   Options.FilesOrDirectory ->
