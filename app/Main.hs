@@ -92,15 +92,15 @@ main = do
         config <- Config.readConfig
 
         -- Get the checks from the CLI and fallback to the config file
-        let (fileChecks, albumChecks, mbArtistCheck) = Options.checks config options
+        let (trackChecks, albumChecks, mbArtistCheck) = Options.checks config options
 
-        when (null fileChecks && null albumChecks && null mbArtistCheck) $
+        when (null trackChecks && null albumChecks && null mbArtistCheck) $
           Exception.throwIO NoCheckInConfig
 
         runConduitWithProgress
           filesOrDirectory
           $ Conduit.mapM AudioTrack.getTags
-            .| Conduit.iterM (Commands.checkFile fileChecks)
+            .| Conduit.iterM (Commands.checkTrack trackChecks)
             .| ConduitL.groupOn (AudioTrack.atAlbum &&& AudioTrack.atDisc)
             .| Conduit.iterM (Commands.checkAlbum albumChecks)
             .| ConduitL.groupOn Album.albumArtistOrArtist

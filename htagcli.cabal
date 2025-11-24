@@ -44,7 +44,7 @@ library
     AudioTrack
     Check.Album
     Check.Artist
-    Check.File
+    Check.Track
     Commands
     Config
     Data.List.NonEmpty.Extra

@@ -8,7 +8,7 @@ module Tests.Pattern
 where
 
 import AudioTrack qualified
-import Check.File qualified as File
+import Check.Track qualified as Track
 import Data.List.NonEmpty qualified as NonEmpty
 import Hedgehog ((===))
 import Hedgehog qualified
@@ -393,7 +393,7 @@ filenameMatchesNoFormatting pattern = filenameMatches pattern Pattern.noFormatti
 filenameMatches ::
   Pattern.Pattern -> Pattern.Formatting -> AudioTrack.AudioTrack -> Bool
 filenameMatches pattern formatting =
-  isRight . File.check (File.FilenameMatches pattern formatting)
+  isRight . Track.check (Track.FilenameMatches pattern formatting)
 
 trackWithTitleAndFile ::
   Text -> Path.Path Path.Abs Path.File -> AudioTrack.AudioTrack

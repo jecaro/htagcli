@@ -81,12 +81,12 @@ test =
     "check same tags"
     [ Tasty.testCase "all tracks have the same tags" $
         withTenTracks $ \_ tracks -> do
-          result <- Album.check (Album.SameTag commonTags) tracks
+          result <- Album.check (Album.SameTags commonTags) tracks
           result `shouldBe` Right (),
       Tasty.testCase "some tracks have a different tag" $
         withTenTracks $ \_ tracks -> do
-          result <- Album.check (Album.SameTag $ Tag.Track <| commonTags) tracks
-          result `shouldBe` Left (Album.SameTagError $ fromList [Tag.Track])
+          result <- Album.check (Album.SameTags $ Tag.Track <| commonTags) tracks
+          result `shouldBe` Left (Album.SameTagsError $ fromList [Tag.Track])
     ]
   where
     commonTags = fromList [Tag.Genre, Tag.Year, Tag.Artist, Tag.AlbumArtist]

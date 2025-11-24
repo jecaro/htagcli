@@ -58,14 +58,14 @@ base_dir = "/absolute/path/to/your/Music"
 [checks]
 
 # Ensure required tags are present
-[checks.check_tags]
+[checks.track_tags]
 enable = true
 tags = ["title", "artist", "album", "genre", "year", "track"]
 
 # Ensure the genre tag matches one of the allowed values
-[checks.check_genre]
+[checks.track_genre]
 enable = true
-genre_among = [
+among = [
   "Pop/Rock",
   "Jazz",
   "Country",
@@ -78,28 +78,28 @@ genre_among = [
 
 # Verify that file paths match the expected naming pattern and formatting
 # options
-[checks.check_files]
+[checks.track_filename]
 enable = true
 
 # Verify that each album directory contains a cover image
-[checks.check_cover]
+[checks.album_cover]
 enable = true
-cover_filename = ["cover.jpg", "cover.png", "cover.gif"]
+filenames = ["cover.jpg", "cover.png", "cover.gif"]
 
 # Verify that all tracks from the same album reside in a single directory
 # Note: htagcli groups files by album while scanning input paths recursively.
-[checks.check_album_in_same_dir]
+[checks.album_same_dir]
 enable = true
 
 # Verify that album-level tags are consistent across all tracks of an album
-[checks.check_album_tags]
+[checks.album_tags]
 enable = true
 tags = ["albumartist", "album", "year", "genre"]
 
 # Verify that track numbers in each album are sequential starting from 1
-[checks.check_album_tracks_sequential]
+[checks.album_tracks_sequential]
 enable = true
 
 # Verify that all tracks from an artist have the same genre
-[checks.check_artist_same_genre]
+[checks.artist_same_genre]
 enable = true

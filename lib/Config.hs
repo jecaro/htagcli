@@ -18,7 +18,7 @@ where
 
 import Check.Album qualified as Album
 import Check.Artist qualified as Artist
-import Check.File qualified as File
+import Check.Track qualified as Track
 import Data.ByteString qualified as ByteString
 import Data.FileEmbed qualified as FileEmbed
 import Data.Text qualified as Text
@@ -64,17 +64,17 @@ data Filename = Filename
 -- | List of the checks to perform
 data Checks = Checks
   { -- | If Nothing, the check is disabled
-    chTags :: Maybe (NonEmpty Tag.Tag),
+    chTrackTags :: Maybe (NonEmpty Tag.Tag),
     -- | If Nothing, the check is disabled
-    chGenreAmong :: Maybe (NonEmpty Text),
+    chTrackGenreAmong :: Maybe (NonEmpty Text),
     -- | If True, the check is enabled, the padding optionally overrides the
     -- one given in the formatting section. This way it is possible to ignore
     -- the padding when checking the filename and still have it when fixing it.
-    chFilenameMatches :: Bool,
+    chTrackFilename :: Bool,
     -- | The album have a cover file with one of the given names
-    chHaveCover :: Maybe (NonEmpty (Path.Path Path.Rel Path.File)),
+    chAlbumHaveCover :: Maybe (NonEmpty (Path.Path Path.Rel Path.File)),
     -- | All the audio tracks of the album are in the same directory
-    chAlbumInSameDir :: Bool,
+    chAlbumSameDir :: Bool,
     -- | All the audio tracks of the album have the same value for the given
     -- tags
     chAlbumSameTags :: Maybe (NonEmpty Tag.Tag),
@@ -88,32 +88,32 @@ data Checks = Checks
 haveChecks :: Checks -> Bool
 haveChecks (Checks {..}) =
   or
-    [ isJust chTags,
-      isJust chGenreAmong,
-      chFilenameMatches,
-      isJust chHaveCover,
-      chAlbumInSameDir,
+    [ isJust chTrackTags,
+      isJust chTrackGenreAmong,
+      chTrackFilename,
+      isJust chAlbumHaveCover,
+      chAlbumSameDir,
       isJust chAlbumSameTags,
       chAlbumTracksSequential,
       chArtistSameGenre
     ]
 
-fileChecks :: Pattern.Pattern -> Pattern.Formatting -> Checks -> [File.Check]
-fileChecks pattern formatting Checks {..} =
+trackChecks :: Pattern.Pattern -> Pattern.Formatting -> Checks -> [Track.Check]
+trackChecks pattern formatting Checks {..} =
   catMaybes
-    [ File.TagsExist <$> chTags,
-      File.GenreAmong <$> chGenreAmong,
-      if not chFilenameMatches
+    [ Track.TagsExist <$> chTrackTags,
+      Track.GenreAmong <$> chTrackGenreAmong,
+      if not chTrackFilename
         then Nothing
-        else Just $ File.FilenameMatches pattern formatting
+        else Just $ Track.FilenameMatches pattern formatting
     ]
 
 albumChecks :: Checks -> [Album.Check]
 albumChecks (Checks {..}) =
   catMaybes
-    [ Album.HaveCover <$> chHaveCover,
-      guarded (const chAlbumInSameDir) Album.InSameDir,
-      Album.SameTag <$> chAlbumSameTags,
+    [ Album.HaveCover <$> chAlbumHaveCover,
+      guarded (const chAlbumSameDir) Album.InSameDir,
+      Album.SameTags <$> chAlbumSameTags,
       guarded (const chAlbumTracksSequential) Album.TracksSequential
     ]
 
@@ -121,7 +121,7 @@ artistCheck :: Checks -> Maybe Artist.Check
 artistCheck (Checks {..}) =
   guarded (const chArtistSameGenre) Artist.SameGenre
 
-factorChecks :: Config -> ([File.Check], [Album.Check], Maybe Artist.Check)
+factorChecks :: Config -> ([Track.Check], [Album.Check], Maybe Artist.Check)
 factorChecks Config {coFilename = Filename {..}, ..} =
   factorChecks' fiPattern fiFormatting coChecks
 
@@ -129,9 +129,9 @@ factorChecks' ::
   Pattern.Pattern ->
   Pattern.Formatting ->
   Checks ->
-  ([File.Check], [Album.Check], Maybe Artist.Check)
+  ([Track.Check], [Album.Check], Maybe Artist.Check)
 factorChecks' pattern formatting checks =
-  ( fileChecks pattern formatting checks,
+  ( trackChecks pattern formatting checks,
     albumChecks checks,
     artistCheck checks
   )
@@ -225,23 +225,23 @@ filenameC =
 checksC :: Toml.TomlCodec Checks
 checksC =
   Checks
-    <$> maybeValidatedC "check_tags" tagsC chTags
-    <*> maybeValidatedC "check_genre" genreAmongC chGenreAmong
-    <*> checkFilesC .= chFilenameMatches
-    <*> maybeValidatedC "check_cover" checkCoverC chHaveCover
-    <*> checkAlbumInSameDirC .= chAlbumInSameDir
-    <*> maybeValidatedC "check_album_tags" checkAlbumSameTagsC chAlbumSameTags
-    <*> checkAlbumTracksSequentialC .= chAlbumTracksSequential
-    <*> checkArtistSameGenreC .= chArtistSameGenre
+    <$> maybeValidatedC "track_tags" tagsC chTrackTags
+    <*> maybeValidatedC "track_genre" amongC chTrackGenreAmong
+    <*> trackFilenameC .= chTrackFilename
+    <*> maybeValidatedC "album_cover" filenamesC chAlbumHaveCover
+    <*> albumSameDirC .= chAlbumSameDir
+    <*> maybeValidatedC "album_tags" tagsC chAlbumSameTags
+    <*> albumTracksSequentialC .= chAlbumTracksSequential
+    <*> artistSameGenreC .= chArtistSameGenre
   where
-    checkFilesC = Toml.table (Toml.bool "enable") "check_files"
-    checkCoverC = Toml.arrayNonEmptyOf relFileB "cover_filename"
-    checkAlbumInSameDirC = Toml.table (Toml.bool "enable") "check_album_in_same_dir"
-    checkAlbumSameTagsC = Toml.arrayNonEmptyOf tagB "tags"
-    checkAlbumTracksSequentialC =
-      Toml.table (Toml.bool "enable") "check_album_tracks_sequential"
-    checkArtistSameGenreC =
-      Toml.table (Toml.bool "enable") "check_artist_same_genre"
+    trackFilenameC = Toml.table (Toml.bool "enable") "track_filename"
+    filenamesC = Toml.arrayNonEmptyOf relFileB "filenames"
+    albumSameDirC = Toml.table (Toml.bool "enable") "album_same_dir"
+    tagsC = Toml.arrayNonEmptyOf tagB "tags"
+    albumTracksSequentialC =
+      Toml.table (Toml.bool "enable") "album_tracks_sequential"
+    artistSameGenreC = Toml.table (Toml.bool "enable") "artist_same_genre"
+    amongC = Toml.arrayNonEmptyOf Toml._Text "among"
 
 -- | Unwrap the Maybe value according to the enable flag.
 maybeValidatedC ::
@@ -282,9 +282,6 @@ enableAndMaybeC codec =
       (Toml.bool "enable")
       (Toml.dioptional codec)
 
-tagsC :: Toml.TomlCodec (NonEmpty Tag.Tag)
-tagsC = Toml.arrayNonEmptyOf tagB "tags"
-
 tagB :: Toml.TomlBiMap Tag.Tag Toml.AnyValue
 tagB = Toml._TextBy Tag.asText parse
   where
@@ -292,9 +289,6 @@ tagB = Toml._TextBy Tag.asText parse
     parse text = case Megaparsec.parseMaybe Tag.parser text of
       Just tag -> Right tag
       Nothing -> Left $ "Invalid tag: " <> text
-
-genreAmongC :: Toml.TomlCodec (NonEmpty Text)
-genreAmongC = Toml.arrayNonEmptyOf Toml._Text "genre_among"
 
 patternC :: Toml.TomlCodec Pattern.Pattern
 patternC = Toml.textBy Pattern.asText parse "filename_matches"

@@ -1,7 +1,7 @@
 module Commands
   ( getTags,
     setTags,
-    checkFile,
+    checkTrack,
     checkAlbum,
     checkArtist,
     FixFilePathsOptions (..),
@@ -15,7 +15,7 @@ import Album qualified
 import AudioTrack qualified
 import Check.Album qualified as Album
 import Check.Artist qualified as Artist
-import Check.File qualified as File
+import Check.Track qualified as Track
 import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
@@ -48,17 +48,17 @@ setTags options filename =
     Nothing
     (SetTagsOptions.setter options)
 
-checkFile :: (MonadIO m) => [File.Check] -> AudioTrack.AudioTrack -> m ()
-checkFile checks track = do
+checkTrack :: (MonadIO m) => [Track.Check] -> AudioTrack.AudioTrack -> m ()
+checkTrack checks track = do
   traverse_ (checkPrintError track) checks
   where
     checkPrintError track' check =
-      whenLeft_ (File.check check track') $ \err ->
+      whenLeft_ (Track.check check track') $ \err ->
         putTextLn $
           "File "
             <> fromString (Path.toFilePath file)
             <> ": "
-            <> File.errorToText err
+            <> Track.errorToText err
     file = AudioTrack.atFile track
 
 checkAlbum ::

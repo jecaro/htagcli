@@ -18,14 +18,14 @@ import "extra" Data.List.NonEmpty.Extra qualified as NonEmpty
 data Check
   = HaveCover (NonEmpty (Path.Path Path.Rel Path.File))
   | InSameDir
-  | SameTag (NonEmpty Tag.Tag)
+  | SameTags (NonEmpty Tag.Tag)
   | TracksSequential
   deriving (Eq, Show)
 
 data Error
   = NotInSameDir
   | MissingCover (Path.Path Path.Abs Path.Dir)
-  | SameTagError (NonEmpty Tag.Tag)
+  | SameTagsError (NonEmpty Tag.Tag)
   | TracksNotSequential
   deriving (Eq, Show)
 
@@ -34,10 +34,10 @@ errorToText NotInSameDir =
   "Audio tracks are not all in the same directory"
 errorToText (MissingCover directory) =
   "Missing cover in directory: " <> Text.pack (Path.toFilePath directory)
-errorToText (SameTagError tags) =
+errorToText (SameTagsError tags) =
   "These tags are not the same for all tracks in the album: "
     <> Text.intercalate ", " (Tag.asText <$> NonEmpty.toList tags)
-errorToText TracksNotSequential = "Track numbers are not sequential"
+errorToText TracksNotSequential = "Tracks are not sequentially numbered"
 
 getDirectories ::
   NonEmpty AudioTrack.AudioTrack -> NonEmpty (Path.Path Path.Abs Path.Dir)
@@ -60,9 +60,9 @@ check (HaveCover coverFilenames) tracks
         (pure $ Right ())
         (pure $ Left (MissingCover dir))
   | otherwise = pure $ Left NotInSameDir
-check (SameTag tagsToCheck) tracks = pure $ case checkedTags of
+check (SameTags tagsToCheck) tracks = pure $ case checkedTags of
   [] -> Right ()
-  (tag : tags) -> Left (SameTagError (tag :| tags))
+  (tag : tags) -> Left (SameTagsError (tag :| tags))
   where
     checkedTags = mapMaybe (haveSameTag' tracks) (toList tagsToCheck)
 check TracksSequential tracks = pure $ case mbNumbers of

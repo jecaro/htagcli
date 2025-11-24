@@ -12,7 +12,7 @@ where
 
 import Check.Album qualified as Album
 import Check.Artist qualified as Artist
-import Check.File qualified as File
+import Check.Track qualified as Track
 import Config qualified
 import Data.List.Extra qualified as List
 import Options.Applicative qualified as Options
@@ -70,7 +70,7 @@ data Command
 checks ::
   Config.Config ->
   CheckOptions ->
-  ([File.Check], [Album.Check], Maybe Artist.Check)
+  ([Track.Check], [Album.Check], Maybe Artist.Check)
 checks
   config@(Config.Config {coFilename = Config.Filename {..}})
   (Options.CheckOptions {..})
@@ -93,11 +93,11 @@ checkOptionsP =
 checksP :: Options.Parser Config.Checks
 checksP =
   Config.Checks
-    <$> optional tagsP
-    <*> optional genreAmongP
-    <*> filenameMatchesP
-    <*> optional haveCoverP
-    <*> albumInSameDirP
+    <$> optional trackTagsP
+    <*> optional trackGenreAmongP
+    <*> trackFilenameP
+    <*> optional albumHaveCoverP
+    <*> albumSameDirP
     <*> optional albumSameTagsP
     <*> albumTracksSequentialP
     <*> artistSameGenreP
@@ -129,29 +129,29 @@ baseDirectoryP =
         <> Options.action "directory"
     )
 
-filenameMatchesP :: Options.Parser Bool
-filenameMatchesP =
+trackFilenameP :: Options.Parser Bool
+trackFilenameP =
   Options.switch
-    ( Options.long "filename"
+    ( Options.long "track-filename"
         <> Options.help
           "Check that filenames match the specified pattern"
     )
 
-haveCoverP :: Options.Parser (NonEmpty (Path.Path Path.Rel Path.File))
-haveCoverP =
+albumHaveCoverP :: Options.Parser (NonEmpty (Path.Path Path.Rel Path.File))
+albumHaveCoverP =
   Options.some1
     ( Options.option
         (Options.maybeReader Path.parseRelFile)
-        ( Options.long "have-cover"
+        ( Options.long "album-have-cover"
             <> Options.metavar "FILENAME"
             <> Options.help "Check that the specified cover file exists"
         )
     )
 
-albumInSameDirP :: Options.Parser Bool
-albumInSameDirP =
+albumSameDirP :: Options.Parser Bool
+albumSameDirP =
   Options.switch
-    ( Options.long "in-same-dir"
+    ( Options.long "album-same-dir"
         <> Options.help "Check that all tracks are in the same directory"
     )
 
@@ -172,7 +172,7 @@ albumSameTagsP =
 albumTracksSequentialP :: Options.Parser Bool
 albumTracksSequentialP =
   Options.switch
-    ( Options.long "tracks-sequential"
+    ( Options.long "album-tracks-sequential"
         <> Options.help
           "Check that track numbers are sequential within the album"
     )
@@ -188,12 +188,12 @@ artistSameGenreP =
 tagR :: Options.ReadM Tag.Tag
 tagR = Options.maybeReader $ Megaparsec.parseMaybe Tag.parser . toText
 
-tagsP :: Options.Parser (NonEmpty Tag.Tag)
-tagsP =
+trackTagsP :: Options.Parser (NonEmpty Tag.Tag)
+trackTagsP =
   Options.some1
     ( Options.option
         tagR
-        ( Options.long "tag"
+        ( Options.long "track-tag"
             <> Options.metavar "TAG"
             <> Options.help
               "Specify a tag to check (title, artist, album, albumartist, \
@@ -201,11 +201,11 @@ tagsP =
         )
     )
 
-genreAmongP :: Options.Parser (NonEmpty Text)
-genreAmongP =
+trackGenreAmongP :: Options.Parser (NonEmpty Text)
+trackGenreAmongP =
   Options.some1
     ( Options.strOption
-        ( Options.long "genre-among"
+        ( Options.long "track-genre"
             <> Options.metavar "GENRE"
             <> Options.help "Specify a genre to check against"
         )

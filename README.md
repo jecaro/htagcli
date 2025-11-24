@@ -88,13 +88,17 @@ easier to reuse the same options.
 `htagcli` can perform several checks on your audio files to help you keep your
 collection clean and well-organized. Available checks include:
 
-- Missing tags: Detects files with missing tag fields
-- Genre: Verifies that the genre exists in a predefined list
-- File path: Ensures that the file path follows a given pattern
-- Album directory: Checks that all files from an album are stored in the same 
-  directory
-- Cover file: Checks the presence of a cover image in the album directory
-- Album tags: Checks that the tags from all files in an album are the same
+- Track level:
+    - Missing tags: Detects files with missing tag fields
+    - Genre: Verifies that the genre exists in a predefined list
+    - File path: Ensures that the file path follows a given pattern
+- Album level:
+    - Album directory: Checks that all files from an album are stored in the 
+      same directory
+    - Cover file: Checks the presence of a cover image in the album directory
+    - Album tags: Checks that the tags from all files in an album are the same
+- Artist level:
+    - Genre: Ensures that all tracks from an artist share the same genre
 
 For more information about available checks, run:
 
