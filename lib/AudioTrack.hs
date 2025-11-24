@@ -27,10 +27,10 @@ data AudioTrack = AudioTrack
     atArtist :: HTagLib.Artist,
     atAlbumArtist :: HTagLib.AlbumArtist,
     atAlbum :: HTagLib.Album,
+    atDisc :: Maybe HTagLib.DiscNumber,
     atGenre :: HTagLib.Genre,
     atYear :: Maybe HTagLib.Year,
-    atTrack :: Maybe HTagLib.TrackNumber,
-    atDisc :: Maybe HTagLib.DiscNumber
+    atTrack :: Maybe HTagLib.TrackNumber
   }
   deriving (Eq, Show)
 
@@ -47,6 +47,11 @@ parser = do
   atArtist <- lineP "Artist: " notEol HTagLib.mkArtist
   atAlbumArtist <- lineP "Album Artist: " notEol HTagLib.mkAlbumArtist
   atAlbum <- lineP "Album: " notEol HTagLib.mkAlbum
+  atDisc <-
+    lineP
+      "Disc: "
+      (Megaparsec.optional Megaparsec.decimal)
+      (HTagLib.mkDiscNumber =<<)
   atGenre <- lineP "Genre: " notEol HTagLib.mkGenre
   atYear <-
     lineP "Year: " (Megaparsec.optional Megaparsec.decimal) (HTagLib.mkYear =<<)
@@ -55,11 +60,6 @@ parser = do
       "Track: "
       (Megaparsec.optional Megaparsec.decimal)
       (HTagLib.mkTrackNumber =<<)
-  atDisc <-
-    lineP
-      "Disc: "
-      (Megaparsec.optional Megaparsec.decimal)
-      (HTagLib.mkDiscNumber =<<)
 
   pure AudioTrack {..}
 
@@ -84,10 +84,10 @@ asText AudioTrack {..} =
       "Artist: " <> HTagLib.unArtist atArtist,
       "Album Artist: " <> HTagLib.unAlbumArtist atAlbumArtist,
       "Album: " <> HTagLib.unAlbum atAlbum,
+      "Disc: " <> withMissing HTagLib.unDiscNumber atDisc,
       "Genre: " <> HTagLib.unGenre atGenre,
       "Year: " <> withMissing HTagLib.unYear atYear,
-      "Track: " <> withMissing HTagLib.unTrackNumber atTrack,
-      "Disc: " <> withMissing HTagLib.unDiscNumber atDisc
+      "Track: " <> withMissing HTagLib.unTrackNumber atTrack
     ]
 
 withMissing :: (Show b) => (a -> b) -> Maybe a -> Text
@@ -106,10 +106,10 @@ getter path =
     <*> HTagLib.artistGetter
     <*> HTagLib.albumArtistGetter
     <*> HTagLib.albumGetter
+    <*> HTagLib.discNumberGetter
     <*> HTagLib.genreGetter
     <*> HTagLib.yearGetter
     <*> HTagLib.trackNumberGetter
-    <*> HTagLib.discNumberGetter
 
 setTags :: (MonadIO m) => AudioTrack -> m ()
 setTags track@AudioTrack {..} =

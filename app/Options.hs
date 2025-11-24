@@ -280,17 +280,28 @@ setTagsOptionsP =
       )
     <*> optional
       ( Options.strOption
+          ( Options.long "albumartist"
+              <> Options.metavar "ALBUMARTIST"
+              <> Options.help "Set the album artist"
+          )
+      )
+    <*> optional
+      ( Options.strOption
           ( Options.long "album"
               <> Options.metavar "ALBUM"
               <> Options.help "Set the album"
           )
       )
     <*> optional
-      ( Options.strOption
-          ( Options.long "albumartist"
-              <> Options.metavar "ALBUMARTIST"
-              <> Options.help "Set the album artist"
+      ( Options.option
+          (Options.maybeReader strToDiscNumber)
+          ( Options.long "disc"
+              <> Options.metavar "DISC"
+              <> Options.help "Set the disc number"
           )
+          <|> Options.flag'
+            SetTagsOptions.Remove
+            (Options.long "nodisc" <> Options.help "Unset the disc")
       )
     <*> optional
       ( Options.strOption
@@ -322,17 +333,6 @@ setTagsOptionsP =
           <|> Options.flag'
             SetTagsOptions.Remove
             (Options.long "notrack" <> Options.help "Unset the track")
-      )
-    <*> optional
-      ( Options.option
-          (Options.maybeReader strToDiscNumber)
-          ( Options.long "disc"
-              <> Options.metavar "DISC"
-              <> Options.help "Set the disc number"
-          )
-          <|> Options.flag'
-            SetTagsOptions.Remove
-            (Options.long "nodisc" <> Options.help "Unset the disc")
       )
   where
     strToYear = strTo HTagLib.mkYear

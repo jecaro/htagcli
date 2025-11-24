@@ -15,12 +15,12 @@ data SetOrRemove a = Set a | Remove
 data SetTagsOptions = SetTagsOptions
   { seTitle :: Maybe HTagLib.Title,
     seArtist :: Maybe HTagLib.Artist,
-    seAlbum :: Maybe HTagLib.Album,
     seAlbumArtist :: Maybe HTagLib.AlbumArtist,
+    seAlbum :: Maybe HTagLib.Album,
+    seDisc :: Maybe (SetOrRemove HTagLib.DiscNumber),
     seGenre :: Maybe HTagLib.Genre,
     seYear :: Maybe (SetOrRemove HTagLib.Year),
-    seTrack :: Maybe (SetOrRemove HTagLib.TrackNumber),
-    seDisc :: Maybe (SetOrRemove HTagLib.DiscNumber)
+    seTrack :: Maybe (SetOrRemove HTagLib.TrackNumber)
   }
   deriving (Show)
 
@@ -45,10 +45,10 @@ setter SetTagsOptions {..} =
         HTagLib.artistSetter <$> seArtist,
         HTagLib.albumSetter <$> seAlbum,
         HTagLib.albumArtistSetter <$> seAlbumArtist,
+        toSetter HTagLib.discNumberSetter seDisc,
         HTagLib.genreSetter <$> seGenre,
         toSetter HTagLib.yearSetter seYear,
-        toSetter HTagLib.trackNumberSetter seTrack,
-        toSetter HTagLib.discNumberSetter seDisc
+        toSetter HTagLib.trackNumberSetter seTrack
       ]
   where
     toSetter _ Nothing = Nothing

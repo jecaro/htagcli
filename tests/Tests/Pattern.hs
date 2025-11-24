@@ -404,10 +404,10 @@ trackWithTitleAndFile title file =
       atArtist = HTagLib.mkArtist "artist",
       atAlbum = HTagLib.mkAlbum "album",
       atAlbumArtist = HTagLib.mkAlbumArtist "albumartist",
+      atDisc = HTagLib.mkDiscNumber 1,
       atGenre = HTagLib.mkGenre "genre",
       atYear = HTagLib.mkYear 2024,
-      atTrack = HTagLib.mkTrackNumber 1,
-      atDisc = HTagLib.mkDiscNumber 1
+      atTrack = HTagLib.mkTrackNumber 1
     }
 
 trackWithFile :: Path.Path Path.Abs Path.File -> AudioTrack.AudioTrack
