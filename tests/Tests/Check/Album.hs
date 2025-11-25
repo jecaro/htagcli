@@ -7,13 +7,14 @@ module Tests.Check.Album
   )
 where
 
+import Album qualified
 import AudioTrack qualified
 import Check.Album qualified as Album
 import Data.List.NonEmpty ((<|))
 import Data.List.NonEmpty qualified as NonEmpty
+import Data.Maybe qualified as Maybe
 import Path (reldir, relfile, (</>))
 import Path qualified
-import Path.IO qualified as Path
 import Sound.HTagLib qualified as HTagLib
 import System.IO qualified as System
 import Tag qualified
@@ -27,18 +28,18 @@ test =
   Tasty.testGroup
     "check cover"
     [ Tasty.testCase "check an album without a cover.jpg" $
-        withTenTracks $
-          \dir tracks -> do
-            result <- Album.check (Album.HaveCover covers) tracks
+        Common.withTenTracksFiles $
+          \dir album -> do
+            result <- Album.check (Album.HaveCover covers) album
             result `shouldBe` Left (Album.MissingCover dir),
       Tasty.testCase "check an album with a cover.jpg" $
-        withTenTracks $
-          \dir tracks -> do
+        Common.withTenTracksFiles $
+          \dir album -> do
             System.writeFile
               (Path.toFilePath $ dir </> NonEmpty.head covers)
               "dummy content"
 
-            result <- Album.check (Album.HaveCover covers) tracks
+            result <- Album.check (Album.HaveCover covers) album
             result `shouldBe` Right ()
     ]
   where
@@ -49,20 +50,18 @@ test =
   Tasty.testGroup
     "check directory"
     [ Tasty.testCase "an album is in a single directory" $ do
-        tracks <- Common.tenTracks
-        result <- Album.check Album.InSameDir tracks
+        result <- Album.check Album.InSameDir Common.tenTracksAlbum
         result `shouldBe` Right (),
       Tasty.testCase "an album is in multiple directories" $ do
-        tracks <- Common.tenTracks
-        let tracksDir = Path.parent . AudioTrack.atFile $ NonEmpty.head tracks
+        let album = Common.tenTracksAlbum
+            tracksDir = Maybe.fromJust $ Album.directory album
             otherDir = Path.parent tracksDir </> [reldir|other|]
-            (firstHalf, secondHalf) = NonEmpty.splitAt 5 tracks
+            (firstHalf, secondHalf) = NonEmpty.splitAt 5 (Album.tracks album)
             secondHalfMoved = moveTo otherDir <$> secondHalf
-        result <-
-          Album.check
-            Album.InSameDir
-            $ fromList
-            $ firstHalf <> secondHalfMoved
+            album' =
+              Maybe.fromJust $
+                Album.mkAlbum (fromList $ firstHalf <> secondHalfMoved)
+        result <- Album.check Album.InSameDir album'
         result `shouldBe` Left Album.NotInSameDir
     ]
   where
@@ -76,12 +75,11 @@ test =
   Tasty.testGroup
     "check same tags"
     [ Tasty.testCase "all tracks have the same tags" $ do
-        tracks <- Common.tenTracks
-        result <- Album.check (Album.SameTags commonTags) tracks
+        result <- Album.check (Album.SameTags commonTags) Common.tenTracksAlbum
         result `shouldBe` Right (),
       Tasty.testCase "some tracks have a different tag" $ do
-        tracks <- Common.tenTracks
-        result <- Album.check (Album.SameTags $ Tag.Track <| commonTags) tracks
+        let album = Common.tenTracksAlbum
+        result <- Album.check (Album.SameTags $ Tag.Track <| commonTags) album
         result `shouldBe` Left (Album.SameTagsError $ fromList [Tag.Track])
     ]
   where
@@ -92,25 +90,13 @@ test =
   Tasty.testGroup
     "check sequential tracks"
     [ Tasty.testCase "the tracks are sequential" $ do
-        tracks <- Common.tenTracks
-        result <- Album.check Album.TracksSequential tracks
+        result <- Album.check Album.TracksSequential Common.tenTracksAlbum
         result `shouldBe` Right (),
       Tasty.testCase "there are two tracks number 10" $ do
-        (track :| tracks) <- Common.tenTracks
-        let otherTen = track {AudioTrack.atTrack = HTagLib.mkTrackNumber 10}
+        let (track :| tracks) = Album.tracks Common.tenTracksAlbum
+            otherTen = track {AudioTrack.atTrack = HTagLib.mkTrackNumber 10}
             tracks' = otherTen :| tracks
-        result <- Album.check Album.TracksSequential tracks'
+            album' = Maybe.fromJust $ Album.mkAlbum tracks'
+        result <- Album.check Album.TracksSequential album'
         result `shouldBe` Left Album.TracksNotSequential
     ]
-
-withTenTracks ::
-  ( Path.Path Path.Abs Path.Dir ->
-    NonEmpty AudioTrack.AudioTrack ->
-    IO ()
-  ) ->
-  Tasty.Assertion
-withTenTracks a = Common.withTenTracksFiles $ \dir -> do
-  let inputDir = dir </> [reldir|input|]
-  filenames <- snd <$> Path.listDir inputDir
-  trackList <- traverse AudioTrack.getTags filenames
-  a inputDir $ fromList trackList

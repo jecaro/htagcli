@@ -41,6 +41,7 @@ library
 
   exposed-modules:
     Album
+    Artist
     AudioTrack
     Check.Album
     Check.Artist

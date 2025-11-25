@@ -6,6 +6,7 @@ module Check.Album
   )
 where
 
+import Album qualified
 import AudioTrack qualified
 import Data.Text qualified as Text
 import Path ((</>))
@@ -39,61 +40,33 @@ errorToText (SameTagsError tags) =
     <> Text.intercalate ", " (Tag.asText <$> NonEmpty.toList tags)
 errorToText TracksNotSequential = "Tracks are not sequentially numbered"
 
-getDirectories ::
-  NonEmpty AudioTrack.AudioTrack -> NonEmpty (Path.Path Path.Abs Path.Dir)
-getDirectories tracks =
-  NonEmpty.nubOrd $ Path.parent . AudioTrack.atFile <$> tracks
-
 check ::
   (MonadIO m) =>
   Check ->
-  NonEmpty AudioTrack.AudioTrack ->
+  Album.Album ->
   m (Either Error ())
-check InSameDir tracks
-  | length (getDirectories tracks) == 1 = pure $ Right ()
+check InSameDir album
+  | isJust $ Album.directory album = pure $ Right ()
   | otherwise = pure $ Left NotInSameDir
-check (HaveCover coverFilenames) tracks
-  | dir :| [] <- getDirectories tracks = do
+check (HaveCover coverFilenames) album
+  | Just dir <- Album.directory album = do
       let absFiles = (dir </>) <$> coverFilenames
       ifM
         (anyM Path.doesFileExist absFiles)
         (pure $ Right ())
         (pure $ Left (MissingCover dir))
   | otherwise = pure $ Left NotInSameDir
-check (SameTags tagsToCheck) tracks = pure $ case checkedTags of
+check (SameTags tagsToCheck) album = pure $ case checkedTags of
   [] -> Right ()
   (tag : tags) -> Left (SameTagsError (tag :| tags))
   where
-    checkedTags = mapMaybe (haveSameTag' tracks) (toList tagsToCheck)
-check TracksSequential tracks = pure $ case mbNumbers of
+    checkedTags = mapMaybe (Album.haveSameTag' album) (toList tagsToCheck)
+check TracksSequential album = pure $ case mbNumbers of
   Nothing -> Left TracksNotSequential
   Just numbers ->
     if sequential $ toList $ HTagLib.unTrackNumber <$> numbers
       then Right ()
       else Left TracksNotSequential
   where
-    mbNumbers = traverse AudioTrack.atTrack tracks
+    mbNumbers = traverse AudioTrack.atTrack (Album.tracks album)
     sequential list = and $ zipWith (==) (sort list) [1 ..]
-
-haveSameTag' :: NonEmpty AudioTrack.AudioTrack -> Tag.Tag -> Maybe Tag.Tag
-haveSameTag' tracks = guarded (not . haveSameTag tracks)
-
-haveSameTag :: NonEmpty AudioTrack.AudioTrack -> Tag.Tag -> Bool
-haveSameTag tracks Tag.Title = haveSameTagWithGetter AudioTrack.atTitle tracks
-haveSameTag tracks Tag.Artist = haveSameTagWithGetter AudioTrack.atArtist tracks
-haveSameTag tracks Tag.AlbumArtist =
-  haveSameTagWithGetter AudioTrack.atAlbumArtist tracks
-haveSameTag tracks Tag.Album = haveSameTagWithGetter AudioTrack.atAlbum tracks
-haveSameTag tracks Tag.Genre = haveSameTagWithGetter AudioTrack.atGenre tracks
-haveSameTag tracks Tag.Year = haveSameTagWithGetter AudioTrack.atYear tracks
-haveSameTag tracks Tag.Track = haveSameTagWithGetter AudioTrack.atTrack tracks
-haveSameTag tracks Tag.Disc = haveSameTagWithGetter AudioTrack.atDisc tracks
-
-haveSameTagWithGetter ::
-  (Eq a) =>
-  (AudioTrack.AudioTrack -> a) ->
-  NonEmpty AudioTrack.AudioTrack ->
-  Bool
-haveSameTagWithGetter getTagValue tracks = all (== head tags) (tail tags)
-  where
-    tags = getTagValue <$> tracks

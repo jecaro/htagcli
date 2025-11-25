@@ -25,23 +25,24 @@ test :: TestTree
 test =
   Tasty.testGroup
     "fixFilePaths"
-    [ Tasty.testCase "dry run" $ Common.withTenTracksFiles $ \dir -> do
-        let inputDir = dir </> [reldir|input|]
-        filenamesBefore <- snd <$> Path.listDir inputDir
+    [ Tasty.testCase "dry run" $
+        Common.withTenTracksFilesInSubdir [reldir|./|] $ \dir _ -> do
+          let inputDir = dir
+          filenamesBefore <- snd <$> Path.listDir inputDir
 
-        result <-
-          traverse
-            (Commands.fixFilePaths' $ fixFilePathsOptions True inputDir)
-            filenamesBefore
+          result <-
+            traverse
+              (Commands.fixFilePaths' $ fixFilePathsOptions True inputDir)
+              filenamesBefore
 
-        -- All files would be renamed
-        all isJust result `shouldBe` True
+          -- All files would be renamed
+          all isJust result `shouldBe` True
 
-        -- No changes visible on disk
-        filenamesAfter <- snd <$> Path.listDir inputDir
-        filenamesAfter `shouldBe` filenamesBefore,
+          -- No changes visible on disk
+          filenamesAfter <- snd <$> Path.listDir inputDir
+          filenamesAfter `shouldBe` filenamesBefore,
       Tasty.testCase "rename and delete empty dirs" $
-        Common.withTenTracksFiles $ \dir -> do
+        Common.withTenTracksFilesInSubdir [reldir|./input|] $ \dir _ -> do
           let inputDir = dir </> [reldir|input|]
           filenamesInCurrentDirBefore <- snd <$> Path.listDir inputDir
           listMbPaths <-
@@ -63,7 +64,7 @@ test =
           lefts checkResults `shouldBe` mempty
           catMaybes listMbPaths `shouldBe` filenamesAfter,
       Tasty.testCase "rename but keep non-empty dirs" $
-        Common.withTenTracksFiles $ \dir -> do
+        Common.withTenTracksFilesInSubdir [reldir|./input|] $ \dir _ -> do
           let inputDir = dir </> [reldir|input|]
               dummy = inputDir </> [relfile|dummy.txt|]
           System.writeFile (Path.toFilePath dummy) "dummy content"

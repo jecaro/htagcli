@@ -6,6 +6,8 @@ module Check.Artist
   )
 where
 
+import Album qualified
+import Artist qualified
 import AudioTrack qualified
 
 data Check = SameGenre
@@ -17,10 +19,12 @@ data Error = SameGenreError
 errorToText :: Error -> Text
 errorToText SameGenreError = "Tracks do not all have the same genre"
 
-check :: Check -> NonEmpty (NonEmpty AudioTrack.AudioTrack) -> Either Error ()
-check SameGenre albums
-  | all (== head genres) genres = Right ()
+check :: Check -> Artist.Artist -> Either Error ()
+check SameGenre artist
+  | all (== firstGenre) otherGenres = Right ()
   | otherwise = Left SameGenreError
   where
-    tracks = join albums
-    genres = AudioTrack.atGenre <$> tracks
+    albums = Artist.albums artist
+    (firstTrack :| otherTracks) = Album.tracks =<< albums
+    firstGenre = AudioTrack.atGenre firstTrack
+    otherGenres = AudioTrack.atGenre <$> otherTracks

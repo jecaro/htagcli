@@ -1,5 +1,6 @@
 module AudioTrack
   ( AudioTrack (..),
+    albumArtistOrArtist,
     haveTag,
     getTags,
     setTags,
@@ -34,6 +35,11 @@ data AudioTrack = AudioTrack
     atTrack :: Maybe HTagLib.TrackNumber
   }
   deriving (Eq, Show)
+
+albumArtistOrArtist :: AudioTrack.AudioTrack -> Text
+albumArtistOrArtist track
+  | haveTag Tag.AlbumArtist track = HTagLib.unAlbumArtist (atAlbumArtist track)
+  | otherwise = HTagLib.unArtist (atArtist track)
 
 parser :: Parser AudioTrack
 parser = do

@@ -1,13 +1,13 @@
 module Main where
 
 import Album qualified
+import Artist qualified
 import AudioTrack qualified
 import Commands qualified
 import Conduit ((.|))
 import Conduit qualified
 import Config qualified
 import Data.Conduit.Combinators qualified as Conduit
-import Data.Conduit.List qualified as ConduitL
 import Data.Either.Extra qualified as Either
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
@@ -101,9 +101,9 @@ main = do
           filesOrDirectory
           $ Conduit.mapM AudioTrack.getTags
             .| Conduit.iterM (Commands.checkTrack trackChecks)
-            .| ConduitL.groupOn (AudioTrack.atAlbum &&& AudioTrack.atDisc)
+            .| albumC
             .| Conduit.iterM (Commands.checkAlbum albumChecks)
-            .| ConduitL.groupOn Album.albumArtistOrArtist
+            .| artistC
             .| Conduit.mapM_C (Commands.checkArtist mbArtistCheck)
       Options.FixFilePaths Options.FixFilePathsOptions {..} filesOrDirectory -> do
         Config.Config {coFilename = Config.Filename {..}, ..} <- Config.readConfig
@@ -151,6 +151,39 @@ fileOrDirectoryC (Options.FDDirectory (Options.Directory {..})) = do
     .| Conduit.filterC
       (\filename -> any (`Text.isSuffixOf` fromString filename) diExtensions)
     .| Conduit.mapMC Path.parseAbsFile
+
+albumC ::
+  (Monad m) =>
+  Conduit.ConduitT AudioTrack.AudioTrack Album.Album m ()
+albumC = clusterC Album.mkAlbum Album.addTrack
+
+artistC ::
+  (Monad m) =>
+  Conduit.ConduitT Album.Album Artist.Artist m ()
+artistC = clusterC Artist.mkArtist Artist.addAlbum
+
+-- | Cluster incoming items into groups using the provided 'mk' and 'add'
+-- functions
+clusterC ::
+  (Monad m) =>
+  (NonEmpty i -> Maybe o) ->
+  (i -> o -> Maybe o) ->
+  Conduit.ConduitT i o m ()
+clusterC mk add = loop Nothing
+  where
+    loop Nothing =
+      Conduit.await >>= \case
+        Nothing -> pure ()
+        -- Create a new cluster
+        Just item -> loop $ mk $ item :| []
+    loop (Just cluster) =
+      Conduit.await >>= \case
+        Nothing -> Conduit.yield cluster
+        Just item -> case add item cluster of
+          Just newCluster -> loop $ Just newCluster
+          Nothing -> do
+            Conduit.yield cluster
+            loop $ mk $ item :| []
 
 exceptions :: SomeException -> IO ()
 exceptions someException = do

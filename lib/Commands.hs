@@ -12,6 +12,7 @@ module Commands
 where
 
 import Album qualified
+import Artist qualified
 import AudioTrack qualified
 import Check.Album qualified as Album
 import Check.Artist qualified as Artist
@@ -62,35 +63,36 @@ checkTrack checks track = do
     file = AudioTrack.atFile track
 
 checkAlbum ::
-  (MonadIO m) => [Album.Check] -> NonEmpty AudioTrack.AudioTrack -> m ()
-checkAlbum checks tracks = do
-  traverse_ (checkPrintError tracks) checks
+  (MonadIO m) => [Album.Check] -> Album.Album -> m ()
+checkAlbum checks album = traverse_ checkPrintError checks
   where
-    checkPrintError tracks' check =
-      whenLeftM_ (Album.check check tracks') $ \err ->
+    checkPrintError check =
+      whenLeftM_ (Album.check check album) $ \err ->
         putTextLn $
           "Album "
-            <> Album.albumArtistOrArtist tracks
-            <> album
-            <> disc
+            <> artistOrAlbumArtistTxt
+            <> albumTxt
+            <> discTxt
             <> ": "
             <> Album.errorToText err
-    album = "/" <> HTagLib.unAlbum (Album.album tracks)
-    disc
-      | Just d <- Album.disc tracks = "/Disc " <> show (HTagLib.unDiscNumber d)
+    artistOrAlbumArtistTxt = Album.albumArtistOrArtist album
+    albumTxt = "/" <> HTagLib.unAlbum (Album.album album)
+    discTxt
+      | Just disc <- Album.disc album =
+          "/Disc " <> show (HTagLib.unDiscNumber disc)
       | otherwise = ""
 
 checkArtist ::
   (MonadIO m) =>
   Maybe Artist.Check ->
-  NonEmpty (NonEmpty AudioTrack.AudioTrack) ->
+  Artist.Artist ->
   m ()
 checkArtist Nothing _ = pure ()
-checkArtist (Just check) albums = do
-  whenLeft_ (Artist.check check albums) $ \err -> do
+checkArtist (Just check) artist = do
+  whenLeft_ (Artist.check check artist) $ \err -> do
     putTextLn $
       "Artist "
-        <> Album.albumArtistOrArtist (join albums)
+        <> HTagLib.unArtist (Artist.artist artist)
         <> ": "
         <> Artist.errorToText err
 
