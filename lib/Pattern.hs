@@ -26,7 +26,6 @@ where
 import AudioTrack qualified
 import Control.Applicative.Combinators.NonEmpty qualified as NonEmpty
 import Data.Foldable qualified as Foldable
-import Data.List.NonEmpty qualified as NonEmpty
 import Data.List.NonEmpty.Extra qualified as NonEmpty
 import Data.Text qualified as Text
 import Path ((</>))
@@ -188,7 +187,12 @@ parsePadding text =
 
 formatWith :: (Placeholder -> Text) -> Pattern -> Text
 formatWith formatter pattern =
-  fold $ NonEmpty.intersperse "/" $ formatComponentWith formatter <$> pattern
+  fold $
+    intersperse "/" $
+      -- Remove empty components
+      filter (not . Text.null) $
+        toList $
+          formatComponentWith formatter <$> pattern
 
 formatComponentWith :: (Placeholder -> Text) -> Component -> Text
 formatComponentWith formatter = foldMap (formatFragmentWith formatter)
