@@ -48,45 +48,41 @@ test :: TestTree
 test =
   Tasty.testGroup
     "check directory"
-    [ Tasty.testCase "an album is in a single directory" $
-        withTenTracks $ \_ tracks -> do
-          result <- Album.check Album.InSameDir tracks
-          result `shouldBe` Right (),
-      Tasty.testCase "an album is in multiple directories" $
-        Common.withTenTracksFiles $ \dir -> do
-          let inputDir = dir </> [reldir|input|]
-
-          -- Take half of the input files
-          filenamesBefore <- snd <$> Path.listDir inputDir
-          let secondHalf = drop 5 filenamesBefore
-
-          let newDir = dir </> [reldir|other|]
-          Path.ensureDir newDir
-
-          -- And move them into 'newDir'
-          traverse_ (moveFileIn newDir) secondHalf
-
-          -- Now get all the tracks where they are
-          filenames <- snd <$> Path.listDirRecur dir
-          trackList <- traverse AudioTrack.getTags filenames
-
-          -- And check if they are in the same dir
-          result <- Album.check Album.InSameDir $ fromList trackList
-          result `shouldBe` Left Album.NotInSameDir
+    [ Tasty.testCase "an album is in a single directory" $ do
+        tracks <- Common.tenTracks
+        result <- Album.check Album.InSameDir tracks
+        result `shouldBe` Right (),
+      Tasty.testCase "an album is in multiple directories" $ do
+        tracks <- Common.tenTracks
+        let tracksDir = Path.parent . AudioTrack.atFile $ NonEmpty.head tracks
+            otherDir = Path.parent tracksDir </> [reldir|other|]
+            (firstHalf, secondHalf) = NonEmpty.splitAt 5 tracks
+            secondHalfMoved = moveTo otherDir <$> secondHalf
+        result <-
+          Album.check
+            Album.InSameDir
+            $ fromList
+            $ firstHalf <> secondHalfMoved
+        result `shouldBe` Left Album.NotInSameDir
     ]
+  where
+    moveTo newDir track =
+      track
+        { AudioTrack.atFile = newDir </> Path.filename (AudioTrack.atFile track)
+        }
 
 test :: TestTree
 test =
   Tasty.testGroup
     "check same tags"
-    [ Tasty.testCase "all tracks have the same tags" $
-        withTenTracks $ \_ tracks -> do
-          result <- Album.check (Album.SameTags commonTags) tracks
-          result `shouldBe` Right (),
-      Tasty.testCase "some tracks have a different tag" $
-        withTenTracks $ \_ tracks -> do
-          result <- Album.check (Album.SameTags $ Tag.Track <| commonTags) tracks
-          result `shouldBe` Left (Album.SameTagsError $ fromList [Tag.Track])
+    [ Tasty.testCase "all tracks have the same tags" $ do
+        tracks <- Common.tenTracks
+        result <- Album.check (Album.SameTags commonTags) tracks
+        result `shouldBe` Right (),
+      Tasty.testCase "some tracks have a different tag" $ do
+        tracks <- Common.tenTracks
+        result <- Album.check (Album.SameTags $ Tag.Track <| commonTags) tracks
+        result `shouldBe` Left (Album.SameTagsError $ fromList [Tag.Track])
     ]
   where
     commonTags = fromList [Tag.Genre, Tag.Year, Tag.Artist, Tag.AlbumArtist]
@@ -95,21 +91,17 @@ test :: TestTree
 test =
   Tasty.testGroup
     "check sequential tracks"
-    [ Tasty.testCase "the tracks are sequential" $
-        withTenTracks $ \_ tracks -> do
-          result <- Album.check Album.TracksSequential tracks
-          result `shouldBe` Right (),
-      Tasty.testCase "there are two tracks number 10" $
-        withTenTracks $ \_ (track :| tracks) -> do
-          let otherTen = track {AudioTrack.atTrack = HTagLib.mkTrackNumber 10}
-              tracks' = otherTen :| tracks
-          result <- Album.check Album.TracksSequential tracks'
-          result `shouldBe` Left Album.TracksNotSequential
+    [ Tasty.testCase "the tracks are sequential" $ do
+        tracks <- Common.tenTracks
+        result <- Album.check Album.TracksSequential tracks
+        result `shouldBe` Right (),
+      Tasty.testCase "there are two tracks number 10" $ do
+        (track :| tracks) <- Common.tenTracks
+        let otherTen = track {AudioTrack.atTrack = HTagLib.mkTrackNumber 10}
+            tracks' = otherTen :| tracks
+        result <- Album.check Album.TracksSequential tracks'
+        result `shouldBe` Left Album.TracksNotSequential
     ]
-
-moveFileIn ::
-  Path.Path Path.Abs Path.Dir -> Path.Path Path.Abs Path.File -> IO ()
-moveFileIn dir file = Path.renameFile file $ dir </> Path.filename file
 
 withTenTracks ::
   ( Path.Path Path.Abs Path.Dir ->
