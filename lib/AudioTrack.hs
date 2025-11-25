@@ -9,6 +9,7 @@ module AudioTrack
   )
 where
 
+import Data.Set qualified as Set
 import Data.Text qualified as Text
 import Path qualified
 import SetTagsOptions qualified
@@ -17,7 +18,7 @@ import Sound.HTagLib.Extra qualified as HTagLib
 import Tag qualified
 import Text.Megaparsec qualified as Megaparsec
 import Text.Megaparsec.Char qualified as Megaparsec
-import Text.Megaparsec.Char.Lexer qualified as Megaparsec
+import Text.Megaparsec.Char.Lexer qualified as MegaparsecL
 
 type Parser = Megaparsec.Parsec Void Text
 
@@ -36,45 +37,55 @@ data AudioTrack = AudioTrack
 
 parser :: Parser AudioTrack
 parser = do
-  void $ Megaparsec.string "File: "
-  fileText <- Megaparsec.takeWhileP Nothing (/= '\n')
+  fileText <- lineP "File:" notEol id
   atFile <- case Path.parseAbsFile (toString fileText) of
     Left err -> fail $ "Failed to parse file path: " <> show err
     Right path -> pure path
 
-  void Megaparsec.newline
-  atTitle <- lineP "Title: " notEol HTagLib.mkTitle
-  atArtist <- lineP "Artist: " notEol HTagLib.mkArtist
-  atAlbumArtist <- lineP "Album Artist: " notEol HTagLib.mkAlbumArtist
-  atAlbum <- lineP "Album: " notEol HTagLib.mkAlbum
+  atTitle <- lineP "Title:" notEol HTagLib.mkTitle
+  atArtist <- lineP "Artist:" notEol HTagLib.mkArtist
+  atAlbumArtist <- lineP "Album Artist:" notEol HTagLib.mkAlbumArtist
+  atAlbum <- lineP "Album:" notEol HTagLib.mkAlbum
   atDisc <-
     lineP
-      "Disc: "
-      (Megaparsec.optional Megaparsec.decimal)
+      "Disc:"
+      (Megaparsec.optional MegaparsecL.decimal)
       (HTagLib.mkDiscNumber =<<)
-  atGenre <- lineP "Genre: " notEol HTagLib.mkGenre
+  atGenre <- lineP "Genre:" notEol HTagLib.mkGenre
   atYear <-
-    lineP "Year: " (Megaparsec.optional Megaparsec.decimal) (HTagLib.mkYear =<<)
+    lineP "Year:" (Megaparsec.optional MegaparsecL.decimal) (HTagLib.mkYear =<<)
   atTrack <-
     lineP
-      "Track: "
-      (Megaparsec.optional Megaparsec.decimal)
+      "Track:"
+      (Megaparsec.optional MegaparsecL.decimal)
       (HTagLib.mkTrackNumber =<<)
 
   pure AudioTrack {..}
 
 audioTracksP :: Parser [AudioTrack]
-audioTracksP = Megaparsec.sepEndBy parser Megaparsec.newline <* Megaparsec.eof
+audioTracksP =
+  Megaparsec.sepEndBy
+    parser
+    (Megaparsec.many Megaparsec.newline)
+    <* Megaparsec.eof
 
 notEol :: Parser Text
 notEol = Megaparsec.takeWhileP Nothing (/= '\n')
 
 lineP :: Text -> Parser b -> (b -> a) -> Parser a
 lineP prefix inner constructor = do
-  void $ Megaparsec.string prefix
-  value <- inner
+  void $ lexeme $ Megaparsec.string prefix
+  value <- lexeme inner
   void Megaparsec.newline
   pure $ constructor value
+
+spaceConsumer :: Parser ()
+spaceConsumer = MegaparsecL.space Megaparsec.hspace1 simpleFailure simpleFailure
+  where
+    simpleFailure = Megaparsec.failure Nothing Set.empty
+
+lexeme :: Parser a -> Parser a
+lexeme = MegaparsecL.lexeme spaceConsumer
 
 asText :: AudioTrack -> Text
 asText AudioTrack {..} =
