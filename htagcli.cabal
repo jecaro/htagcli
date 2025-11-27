@@ -83,6 +83,7 @@ executable htagcli
     Options
     Progress
     Progress.Queue
+    Stats
 
   build-depends:
     ansi-terminal,

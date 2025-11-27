@@ -49,25 +49,29 @@ setTags options filename =
     Nothing
     (SetTagsOptions.setter options)
 
-checkTrack :: (MonadIO m) => [Track.Check] -> AudioTrack.AudioTrack -> m ()
-checkTrack checks track = do
-  traverse_ (checkPrintError track) checks
+countTrues :: [Bool] -> Int
+countTrues = length . filter id
+
+checkTrack :: (MonadIO m) => [Track.Check] -> AudioTrack.AudioTrack -> m Int
+checkTrack checks track = countTrues <$> traverse checkPrintError checks
   where
-    checkPrintError track' check =
-      whenLeft_ (Track.check check track') $ \err ->
+    checkPrintError check = do
+      let result = Track.check check track
+      whenLeft_ result $ \err ->
         putTextLn $
           "File "
             <> fromString (Path.toFilePath file)
             <> ": "
             <> Track.errorToText err
+      pure $ isLeft result
     file = AudioTrack.atFile track
 
-checkAlbum ::
-  (MonadIO m) => [Album.Check] -> Album.Album -> m ()
-checkAlbum checks album = traverse_ checkPrintError checks
+checkAlbum :: (MonadIO m) => [Album.Check] -> Album.Album -> m Int
+checkAlbum checks album = countTrues <$> traverse checkPrintError checks
   where
-    checkPrintError check =
-      whenLeftM_ (Album.check check album) $ \err ->
+    checkPrintError check = do
+      result <- Album.check check album
+      whenLeft_ result $ \err ->
         putTextLn $
           "Album "
             <> artistOrAlbumArtistTxt
@@ -75,6 +79,7 @@ checkAlbum checks album = traverse_ checkPrintError checks
             <> discTxt
             <> ": "
             <> Album.errorToText err
+      pure $ isLeft result
     artistOrAlbumArtistTxt = Album.albumArtistOrArtist album
     albumTxt = "/" <> HTagLib.unAlbum (Album.album album)
     discTxt
@@ -86,15 +91,17 @@ checkArtist ::
   (MonadIO m) =>
   Maybe Artist.Check ->
   Artist.Artist ->
-  m ()
-checkArtist Nothing _ = pure ()
+  m Bool
+checkArtist Nothing _ = pure False
 checkArtist (Just check) artist = do
-  whenLeft_ (Artist.check check artist) $ \err -> do
+  let result = Artist.check check artist
+  whenLeft_ result $ \err -> do
     putTextLn $
       "Artist "
         <> HTagLib.unArtist (Artist.artist artist)
         <> ": "
         <> Artist.errorToText err
+  pure $ isLeft result
 
 data FixFilePathsOptions = FixFilePathsOptions
   { fiDryRun :: Bool,

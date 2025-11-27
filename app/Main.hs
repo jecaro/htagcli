@@ -16,6 +16,8 @@ import Options.Applicative qualified as Options
 import Path qualified
 import Path.IO qualified as Path
 import Progress qualified
+import Stats qualified
+import System.Exit qualified as System
 import System.Process.Typed qualified as Process
 import Text.Megaparsec qualified as Megaparsec
 import UnliftIO.Exception qualified as Exception
@@ -97,14 +99,38 @@ main = do
         when (null trackChecks && null albumChecks && null mbArtistCheck) $
           Exception.throwIO NoCheckInConfig
 
+        stats <- newIORef Stats.empty
+        let modifyStats = modifyIORef' stats
+            addTrackErrors = modifyStats . Stats.addTrackErrors
+            addAlbumErrors = modifyStats . Stats.addAlbumErrors
+            incArtistErrors = modifyStats Stats.incArtistErrors
+
         runConduitWithProgress
           filesOrDirectory
-          $ Conduit.mapM AudioTrack.getTags
-            .| Conduit.iterM (Commands.checkTrack trackChecks)
-            .| albumC
-            .| Conduit.iterM (Commands.checkAlbum albumChecks)
-            .| artistC
-            .| Conduit.mapM_C (Commands.checkArtist mbArtistCheck)
+          ( Conduit.mapM AudioTrack.getTags
+              .| Conduit.iterM
+                (addTrackErrors <=< Commands.checkTrack trackChecks)
+              .| albumC
+              .| Conduit.iterM
+                (addAlbumErrors <=< Commands.checkAlbum albumChecks)
+              .| artistC
+              .| Conduit.mapM_C
+                (flip when incArtistErrors <=< Commands.checkArtist mbArtistCheck)
+          )
+
+        Stats.CheckErrors {..} <- readIORef stats
+        unless (null trackChecks) $
+          putTextLn $
+            "Track errors: " <> show ceTrackErrors
+        unless (null albumChecks) $
+          putTextLn $
+            "Album errors: " <> show ceAlbumErrors
+        when (isJust mbArtistCheck) $
+          putTextLn $
+            "Artist errors: " <> show ceArtistErrors
+
+        let total = ceTrackErrors + ceAlbumErrors + ceArtistErrors
+        when (total > 0) $ System.exitWith $ System.ExitFailure total
       Options.FixFilePaths Options.FixFilePathsOptions {..} filesOrDirectory -> do
         Config.Config {coFilename = Config.Filename {..}, ..} <- Config.readConfig
         let formatting = fromMaybe fiFormatting foFormatting
@@ -186,9 +212,13 @@ clusterC mk add = loop Nothing
             loop $ mk $ item :| []
 
 exceptions :: SomeException -> IO ()
-exceptions someException = do
-  Text.hPutStr stderr message
-  exitFailure
+exceptions someException
+  -- Rethrow exit failures to preserve the exit code
+  | Just (err :: System.ExitCode) <- fromException someException =
+      Exception.throwIO err
+  | otherwise = do
+      Text.hPutStr stderr message
+      exitFailure
   where
     message
       | Just mainException <- fromException someException =
