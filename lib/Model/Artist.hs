@@ -7,16 +7,21 @@ module Model.Artist
   )
 where
 
-import Model.Album qualified as Album
 import Data.List.NonEmpty ((<|))
+import Data.Text qualified as Text
+import Model.Album qualified as Album
 import Sound.HTagLib qualified as HTagLib
+import Sound.HTagLib.Extra qualified as HTagLib
 
 newtype Artist = Artist (NonEmpty Album.Album)
   deriving (Eq, Show)
 
 mkArtist :: NonEmpty Album.Album -> Maybe Artist
 mkArtist albums'@(firstAlbum :| otherAlbums)
-  | (allSameAlbumArtist && (firstAlbumArtist /= "Various Artists"))
+  | ( allSameAlbumArtist
+        && not (Text.null $ HTagLib.unAlbumArtist firstAlbumArtist)
+        && (firstAlbumArtist /= "Various Artists")
+    )
       || allSameArtist =
       Just $ Artist albums'
   | otherwise = Nothing
