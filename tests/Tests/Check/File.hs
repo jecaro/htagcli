@@ -7,13 +7,13 @@ module Tests.Check.File
   )
 where
 
-import AudioTrack qualified
 import Check.Track qualified as Track
+import Model.AudioTrack qualified as AudioTrack
+import Model.Pattern qualified as Pattern
+import Model.Tag qualified as Tag
 import Path (absfile)
-import Pattern qualified
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
-import Tag qualified
 import Test.Hspec.Expectations (shouldBe)
 import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty

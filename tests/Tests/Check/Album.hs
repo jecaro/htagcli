@@ -7,17 +7,17 @@ module Tests.Check.Album
   )
 where
 
-import Album qualified
-import AudioTrack qualified
 import Check.Album qualified as Album
 import Data.List.NonEmpty ((<|))
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Maybe qualified as Maybe
+import Model.Album qualified as Album
+import Model.AudioTrack qualified as AudioTrack
+import Model.Tag qualified as Tag
 import Path (reldir, relfile, (</>))
 import Path qualified
 import Sound.HTagLib qualified as HTagLib
 import System.IO qualified as System
-import Tag qualified
 import Test.Hspec.Expectations (shouldBe)
 import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty

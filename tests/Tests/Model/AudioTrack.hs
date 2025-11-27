@@ -1,13 +1,12 @@
 {- AUTOCOLLECT.TEST -}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Tests.AudioTrack
+module Tests.Model.AudioTrack
   (
   {- AUTOCOLLECT.TEST.export -}
   )
 where
 
-import AudioTrack qualified
 import Control.Monad.Morph qualified as Morph
 import Control.Monad.Trans.Resource qualified as Resource
 import Data.Char qualified as Char
@@ -16,6 +15,7 @@ import Hedgehog ((===))
 import Hedgehog qualified
 import Hedgehog.Gen qualified as HedgehogGen
 import Hedgehog.Range qualified as HedgehogRange
+import Model.AudioTrack qualified as AudioTrack
 import Path (relfile, (</>))
 import Path qualified
 import Path.IO qualified as Path

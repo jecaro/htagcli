@@ -1,4 +1,4 @@
-module SetTagsOptions
+module Model.SetTagsOptions
   ( SetTagsOptions (..),
     SetOrRemove (..),
     noSetTagsOptions,
@@ -52,5 +52,5 @@ setter SetTagsOptions {..} =
       ]
   where
     toSetter _ Nothing = Nothing
-    toSetter tagSetter (Just SetTagsOptions.Remove) = Just $ tagSetter Nothing
-    toSetter tagSetter (Just (SetTagsOptions.Set v)) = Just $ tagSetter $ Just v
+    toSetter tagSetter (Just Remove) = Just $ tagSetter Nothing
+    toSetter tagSetter (Just (Set v)) = Just $ tagSetter $ Just v

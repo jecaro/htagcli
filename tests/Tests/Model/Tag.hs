@@ -1,6 +1,6 @@
 {- AUTOCOLLECT.TEST -}
 
-module Tests.Tag
+module Tests.Model.Tag
   (
   {- AUTOCOLLECT.TEST.export -}
   )
@@ -9,7 +9,7 @@ where
 import Hedgehog ((===))
 import Hedgehog qualified
 import Hedgehog.Gen qualified as Hedgehog
-import Tag qualified
+import Model.Tag qualified as Tag
 import Test.Tasty.Hedgehog qualified as Tasty
 import Text.Megaparsec qualified as Megaparsec
 

@@ -7,8 +7,8 @@ module Tests.Check.Artist
   )
 where
 
-import Artist qualified
 import Check.Artist qualified as Artist
+import Model.Artist qualified as Artist
 import Path (absdir)
 import Relude.Unsafe qualified as Unsafe
 import Sound.HTagLib qualified as HTagLib

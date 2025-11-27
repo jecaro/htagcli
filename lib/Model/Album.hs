@@ -1,4 +1,4 @@
-module Album
+module Model.Album
   ( Album,
     mkAlbum,
     addTrack,
@@ -14,12 +14,12 @@ module Album
   )
 where
 
-import AudioTrack qualified
+import Model.AudioTrack qualified as AudioTrack
 import Data.List.NonEmpty ((<|))
 import Path qualified
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
-import Tag qualified
+import Model.Tag qualified as Tag
 import "extra" Data.List.NonEmpty.Extra qualified as NonEmpty
 
 newtype Album = Album (NonEmpty AudioTrack.AudioTrack)

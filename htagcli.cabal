@@ -40,20 +40,20 @@ library
     lib
 
   exposed-modules:
-    Album
-    Artist
-    AudioTrack
     Check.Album
     Check.Artist
     Check.Track
     Commands
     Config
     Data.List.NonEmpty.Extra
+    Model.Album
+    Model.Artist
+    Model.AudioTrack
+    Model.Pattern
+    Model.SetTagsOptions
+    Model.Tag
     Path.IO.Extra
-    Pattern
-    SetTagsOptions
     Sound.HTagLib.Extra
-    Tag
     Toml.Extra
 
   build-depends:
@@ -112,15 +112,15 @@ test-suite tests
     Main.hs
 
   other-modules:
-    Tests.AudioTrack
     Tests.Check.Album
     Tests.Check.Artist
     Tests.Check.File
     Tests.Commands
     Tests.Common
     Tests.Config
-    Tests.Pattern
-    Tests.Tag
+    Tests.Model.AudioTrack
+    Tests.Model.Pattern
+    Tests.Model.Tag
 
   ghc-options:
     -F

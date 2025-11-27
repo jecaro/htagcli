@@ -1,25 +1,25 @@
 {- AUTOCOLLECT.TEST -}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Tests.Pattern
+module Tests.Model.Pattern
   (
   {- AUTOCOLLECT.TEST.export -}
   )
 where
 
-import AudioTrack qualified
 import Check.Track qualified as Track
 import Data.List.NonEmpty qualified as NonEmpty
 import Hedgehog ((===))
 import Hedgehog qualified
 import Hedgehog.Gen qualified as HedgehogGen
 import Hedgehog.Range qualified as HedgehogRange
+import Model.AudioTrack qualified as AudioTrack
+import Model.Pattern qualified as Pattern
+import Model.Tag qualified as Tag
 import Path (absdir, absfile, (</>))
 import Path qualified
-import Pattern qualified
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
-import Tag qualified
 import Test.Hspec.Expectations (shouldBe)
 import Test.Hspec.Megaparsec (shouldParse)
 import Test.Tasty qualified as Tasty

@@ -7,15 +7,15 @@ module Tests.Commands
   )
 where
 
-import AudioTrack qualified
 import Check.Track qualified as Track
 import Commands qualified
+import Model.AudioTrack qualified as AudioTrack
+import Model.Pattern qualified as Pattern
+import Model.Tag qualified as Tag
 import Path (reldir, relfile, (</>))
 import Path qualified
 import Path.IO qualified as Path
-import Pattern qualified
 import System.IO qualified as System
-import Tag qualified
 import Test.Hspec.Expectations (shouldBe)
 import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty

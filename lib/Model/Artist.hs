@@ -1,4 +1,4 @@
-module Artist
+module Model.Artist
   ( Artist,
     mkArtist,
     addAlbum,
@@ -7,7 +7,7 @@ module Artist
   )
 where
 
-import Album qualified
+import Model.Album qualified as Album
 import Data.List.NonEmpty ((<|))
 import Sound.HTagLib qualified as HTagLib
 

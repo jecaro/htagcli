@@ -6,14 +6,14 @@ module Check.Album
   )
 where
 
-import Album qualified
-import AudioTrack qualified
 import Data.Text qualified as Text
+import Model.Album qualified as Album
+import Model.AudioTrack qualified as AudioTrack
+import Model.Tag qualified as Tag
 import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
 import Sound.HTagLib qualified as HTagLib
-import Tag qualified
 import "extra" Data.List.NonEmpty.Extra qualified as NonEmpty
 
 data Check

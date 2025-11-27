@@ -15,14 +15,14 @@ import Check.Artist qualified as Artist
 import Check.Track qualified as Track
 import Config qualified
 import Data.List.Extra qualified as List
+import Model.Pattern qualified as Pattern
+import Model.SetTagsOptions qualified as SetTagsOptions
+import Model.Tag qualified as Tag
 import Options.Applicative qualified as Options
 import Options.Applicative.NonEmpty qualified as Options
 import Path qualified
-import Pattern qualified
-import SetTagsOptions qualified
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
-import Tag qualified
 import Text.Megaparsec qualified as Megaparsec
 
 data Directory = Directory

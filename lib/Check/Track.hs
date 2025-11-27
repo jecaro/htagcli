@@ -6,13 +6,13 @@ module Check.Track
   )
 where
 
-import AudioTrack qualified
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Text qualified as Text
+import Model.AudioTrack qualified as AudioTrack
+import Model.Pattern qualified as Pattern
+import Model.Tag qualified as Tag
 import Path qualified
-import Pattern qualified
 import Sound.HTagLib qualified as HTagLib
-import Tag qualified
 
 data Check
   = TagsExist (NonEmpty Tag.Tag)

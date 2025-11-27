@@ -1,4 +1,4 @@
-module Tag (Tag (..), asText, parser) where
+module Model.Tag (Tag (..), asText, parser) where
 
 import Text.Megaparsec qualified as Megaparsec
 import Text.Megaparsec.Char qualified as Megaparsec
@@ -18,15 +18,15 @@ asText Year = "year"
 asText Track = "track"
 asText Disc = "disc"
 
-parser :: Parser Tag.Tag
+parser :: Parser Tag
 parser =
   Megaparsec.choice
-    [ Tag.Title <$ Megaparsec.string "title",
-      Tag.Artist <$ Megaparsec.string "artist",
-      Tag.AlbumArtist <$ Megaparsec.string "albumartist",
-      Tag.Album <$ Megaparsec.string "album",
-      Tag.Genre <$ Megaparsec.string "genre",
-      Tag.Year <$ Megaparsec.string "year",
-      Tag.Track <$ Megaparsec.string "track",
-      Tag.Disc <$ Megaparsec.string "disc"
+    [ Title <$ Megaparsec.string "title",
+      Artist <$ Megaparsec.string "artist",
+      AlbumArtist <$ Megaparsec.string "albumartist",
+      Album <$ Megaparsec.string "album",
+      Genre <$ Megaparsec.string "genre",
+      Year <$ Megaparsec.string "year",
+      Track <$ Megaparsec.string "track",
+      Disc <$ Megaparsec.string "disc"
     ]

@@ -11,18 +11,18 @@ module Commands
   )
 where
 
-import Album qualified
-import Artist qualified
-import AudioTrack qualified
 import Check.Album qualified as Album
 import Check.Artist qualified as Artist
 import Check.Track qualified as Track
+import Model.Album qualified as Album
+import Model.Artist qualified as Artist
+import Model.AudioTrack qualified as AudioTrack
+import Model.Pattern qualified as Pattern
+import Model.SetTagsOptions qualified as SetTagsOptions
 import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
 import Path.IO.Extra qualified as Path
-import Pattern qualified
-import SetTagsOptions qualified
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
 import UnliftIO.Exception qualified as Exception

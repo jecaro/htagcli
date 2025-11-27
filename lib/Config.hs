@@ -23,13 +23,13 @@ import Data.ByteString qualified as ByteString
 import Data.FileEmbed qualified as FileEmbed
 import Data.Text qualified as Text
 import GHC.IO.Exception qualified as Exception
+import Model.Pattern qualified as Pattern
+import Model.Tag qualified as Tag
 import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
-import Pattern qualified
 import System.IO qualified as System
 import System.IO.Error qualified as Error
-import Tag qualified
 import Text.Megaparsec qualified as Megaparsec
 import Toml ((.=))
 import Toml qualified

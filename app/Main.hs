@@ -1,8 +1,5 @@
 module Main where
 
-import Album qualified
-import Artist qualified
-import AudioTrack qualified
 import Commands qualified
 import Conduit ((.|))
 import Conduit qualified
@@ -11,6 +8,9 @@ import Data.Conduit.Combinators qualified as Conduit
 import Data.Either.Extra qualified as Either
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
+import Model.Album qualified as Album
+import Model.Artist qualified as Artist
+import Model.AudioTrack qualified as AudioTrack
 import Options qualified
 import Options.Applicative qualified as Options
 import Path qualified

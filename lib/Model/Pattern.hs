@@ -1,6 +1,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Pattern
+module Model.Pattern
   ( Formatting (..),
     Padding (..),
     Component,
@@ -23,7 +23,7 @@ module Pattern
   )
 where
 
-import AudioTrack qualified
+import Model.AudioTrack qualified as AudioTrack
 import Control.Applicative.Combinators.NonEmpty qualified as NonEmpty
 import Data.Foldable qualified as Foldable
 import Data.List.NonEmpty.Extra qualified as NonEmpty
@@ -33,7 +33,7 @@ import Path qualified
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
 import System.FilePath qualified as FilePath
-import Tag qualified
+import Model.Tag qualified as Tag
 import Text.Megaparsec qualified as Megaparsec
 import Text.Megaparsec.Char qualified as Megaparsec
 import Text.Printf qualified as Text
@@ -229,9 +229,9 @@ formatTag formatting AudioTrack.AudioTrack {..} Tag.Genre =
   textFormatter formatting . HTagLib.unGenre $ atGenre
 formatTag _ AudioTrack.AudioTrack {..} Tag.Year =
   maybe "" (show . HTagLib.unYear) atYear
-formatTag Pattern.Formatting {..} AudioTrack.AudioTrack {..} Tag.Track =
+formatTag Formatting {..} AudioTrack.AudioTrack {..} Tag.Track =
   maybe "" (numberFormat foPadTrackNumbers . HTagLib.unTrackNumber) atTrack
-formatTag Pattern.Formatting {..} AudioTrack.AudioTrack {..} Tag.Disc =
+formatTag Formatting {..} AudioTrack.AudioTrack {..} Tag.Disc =
   maybe "" (numberFormat foPadDiscNumbers . HTagLib.unDiscNumber) atDisc
 
 textFormatter :: Formatting -> Text -> Text

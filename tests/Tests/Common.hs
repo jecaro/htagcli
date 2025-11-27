@@ -8,8 +8,8 @@ module Tests.Common
   )
 where
 
-import Album qualified
-import AudioTrack qualified
+import Model.Album qualified as Album
+import Model.AudioTrack qualified as AudioTrack
 import Path (absdir, reldir, relfile, (</>))
 import Path qualified
 import Path.IO qualified as Path

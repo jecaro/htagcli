@@ -6,9 +6,9 @@ module Check.Artist
   )
 where
 
-import Album qualified
-import Artist qualified
-import AudioTrack qualified
+import Model.Album qualified as Album
+import Model.Artist qualified as Artist
+import Model.AudioTrack qualified as AudioTrack
 
 data Check = SameGenre
   deriving (Eq, Show)
