@@ -80,6 +80,7 @@ executable htagcli
     Main.hs
 
   other-modules:
+    ConduitUtils
     Options
     Progress
     Progress.Queue

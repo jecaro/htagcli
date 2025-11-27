@@ -1,19 +1,15 @@
 module Main where
 
 import Commands qualified
-import Conduit ((.|))
-import Conduit qualified
+import ConduitUtils qualified
 import Config qualified
 import Data.Conduit.Combinators qualified as Conduit
 import Data.Either.Extra qualified as Either
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
-import Model.Album qualified as Album
-import Model.Artist qualified as Artist
 import Model.AudioTrack qualified as AudioTrack
 import Options qualified
 import Options.Applicative qualified as Options
-import Path qualified
 import Path.IO qualified as Path
 import Progress qualified
 import Stats qualified
@@ -23,6 +19,8 @@ import Text.Megaparsec qualified as Megaparsec
 import UnliftIO.Exception qualified as Exception
 import UnliftIO.IO qualified as IO
 import UnliftIO.Temporary qualified as Temporary
+import "conduit" Conduit ((.|))
+import "conduit" Conduit qualified
 
 data Error
   = NoCheckInConfig
@@ -47,11 +45,11 @@ main = do
     case command of
       Options.CreateConfig -> Config.createConfig
       Options.GetTags filesOrDirectory ->
-        runConduitWithProgress
+        ConduitUtils.runConduitWithProgress
           filesOrDirectory
           $ Conduit.mapM_C Commands.getTags
       Options.SetTags setTagsOptions filesOrDirectory ->
-        runConduitWithProgress
+        ConduitUtils.runConduitWithProgress
           filesOrDirectory
           $ Conduit.mapM_C
           $ Commands.setTags setTagsOptions
@@ -59,7 +57,7 @@ main = do
         (editedContent, tempFilename) <- Temporary.withSystemTempFile "htagcli-edit-temp" $
           \tempFilename tempHandle -> do
             -- Write all input tags into a temporary file
-            runConduitWithProgress
+            ConduitUtils.runConduitWithProgress
               filesOrDirectory
               $ Conduit.mapM getTagsAsText
                 .| Conduit.sinkHandle tempHandle
@@ -105,15 +103,15 @@ main = do
             addAlbumErrors = modifyStats . Stats.addAlbumErrors
             incArtistErrors = modifyStats Stats.incArtistErrors
 
-        runConduitWithProgress
+        ConduitUtils.runConduitWithProgress
           filesOrDirectory
           ( Conduit.mapM AudioTrack.getTags
               .| Conduit.iterM
                 (addTrackErrors <=< Commands.checkTrack trackChecks)
-              .| albumC
+              .| ConduitUtils.albumC
               .| Conduit.iterM
                 (addAlbumErrors <=< Commands.checkAlbum albumChecks)
-              .| artistC
+              .| ConduitUtils.artistC
               .| Conduit.mapM_C
                 (flip when incArtistErrors <=< Commands.checkArtist mbArtistCheck)
           )
@@ -145,7 +143,7 @@ main = do
                   Commands.fiPattern = pattern
                 }
 
-        runConduitWithProgress
+        ConduitUtils.runConduitWithProgress
           filesOrDirectory
           $ Conduit.mapM_C
           $ Commands.fixFilePaths fixFilePathOptions
@@ -153,63 +151,6 @@ main = do
     getTagsAsText filename = do
       content <- encodeUtf8 . AudioTrack.asText <$> AudioTrack.getTags filename
       pure $ content <> "\n"
-
-runConduitWithProgress ::
-  Options.FilesOrDirectory ->
-  Conduit.ConduitT
-    (Path.Path Path.Abs Path.File)
-    Void
-    (Conduit.ResourceT IO)
-    a ->
-  IO a
-runConduitWithProgress = Progress.connectWithProgress . fileOrDirectoryC
-
-fileOrDirectoryC ::
-  (Conduit.MonadResource m, Conduit.MonadThrow m) =>
-  Options.FilesOrDirectory ->
-  Conduit.ConduitT i (Path.Path Path.Abs Path.File) m ()
-fileOrDirectoryC (Options.FDFiles (Options.Files {..})) = do
-  absFiles <- traverse Path.makeAbsolute fiFiles
-  Conduit.yieldMany absFiles
-fileOrDirectoryC (Options.FDDirectory (Options.Directory {..})) = do
-  absDir <- Path.makeAbsolute diPath
-  Conduit.sourceDirectoryDeep False (Path.toFilePath absDir)
-    .| Conduit.filterC
-      (\filename -> any (`Text.isSuffixOf` fromString filename) diExtensions)
-    .| Conduit.mapMC Path.parseAbsFile
-
-albumC ::
-  (Monad m) =>
-  Conduit.ConduitT AudioTrack.AudioTrack Album.Album m ()
-albumC = clusterC Album.mkAlbum Album.addTrack
-
-artistC ::
-  (Monad m) =>
-  Conduit.ConduitT Album.Album Artist.Artist m ()
-artistC = clusterC Artist.mkArtist Artist.addAlbum
-
--- | Cluster incoming items into groups using the provided 'mk' and 'add'
--- functions
-clusterC ::
-  (Monad m) =>
-  (NonEmpty i -> Maybe o) ->
-  (i -> o -> Maybe o) ->
-  Conduit.ConduitT i o m ()
-clusterC mk add = loop Nothing
-  where
-    loop Nothing =
-      Conduit.await >>= \case
-        Nothing -> pure ()
-        -- Create a new cluster
-        Just item -> loop $ mk $ item :| []
-    loop (Just cluster) =
-      Conduit.await >>= \case
-        Nothing -> Conduit.yield cluster
-        Just item -> case add item cluster of
-          Just newCluster -> loop $ Just newCluster
-          Nothing -> do
-            Conduit.yield cluster
-            loop $ mk $ item :| []
 
 exceptions :: SomeException -> IO ()
 exceptions someException

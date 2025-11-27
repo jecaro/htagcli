@@ -1,11 +1,11 @@
 module Progress (connectWithProgress) where
 
-import Conduit ((.|))
-import Conduit qualified
 import Data.Conduit.Combinators qualified as ConduitC
 import Progress.Queue qualified as Queue
 import System.Console.ANSI as ANSI
 import UnliftIO.Async qualified as Async
+import "conduit" Conduit ((.|))
+import "conduit" Conduit qualified
 
 -- | Given a source and a sink. Run the resulting conduit while displaying
 -- progress messages if ran in an interactive terminal.
