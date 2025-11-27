@@ -36,7 +36,7 @@ test =
         Common.withTenTracksFiles $
           \dir album -> do
             System.writeFile
-              (Path.toFilePath $ dir </> NonEmpty.head covers)
+              (Path.toFilePath $ dir </> head covers)
               "dummy content"
 
             result <- Album.check (Album.HaveCover covers) album

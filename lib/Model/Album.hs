@@ -14,12 +14,12 @@ module Model.Album
   )
 where
 
-import Model.AudioTrack qualified as AudioTrack
 import Data.List.NonEmpty ((<|))
+import Model.AudioTrack qualified as AudioTrack
+import Model.Tag qualified as Tag
 import Path qualified
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
-import Model.Tag qualified as Tag
 import "extra" Data.List.NonEmpty.Extra qualified as NonEmpty
 
 newtype Album = Album (NonEmpty AudioTrack.AudioTrack)
@@ -71,7 +71,7 @@ album (Album (track :| _)) = AudioTrack.atAlbum track
 -- | Return the directory if all tracks are in the same one
 directory :: Album -> Maybe (Path.Path Path.Abs Path.Dir)
 directory (Album tracks')
-  | length directories == 1 = Just (NonEmpty.head directories)
+  | length directories == 1 = Just $ head directories
   | otherwise = Nothing
   where
     directories = NonEmpty.nubOrd $ Path.parent . AudioTrack.atFile <$> tracks'

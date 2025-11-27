@@ -14,7 +14,6 @@ import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
 import Sound.HTagLib qualified as HTagLib
-import "extra" Data.List.NonEmpty.Extra qualified as NonEmpty
 
 data Check
   = HaveCover (NonEmpty (Path.Path Path.Rel Path.File))
@@ -37,7 +36,7 @@ errorToText (MissingCover directory) =
   "Missing cover in directory: " <> Text.pack (Path.toFilePath directory)
 errorToText (SameTagsError tags) =
   "These tags are not the same for all tracks in the album: "
-    <> Text.intercalate ", " (Tag.asText <$> NonEmpty.toList tags)
+    <> Text.intercalate ", " (Tag.asText <$> toList tags)
 errorToText TracksNotSequential = "Tracks are not sequentially numbered"
 
 check ::

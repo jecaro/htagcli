@@ -8,7 +8,6 @@ module Tests.Model.Pattern
 where
 
 import Check.Track qualified as Track
-import Data.List.NonEmpty qualified as NonEmpty
 import Hedgehog ((===))
 import Hedgehog qualified
 import Hedgehog.Gen qualified as HedgehogGen
@@ -39,7 +38,7 @@ concatConsecutiveTexts :: NonEmpty Pattern.Fragment -> NonEmpty Pattern.Fragment
 concatConsecutiveTexts ((Pattern.FrText txt1) :| ((Pattern.FrText txt2) : xs)) =
   concatConsecutiveTexts (Pattern.FrText (txt1 <> txt2) :| xs)
 concatConsecutiveTexts (fragments :| (x : xs)) =
-  fragments :| NonEmpty.toList (concatConsecutiveTexts $ x :| xs)
+  fragments :| toList (concatConsecutiveTexts $ x :| xs)
 concatConsecutiveTexts fragments = fragments
 
 placeholderGen :: Hedgehog.Gen Pattern.Fragment

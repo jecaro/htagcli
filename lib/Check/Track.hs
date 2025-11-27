@@ -29,10 +29,10 @@ data Error
 errorToText :: Error -> Text
 errorToText (MissingTags tags) =
   "Missing tag(s): "
-    <> Text.intercalate ", " (Tag.asText <$> NonEmpty.toList tags)
+    <> Text.intercalate ", " (Tag.asText <$> toList tags)
 errorToText (GenreMismatch expected genre) =
   "Genre mismatch: expected one of "
-    <> Text.intercalate ", " (NonEmpty.toList expected)
+    <> Text.intercalate ", " (toList expected)
     <> ", got "
     <> genre
 errorToText (FilenameMismatch expected) =
