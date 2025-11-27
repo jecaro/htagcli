@@ -33,16 +33,18 @@ test =
         Artist.check Artist.SameGenre artist
           `shouldBe` Right (),
       Tasty.testCase "two albums of the same artist with different genres" $ do
+        let rock = HTagLib.mkGenre "Rock"
+            pop = HTagLib.mkGenre "Pop"
         let album1 =
-              tenTracksAlbum (HTagLib.mkAlbum "album-1") (HTagLib.mkGenre "Rock")
+              tenTracksAlbum (HTagLib.mkAlbum "album-1") pop
             album2 =
-              tenTracksAlbum (HTagLib.mkAlbum "album-2") (HTagLib.mkGenre "Pop")
+              tenTracksAlbum (HTagLib.mkAlbum "album-2") rock
             artist =
               Unsafe.fromJust $
                 Artist.mkArtist $
                   fromList [album1, album2]
         Artist.check Artist.SameGenre artist
-          `shouldBe` Left Artist.SameGenreError
+          `shouldBe` Left (Artist.SameGenreError $ fromList [pop, rock])
     ]
   where
     tenTracksAlbum = Common.tenTracksAlbum' [absdir|/path/to|]
