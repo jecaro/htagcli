@@ -98,7 +98,7 @@ checkArtist (Just check) artist = do
   whenLeft_ result $ \err -> do
     putTextLn $
       "Artist "
-        <> HTagLib.unArtist (Artist.artist artist)
+        <> Artist.albumArtistOrArtist artist
         <> ": "
         <> Artist.errorToText err
   pure $ isLeft result

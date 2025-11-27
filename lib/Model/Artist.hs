@@ -2,7 +2,7 @@ module Model.Artist
   ( Artist,
     mkArtist,
     addAlbum,
-    artist,
+    albumArtistOrArtist,
     albums,
   )
 where
@@ -10,7 +10,6 @@ where
 import Data.List.NonEmpty ((<|))
 import Data.Text qualified as Text
 import Model.Album qualified as Album
-import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
 
 newtype Artist = Artist (NonEmpty Album.Album)
@@ -37,8 +36,8 @@ mkArtist albums'@(firstAlbum :| otherAlbums)
 addAlbum :: Album.Album -> Artist -> Maybe Artist
 addAlbum album (Artist albums') = mkArtist (album <| albums')
 
-artist :: Artist -> HTagLib.Artist
-artist (Artist (album :| _)) = Album.artist album
+albumArtistOrArtist :: Artist -> Text
+albumArtistOrArtist (Artist (album :| _)) = Album.albumArtistOrArtist album
 
 albums :: Artist -> NonEmpty Album.Album
 albums (Artist albums') = albums'
