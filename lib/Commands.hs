@@ -74,13 +74,14 @@ checkAlbum checks album = countTrues <$> traverse checkPrintError checks
       whenLeft_ result $ \err ->
         putTextLn $
           "Album "
-            <> artistOrAlbumArtistTxt
+            <> albumArtistOrArtistTxt
             <> albumTxt
             <> discTxt
             <> ": "
             <> Album.errorToText err
       pure $ isLeft result
-    artistOrAlbumArtistTxt = Album.albumArtistOrArtist album
+    albumArtistOrArtistTxt =
+      HTagLib.unAlbumArtistOrArtist $ Album.albumArtistOrArtist album
     albumTxt = "/" <> HTagLib.unAlbum (Album.album album)
     discTxt
       | Just disc <- Album.disc album =
@@ -98,10 +99,13 @@ checkArtist (Just check) artist = do
   whenLeft_ result $ \err -> do
     putTextLn $
       "Artist "
-        <> Artist.albumArtistOrArtist artist
+        <> albumArtistOrArtistTxt
         <> ": "
         <> Artist.errorToText err
   pure $ isLeft result
+  where
+    albumArtistOrArtistTxt =
+      HTagLib.unAlbumArtistOrArtist $ Artist.albumArtistOrArtist artist
 
 data FixFilePathsOptions = FixFilePathsOptions
   { fiDryRun :: Bool,

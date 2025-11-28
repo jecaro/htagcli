@@ -12,11 +12,11 @@ where
 
 import Data.Set qualified as Set
 import Data.Text qualified as Text
-import Path qualified
 import Model.SetTagsOptions qualified as SetTagsOptions
+import Model.Tag qualified as Tag
+import Path qualified
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
-import Model.Tag qualified as Tag
 import Text.Megaparsec qualified as Megaparsec
 import Text.Megaparsec.Char qualified as Megaparsec
 import Text.Megaparsec.Char.Lexer qualified as MegaparsecL
@@ -36,10 +36,10 @@ data AudioTrack = AudioTrack
   }
   deriving (Eq, Show)
 
-albumArtistOrArtist :: AudioTrack -> Text
+albumArtistOrArtist :: AudioTrack -> HTagLib.AlbumArtistOrArtist
 albumArtistOrArtist track
-  | haveTag Tag.AlbumArtist track = HTagLib.unAlbumArtist (atAlbumArtist track)
-  | otherwise = HTagLib.unArtist (atArtist track)
+  | haveTag Tag.AlbumArtist track = HTagLib.AlAlbumArtist $ atAlbumArtist track
+  | otherwise = HTagLib.AlArtist $ atArtist track
 
 parser :: Parser AudioTrack
 parser = do

@@ -53,7 +53,7 @@ addTrack track (Album tracks') = mkAlbum (track <| tracks')
 tracks :: Album -> NonEmpty AudioTrack.AudioTrack
 tracks (Album tracks') = tracks'
 
-albumArtistOrArtist :: Album -> Text
+albumArtistOrArtist :: Album -> HTagLib.AlbumArtistOrArtist
 albumArtistOrArtist (Album (track :| _)) = AudioTrack.albumArtistOrArtist track
 
 artist :: Album -> HTagLib.Artist

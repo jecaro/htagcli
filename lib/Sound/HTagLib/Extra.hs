@@ -4,6 +4,8 @@ module Sound.HTagLib.Extra
     unAlbumArtist,
     albumArtistGetter,
     albumArtistSetter,
+    AlbumArtistOrArtist (..),
+    unAlbumArtistOrArtist,
     DiscNumber,
     mkDiscNumber,
     unDiscNumber,
@@ -21,6 +23,9 @@ newtype AlbumArtist = AlbumArtist Text
 instance IsString AlbumArtist where
   fromString = mkAlbumArtist . fromString
 
+data AlbumArtistOrArtist = AlAlbumArtist AlbumArtist | AlArtist HTagLib.Artist
+  deriving (Show, Eq)
+
 newtype DiscNumber = DiscNumber Int
   deriving (Show, Eq)
 
@@ -32,6 +37,10 @@ mkAlbumArtist = AlbumArtist . Text.map nullToSpace
   where
     nullToSpace '\0' = ' '
     nullToSpace c = c
+
+unAlbumArtistOrArtist :: AlbumArtistOrArtist -> Text
+unAlbumArtistOrArtist (AlAlbumArtist albumArtist) = unAlbumArtist albumArtist
+unAlbumArtistOrArtist (AlArtist artist) = HTagLib.unArtist artist
 
 unDiscNumber :: DiscNumber -> Int
 unDiscNumber (DiscNumber disc) = disc

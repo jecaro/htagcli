@@ -36,7 +36,7 @@ mkArtist albums'@(firstAlbum :| otherAlbums)
 addAlbum :: Album.Album -> Artist -> Maybe Artist
 addAlbum album (Artist albums') = mkArtist (album <| albums')
 
-albumArtistOrArtist :: Artist -> Text
+albumArtistOrArtist :: Artist -> HTagLib.AlbumArtistOrArtist
 albumArtistOrArtist (Artist (album :| _)) = Album.albumArtistOrArtist album
 
 albums :: Artist -> NonEmpty Album.Album
