@@ -3,6 +3,7 @@ module Model.Cover
     Size (..),
     sizeToText,
     pictureSize,
+    haveRange,
     withinRange,
   )
 where
@@ -37,6 +38,9 @@ pictureSize picture =
     { siWidth = Picture.dynamicMap Picture.imageWidth picture,
       siHeight = Picture.dynamicMap Picture.imageHeight picture
     }
+
+haveRange :: Cover -> Bool
+haveRange Cover {..} = isJust coMinSize || isJust coMaxSize
 
 withinRange :: Cover -> Size -> Bool
 withinRange Cover {..} size =

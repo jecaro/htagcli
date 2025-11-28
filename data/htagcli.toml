@@ -86,7 +86,8 @@ enable = true
 enable = true
 filenames = ["cover.jpg", "cover.png", "cover.gif"]
 # optional size constraints in pixels, not taken into account if left
-# unspecified
+# unspecified.
+# Warning: this makes the check significantly slower
 min_size = { width = 300, height = 300 }
 max_size = { width = 1000, height = 1000 }
 

@@ -73,15 +73,18 @@ check (HaveCover cover@Cover {..}) album
         maybeToExceptT (MissingCover dir) $
           MaybeT $
             Monad.findM Path.doesFileExist (toList absFiles)
-      picture <-
-        Except.withExceptT (UnableToReadCover coverFile . toText) $
-          ExceptT $
-            readImage coverFile
+      -- Reading the image is very slow, so only do it if we have size
+      -- constraints
+      when (Cover.haveRange cover) $ do
+        picture <-
+          Except.withExceptT (UnableToReadCover coverFile . toText) $
+            ExceptT $
+              readImage coverFile
 
-      let size = Cover.pictureSize picture
-      unless (Cover.withinRange cover size) $
-        Except.throwE $
-          BadCoverSize coverFile size
+        let size = Cover.pictureSize picture
+        unless (Cover.withinRange cover size) $
+          Except.throwE $
+            BadCoverSize coverFile size
   | otherwise = pure $ Left NotInSameDir
   where
     readImage = liftIO . Picture.readImage . Path.toFilePath
