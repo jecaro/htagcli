@@ -16,13 +16,13 @@ import Sound.HTagLib qualified as HTagLib
 
 data Check
   = TagsExist (NonEmpty Tag.Tag)
-  | GenreAmong (NonEmpty Text)
+  | GenreAmong (NonEmpty HTagLib.Genre)
   | FilenameMatches Pattern.Pattern Pattern.Formatting
   deriving (Show)
 
 data Error
   = MissingTags (NonEmpty Tag.Tag)
-  | GenreMismatch (NonEmpty Text) Text
+  | GenreMismatch (NonEmpty HTagLib.Genre) HTagLib.Genre
   | FilenameMismatch Text
   deriving (Eq, Show)
 
@@ -32,9 +32,9 @@ errorToText (MissingTags tags) =
     <> Text.intercalate ", " (Tag.asText <$> toList tags)
 errorToText (GenreMismatch expected genre) =
   "Genre mismatch: expected one of "
-    <> Text.intercalate ", " (toList expected)
+    <> Text.intercalate ", " (toList $ HTagLib.unGenre <$> expected)
     <> ", got "
-    <> genre
+    <> HTagLib.unGenre genre
 errorToText (FilenameMismatch expected) =
   "Filename does not match the pattern, expected \"" <> expected <> "\""
 
@@ -46,12 +46,11 @@ check (TagsExist tags) track =
   where
     missingTags = NonEmpty.filter (not . (`AudioTrack.haveTag` track)) tags
 check (GenreAmong genres) track
-  | HTagLib.unGenre (AudioTrack.atGenre track) `elem` genres = Right ()
+  | AudioTrack.atGenre track `elem` genres = Right ()
   | otherwise =
       Left $
-        GenreMismatch
-          genres
-          (HTagLib.unGenre $ AudioTrack.atGenre track)
+        GenreMismatch genres $
+          AudioTrack.atGenre track
 check (FilenameMatches pattern formatting) track = do
   whenJust (nonEmpty $ Pattern.tags pattern) $ \tags ->
     check (TagsExist tags) track

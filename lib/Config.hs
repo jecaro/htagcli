@@ -29,6 +29,7 @@ import Model.Tag qualified as Tag
 import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
+import Sound.HTagLib qualified as HTagLib
 import System.IO qualified as System
 import System.IO.Error qualified as Error
 import Text.Megaparsec qualified as Megaparsec
@@ -67,7 +68,7 @@ data Checks = Checks
   { -- | If Nothing, the check is disabled
     chTrackTags :: Maybe (NonEmpty Tag.Tag),
     -- | If Nothing, the check is disabled
-    chTrackGenreAmong :: Maybe (NonEmpty Text),
+    chTrackGenreAmong :: Maybe (NonEmpty HTagLib.Genre),
     -- | If True, the check is enabled, the padding optionally overrides the
     -- one given in the formatting section. This way it is possible to ignore
     -- the padding when checking the filename and still have it when fixing it.
@@ -241,7 +242,7 @@ checksC =
     albumTracksSequentialC =
       Toml.table (Toml.bool "enable") "album_tracks_sequential"
     artistSameGenreC = Toml.table (Toml.bool "enable") "artist_same_genre"
-    amongC = Toml.arrayNonEmptyOf Toml._Text "among"
+    amongC = Toml.arrayNonEmptyOf genreB "among"
     albumHaveCoverC =
       Cover.Cover
         <$> filenamesC .= Cover.coPaths
@@ -254,6 +255,9 @@ checksC =
             <$> Toml.int "width" .= Cover.siWidth
             <*> Toml.int "height" .= Cover.siHeight
         )
+
+genreB :: Toml.TomlBiMap HTagLib.Genre Toml.AnyValue
+genreB = Toml._TextBy HTagLib.unGenre $ Right . HTagLib.mkGenre
 
 -- | Unwrap the Maybe value according to the enable flag.
 maybeValidatedC ::

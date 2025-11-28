@@ -229,14 +229,15 @@ trackTagsP =
         )
     )
 
-trackGenreAmongP :: Options.Parser (NonEmpty Text)
+trackGenreAmongP :: Options.Parser (NonEmpty HTagLib.Genre)
 trackGenreAmongP =
   Options.some1
-    ( Options.strOption
-        ( Options.long "track-genre"
-            <> Options.metavar "GENRE"
-            <> Options.help "Specify a genre to check against"
-        )
+    ( HTagLib.mkGenre
+        <$> Options.strOption
+          ( Options.long "track-genre"
+              <> Options.metavar "GENRE"
+              <> Options.help "Specify a genre to check against"
+          )
     )
 
 filematchesP :: Options.Parser Pattern.Pattern
