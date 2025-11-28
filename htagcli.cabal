@@ -49,6 +49,7 @@ library
     Model.Album
     Model.Artist
     Model.AudioTrack
+    Model.Cover
     Model.Pattern
     Model.SetTagsOptions
     Model.Tag
@@ -57,6 +58,7 @@ library
     Toml.Extra
 
   build-depends:
+    JuicyPixels,
     extra,
     file-embed,
     filepath,
@@ -66,6 +68,7 @@ library
     path,
     path-io,
     tomland,
+    transformers,
     unliftio,
     validation-selective,
 

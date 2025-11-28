@@ -23,6 +23,7 @@ import Data.ByteString qualified as ByteString
 import Data.FileEmbed qualified as FileEmbed
 import Data.Text qualified as Text
 import GHC.IO.Exception qualified as Exception
+import Model.Cover qualified as Cover
 import Model.Pattern qualified as Pattern
 import Model.Tag qualified as Tag
 import Path ((</>))
@@ -71,8 +72,8 @@ data Checks = Checks
     -- one given in the formatting section. This way it is possible to ignore
     -- the padding when checking the filename and still have it when fixing it.
     chTrackFilename :: Bool,
-    -- | The album have a cover file with one of the given names
-    chAlbumHaveCover :: Maybe (NonEmpty (Path.Path Path.Rel Path.File)),
+    -- | The album have a cover file
+    chAlbumHaveCover :: Maybe Cover.Cover,
     -- | All the audio tracks of the album are in the same directory
     chAlbumSameDir :: Bool,
     -- | All the audio tracks of the album have the same value for the given
@@ -228,20 +229,31 @@ checksC =
     <$> maybeValidatedC "track_tags" tagsC chTrackTags
     <*> maybeValidatedC "track_genre" amongC chTrackGenreAmong
     <*> trackFilenameC .= chTrackFilename
-    <*> maybeValidatedC "album_cover" filenamesC chAlbumHaveCover
+    <*> maybeValidatedC "album_cover" albumHaveCoverC chAlbumHaveCover
     <*> albumSameDirC .= chAlbumSameDir
     <*> maybeValidatedC "album_tags" tagsC chAlbumSameTags
     <*> albumTracksSequentialC .= chAlbumTracksSequential
     <*> artistSameGenreC .= chArtistSameGenre
   where
     trackFilenameC = Toml.table (Toml.bool "enable") "track_filename"
-    filenamesC = Toml.arrayNonEmptyOf relFileB "filenames"
     albumSameDirC = Toml.table (Toml.bool "enable") "album_same_dir"
     tagsC = Toml.arrayNonEmptyOf tagB "tags"
     albumTracksSequentialC =
       Toml.table (Toml.bool "enable") "album_tracks_sequential"
     artistSameGenreC = Toml.table (Toml.bool "enable") "artist_same_genre"
     amongC = Toml.arrayNonEmptyOf Toml._Text "among"
+    albumHaveCoverC =
+      Cover.Cover
+        <$> filenamesC .= Cover.coPaths
+        <*> Toml.dioptional (sizeC "min_size") .= Cover.coMinSize
+        <*> Toml.dioptional (sizeC "max_size") .= Cover.coMaxSize
+    filenamesC = Toml.arrayNonEmptyOf relFileB "filenames"
+    sizeC =
+      Toml.table
+        ( Cover.Size
+            <$> Toml.int "width" .= Cover.siWidth
+            <*> Toml.int "height" .= Cover.siHeight
+        )
 
 -- | Unwrap the Maybe value according to the enable flag.
 maybeValidatedC ::

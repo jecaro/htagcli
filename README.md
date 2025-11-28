@@ -95,7 +95,8 @@ collection clean and well-organized. Available checks include:
 - Album level:
     - Album directory: Checks that all files from an album are stored in the 
       same directory
-    - Cover file: Checks the presence of a cover image in the album directory
+    - Cover file: Checks the presence of a cover image in the album directory. 
+      Also verifies that the cover image size is within specified limits.
     - Album tags: Checks that the tags from all files in an album are the same
 - Artist level:
     - Genre: Ensures that all tracks from an artist share the same genre

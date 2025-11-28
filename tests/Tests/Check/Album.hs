@@ -16,9 +16,9 @@ import Model.AudioTrack qualified as AudioTrack
 import Model.Tag qualified as Tag
 import Path (reldir, relfile, (</>))
 import Path qualified
+import Path.IO qualified as Path
 import Sound.HTagLib qualified as HTagLib
-import System.IO qualified as System
-import Test.Hspec.Expectations (shouldBe)
+import Test.Hspec.Expectations (shouldBe, shouldSatisfy)
 import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty
 import Tests.Common qualified as Common
@@ -27,22 +27,57 @@ test :: TestTree
 test =
   Tasty.testGroup
     "check cover"
-    [ Tasty.testCase "check an album without a cover.jpg" $
+    [ Tasty.testCase "check an album without a cover.png" $
         Common.withTenTracksFiles $
           \dir album -> do
-            result <- Album.check (Album.HaveCover covers) album
+            result <- Album.check (Album.HaveCover coverNoSize) album
             result `shouldBe` Left (Album.MissingCover dir),
-      Tasty.testCase "check an album with a cover.jpg" $
+      Tasty.testCase "check an album with a cover.png" $
         Common.withTenTracksFiles $
           \dir album -> do
-            System.writeFile
-              (Path.toFilePath $ dir </> head covers)
-              "dummy content"
+            let coverFile = [relfile|./data/cover.png|]
+            Path.copyFile coverFile $ dir </> Path.filename coverFile
 
-            result <- Album.check (Album.HaveCover covers) album
-            result `shouldBe` Right ()
+            result <- Album.check (Album.HaveCover coverNoSize) album
+            result `shouldBe` Right (),
+      Tasty.testCase "check an album with a cover.png but too small" $
+        Common.withTenTracksFiles $
+          \dir album -> do
+            let coverFile = [relfile|./data/cover.png|]
+            Path.copyFile coverFile $ dir </> Path.filename coverFile
+
+            result <- Album.check (Album.HaveCover coverTooSmall) album
+            result `shouldSatisfy` isBadCoverSize,
+      Tasty.testCase "check an album with a cover.png but too big" $
+        Common.withTenTracksFiles $
+          \dir album -> do
+            let coverFile = [relfile|./data/cover.png|]
+            Path.copyFile coverFile $ dir </> Path.filename coverFile
+
+            result <- Album.check (Album.HaveCover coverTooBig) album
+            result `shouldSatisfy` isBadCoverSize
     ]
   where
+    isBadCoverSize (Left (Album.BadCoverSize _ _)) = True
+    isBadCoverSize _ = False
+    coverNoSize =
+      Album.Cover
+        { Album.coPaths = covers,
+          Album.coMinSize = Nothing,
+          Album.coMaxSize = Nothing
+        }
+    coverTooSmall =
+      Album.Cover
+        { Album.coPaths = covers,
+          Album.coMinSize = Just (Album.Size 200 200),
+          Album.coMaxSize = Nothing
+        }
+    coverTooBig =
+      Album.Cover
+        { Album.coPaths = covers,
+          Album.coMinSize = Nothing,
+          Album.coMaxSize = Just (Album.Size 50 50)
+        }
     covers = fromList [[relfile|cover.jpg|], [relfile|cover.png|]]
 
 test :: TestTree

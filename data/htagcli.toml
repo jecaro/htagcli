@@ -85,6 +85,10 @@ enable = true
 [checks.album_cover]
 enable = true
 filenames = ["cover.jpg", "cover.png", "cover.gif"]
+# optional size constraints in pixels, not taken into account if left
+# unspecified
+min_size = { width = 300, height = 300 }
+max_size = { width = 1000, height = 1000 }
 
 # Verify that all tracks from the same album reside in a single directory
 # Note: htagcli groups files by album while scanning input paths recursively.

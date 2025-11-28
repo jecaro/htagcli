@@ -15,6 +15,8 @@ import Check.Artist qualified as Artist
 import Check.Track qualified as Track
 import Config qualified
 import Data.List.Extra qualified as List
+import Data.Text qualified as Text
+import Model.Cover qualified as Cover
 import Model.Pattern qualified as Pattern
 import Model.SetTagsOptions qualified as SetTagsOptions
 import Model.Tag qualified as Tag
@@ -137,16 +139,42 @@ trackFilenameP =
           "Check that filenames match the specified pattern"
     )
 
-albumHaveCoverP :: Options.Parser (NonEmpty (Path.Path Path.Rel Path.File))
+albumHaveCoverP :: Options.Parser Cover.Cover
 albumHaveCoverP =
+  Cover.Cover
+    <$> coverPathsP
+    <*> Options.optional (coverSizeP "album-cover-min-size")
+    <*> Options.optional (coverSizeP "album-cover-max-size")
+
+coverPathsP :: Options.Parser (NonEmpty (Path.Path Path.Rel Path.File))
+coverPathsP =
   Options.some1
     ( Options.option
         (Options.maybeReader Path.parseRelFile)
-        ( Options.long "album-have-cover"
+        ( Options.long "album-cover-filename"
             <> Options.metavar "FILENAME"
             <> Options.help "Check that the specified cover file exists"
         )
     )
+
+coverSizeP :: String -> Options.Parser Cover.Size
+coverSizeP option =
+  Options.option
+    (Options.eitherReader $ first toString . parse . toText)
+    ( Options.long option
+        <> Options.metavar "WIDTHxHEIGHT"
+        <> Options.help
+          ("Specify the " <> option <> " in the form WIDTHxHEIGHT")
+    )
+  where
+    parse :: Text -> Either Text Cover.Size
+    parse text =
+      case Text.splitOn "x" text of
+        [widthTxt, heightTxt] ->
+          case (readMaybe (toString widthTxt), readMaybe (toString heightTxt)) of
+            (Just siWidth, Just siHeight) -> Right $ Cover.Size {..}
+            _ -> Left "Width and height must be integers"
+        _ -> Left "Size must be in the form WIDTHxHEIGHT"
 
 albumSameDirP :: Options.Parser Bool
 albumSameDirP =
