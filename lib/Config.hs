@@ -83,7 +83,7 @@ data Checks = Checks
     -- | The tracks of the album have sequential track numbers
     chAlbumTracksSequential :: Bool,
     -- | All the tracks from the artist have the same genre
-    chArtistSameGenre :: Bool
+    chArtistSameGenre :: Maybe Artist.Check
   }
   deriving (Show)
 
@@ -97,7 +97,7 @@ haveChecks (Checks {..}) =
       chAlbumSameDir,
       isJust chAlbumSameTags,
       chAlbumTracksSequential,
-      chArtistSameGenre
+      isJust chArtistSameGenre
     ]
 
 trackChecks :: Pattern.Pattern -> Pattern.Formatting -> Checks -> [Track.Check]
@@ -120,8 +120,7 @@ albumChecks (Checks {..}) =
     ]
 
 artistCheck :: Checks -> Maybe Artist.Check
-artistCheck (Checks {..}) =
-  guarded (const chArtistSameGenre) Artist.SameGenre
+artistCheck (Checks {..}) = chArtistSameGenre
 
 factorChecks :: Config -> ([Track.Check], [Album.Check], Maybe Artist.Check)
 factorChecks Config {coFilename = Filename {..}, ..} =
@@ -234,14 +233,19 @@ checksC =
     <*> albumSameDirC .= chAlbumSameDir
     <*> maybeValidatedC "album_tags" tagsC chAlbumSameTags
     <*> albumTracksSequentialC .= chAlbumTracksSequential
-    <*> artistSameGenreC .= chArtistSameGenre
+    <*> maybeValidatedC "artist_same_genre" artistSameGenreC chArtistSameGenre
   where
     trackFilenameC = Toml.table (Toml.bool "enable") "track_filename"
     albumSameDirC = Toml.table (Toml.bool "enable") "album_same_dir"
     tagsC = Toml.arrayNonEmptyOf tagB "tags"
     albumTracksSequentialC =
       Toml.table (Toml.bool "enable") "album_tracks_sequential"
-    artistSameGenreC = Toml.table (Toml.bool "enable") "artist_same_genre"
+    artistSameGenreC =
+      Toml.diwrap $
+        Toml.map
+          (Toml.text "artist")
+          (Toml.arrayNonEmptyOf genreB "genres")
+          "except"
     amongC = Toml.arrayNonEmptyOf genreB "among"
     albumHaveCoverC =
       Cover.Cover

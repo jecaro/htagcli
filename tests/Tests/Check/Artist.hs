@@ -22,29 +22,40 @@ test =
   Tasty.testGroup
     "check artist"
     [ Tasty.testCase "two albums of the same artist with the same genre" $ do
-        let album1 =
-              tenTracksAlbum (HTagLib.mkAlbum "album-1") (HTagLib.mkGenre "Rock")
-            album2 =
-              tenTracksAlbum (HTagLib.mkAlbum "album-2") (HTagLib.mkGenre "Rock")
+        let album1 = tenTracksAlbum (HTagLib.mkAlbum "album-1") rock
+            album2 = tenTracksAlbum (HTagLib.mkAlbum "album-2") rock
             artist =
               Unsafe.fromJust $
                 Artist.mkArtist $
                   fromList [album1, album2]
-        Artist.check Artist.SameGenre artist
+        Artist.check (Artist.SameGenre mempty) artist
           `shouldBe` Right (),
       Tasty.testCase "two albums of the same artist with different genres" $ do
-        let rock = HTagLib.mkGenre "Rock"
-            pop = HTagLib.mkGenre "Pop"
-        let album1 =
-              tenTracksAlbum (HTagLib.mkAlbum "album-1") pop
-            album2 =
-              tenTracksAlbum (HTagLib.mkAlbum "album-2") rock
+        let album1 = tenTracksAlbum (HTagLib.mkAlbum "album-1") pop
+            album2 = tenTracksAlbum (HTagLib.mkAlbum "album-2") rock
             artist =
               Unsafe.fromJust $
                 Artist.mkArtist $
                   fromList [album1, album2]
-        Artist.check Artist.SameGenre artist
-          `shouldBe` Left (Artist.SameGenreError $ fromList [pop, rock])
+        Artist.check (Artist.SameGenre mempty) artist
+          `shouldBe` Left (Artist.SameGenreError genres),
+      Tasty.testCase
+        "two albums of the same artist with different genres but \
+        \with exceptions"
+        $ do
+          let album1 = tenTracksAlbum (HTagLib.mkAlbum "album-1") pop
+              album2 = tenTracksAlbum (HTagLib.mkAlbum "album-2") rock
+              artist =
+                Unsafe.fromJust $
+                  Artist.mkArtist $
+                    fromList [album1, album2]
+          Artist.check
+            (Artist.SameGenre (fromList [("Album Artist", genres)]))
+            artist
+            `shouldBe` Right ()
     ]
   where
     tenTracksAlbum = Common.tenTracksAlbum' [absdir|/path/to|]
+    rock = HTagLib.mkGenre "Rock"
+    pop = HTagLib.mkGenre "Pop"
+    genres = fromList [pop, rock]

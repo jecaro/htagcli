@@ -205,9 +205,11 @@ albumTracksSequentialP =
           "Check that track numbers are sequential within the album"
     )
 
-artistSameGenreP :: Options.Parser Bool
+artistSameGenreP :: Options.Parser (Maybe Artist.Check)
 artistSameGenreP =
-  Options.switch
+  Options.flag
+    Nothing
+    (Just $ Artist.SameGenre mempty)
     ( Options.long "artist-same-genre"
         <> Options.help
           "Check that all tracks by the same artist have the same genre"

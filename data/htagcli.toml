@@ -107,3 +107,8 @@ enable = true
 # Verify that all tracks from an artist have the same genre
 [checks.artist_same_genre]
 enable = true
+# In some cases, an artist may legitimately span multiple genres. One can list
+# them here to have the check pass for those artists.
+except = [
+  { artist = "Some Artist", genres = ["Pop/Rock", "Original Soundtracks"] }
+]
