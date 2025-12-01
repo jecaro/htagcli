@@ -44,22 +44,19 @@ main = do
   Exception.handleAny exceptions $ do
     case command of
       Options.CreateConfig -> Config.createConfig
-      Options.GetTags filesOrDirectory ->
-        ConduitUtils.runConduitWithProgress
-          filesOrDirectory
-          $ Conduit.mapM_C Commands.getTags
-      Options.SetTags setTagsOptions filesOrDirectory ->
-        ConduitUtils.runConduitWithProgress
-          filesOrDirectory
-          $ Conduit.mapM_C
-          $ Commands.setTags setTagsOptions
-      Options.Edit filesOrDirectory -> do
+      Options.GetTags files ->
+        ConduitUtils.runConduitWithProgress files $
+          Conduit.mapM_C Commands.getTags
+      Options.SetTags setTagsOptions files ->
+        ConduitUtils.runConduitWithProgress files $
+          Conduit.mapM_C $
+            Commands.setTags setTagsOptions
+      Options.Edit files -> do
         (editedContent, tempFilename) <- Temporary.withSystemTempFile "htagcli-edit-temp" $
           \tempFilename tempHandle -> do
             -- Write all input tags into a temporary file
-            ConduitUtils.runConduitWithProgress
-              filesOrDirectory
-              $ Conduit.mapM getTagsAsText
+            ConduitUtils.runConduitWithProgress files $
+              Conduit.mapM getTagsAsText
                 .| Conduit.sinkHandle tempHandle
             IO.hClose tempHandle
 
@@ -88,7 +85,7 @@ main = do
         Progress.connectWithProgress
           (Conduit.yieldMany audioTracks)
           (Conduit.mapM_C AudioTrack.setTags)
-      Options.Check options filesOrDirectory -> do
+      Options.Check options files -> do
         config <- Config.readConfig
 
         -- Get the checks from the CLI and fallback to the config file
@@ -103,18 +100,16 @@ main = do
             addAlbumErrors = modifyStats . Stats.addAlbumErrors
             incArtistErrors = modifyStats Stats.incArtistErrors
 
-        ConduitUtils.runConduitWithProgress
-          filesOrDirectory
-          ( Conduit.mapM AudioTrack.getTags
-              .| Conduit.iterM
-                (addTrackErrors <=< Commands.checkTrack trackChecks)
-              .| ConduitUtils.albumC
-              .| Conduit.iterM
-                (addAlbumErrors <=< Commands.checkAlbum albumChecks)
-              .| ConduitUtils.artistC
-              .| Conduit.mapM_C
-                (flip when incArtistErrors <=< Commands.checkArtist mbArtistCheck)
-          )
+        ConduitUtils.runConduitWithProgress files $
+          Conduit.mapM AudioTrack.getTags
+            .| Conduit.iterM
+              (addTrackErrors <=< Commands.checkTrack trackChecks)
+            .| ConduitUtils.albumC
+            .| Conduit.iterM
+              (addAlbumErrors <=< Commands.checkAlbum albumChecks)
+            .| ConduitUtils.artistC
+            .| Conduit.mapM_C
+              (flip when incArtistErrors <=< Commands.checkArtist mbArtistCheck)
 
         Stats.CheckErrors {..} <- readIORef stats
         unless (null trackChecks) $
@@ -129,7 +124,7 @@ main = do
 
         let total = ceTrackErrors + ceAlbumErrors + ceArtistErrors
         when (total > 0) $ System.exitWith $ System.ExitFailure total
-      Options.FixFilePaths Options.FixFilePathsOptions {..} filesOrDirectory -> do
+      Options.FixFilePaths Options.FixFilePathsOptions {..} files -> do
         Config.Config {coFilename = Config.Filename {..}, ..} <- Config.readConfig
         let formatting = fromMaybe fiFormatting foFormatting
             pattern = fromMaybe fiPattern foPattern
@@ -143,10 +138,9 @@ main = do
                   Commands.fiPattern = pattern
                 }
 
-        ConduitUtils.runConduitWithProgress
-          filesOrDirectory
-          $ Conduit.mapM_C
-          $ Commands.fixFilePaths fixFilePathOptions
+        ConduitUtils.runConduitWithProgress files $
+          Conduit.mapM_C $
+            Commands.fixFilePaths fixFilePathOptions
   where
     getTagsAsText filename = do
       content <- encodeUtf8 . AudioTrack.asText <$> AudioTrack.getTags filename

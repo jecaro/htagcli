@@ -10,30 +10,36 @@ import Options qualified
 import Path qualified
 import Path.IO qualified as Path
 import Progress qualified
+import System.FilePath qualified as FilePath
 
 runConduitWithProgress ::
-  Options.FilesOrDirectory ->
+  Options.Files ->
   Conduit.ConduitT
     (Path.Path Path.Abs Path.File)
     Void
     (Conduit.ResourceT IO)
     a ->
   IO a
-runConduitWithProgress = Progress.connectWithProgress . fileOrDirectoryC
+runConduitWithProgress = Progress.connectWithProgress . filesC
 
-fileOrDirectoryC ::
+filesC ::
   (Conduit.MonadResource m, Conduit.MonadThrow m) =>
-  Options.FilesOrDirectory ->
+  Options.Files ->
   Conduit.ConduitT i (Path.Path Path.Abs Path.File) m ()
-fileOrDirectoryC (Options.FDFiles (Options.Files {..})) = do
-  absFiles <- traverse Path.makeAbsolute fiFiles
-  Conduit.yieldMany absFiles
-fileOrDirectoryC (Options.FDDirectory (Options.Directory {..})) = do
-  absDir <- Path.makeAbsolute diPath
-  Conduit.sourceDirectoryDeep False (Path.toFilePath absDir)
-    .| Conduit.filterC
-      (\filename -> any (`Text.isSuffixOf` fromString filename) diExtensions)
-    .| Conduit.mapMC Path.parseAbsFile
+filesC Options.Files {..} = do
+  flip foldMap fiPaths $ \text -> do
+    if FilePath.hasExtension $ toString text
+      then do
+        file <- Path.resolveFile' $ toString text
+        Conduit.yield file
+      else do
+        absDir <- Path.resolveDir' $ toString text
+        Conduit.sourceDirectoryDeep False (Path.toFilePath absDir)
+          .| Conduit.filterC
+            ( \filename ->
+                any (`Text.isSuffixOf` fromString filename) fiExtensions
+            )
+          .| Conduit.mapMC Path.parseAbsFile
 
 albumC ::
   (Monad m) =>

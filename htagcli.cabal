@@ -93,6 +93,7 @@ executable htagcli
     ansi-terminal,
     conduit,
     extra,
+    filepath,
     htagcli,
     htaglib,
     megaparsec,

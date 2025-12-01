@@ -1,9 +1,7 @@
 module Options
   ( CheckOptions (..),
     Command (..),
-    Directory (..),
     Files (..),
-    FilesOrDirectory (..),
     FixFilePathsOptions (..),
     optionsInfo,
     checks,
@@ -27,20 +25,10 @@ import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
 import Text.Megaparsec qualified as Megaparsec
 
-data Directory = Directory
-  { diPath :: Path.SomeBase Path.Dir,
-    diExtensions :: NonEmpty Text
+data Files = Files
+  { fiPaths :: NonEmpty Text,
+    fiExtensions :: NonEmpty Text
   }
-  deriving (Show)
-
-newtype Files = Files
-  { fiFiles :: NonEmpty (Path.SomeBase Path.File)
-  }
-  deriving (Show)
-
-data FilesOrDirectory
-  = FDFiles Files
-  | FDDirectory Directory
   deriving (Show)
 
 data CheckOptions = CheckOptions
@@ -60,11 +48,11 @@ data FixFilePathsOptions = FixFilePathsOptions
 
 data Command
   = CreateConfig
-  | GetTags FilesOrDirectory
-  | SetTags SetTagsOptions.SetTagsOptions FilesOrDirectory
-  | Edit FilesOrDirectory
-  | Check CheckOptions FilesOrDirectory
-  | FixFilePaths FixFilePathsOptions FilesOrDirectory
+  | GetTags Files
+  | SetTags SetTagsOptions.SetTagsOptions Files
+  | Edit Files
+  | Check CheckOptions Files
+  | FixFilePaths FixFilePathsOptions Files
   deriving (Show)
 
 -- | Get checks from the CLI, and fall back to the config file if none are
@@ -371,34 +359,20 @@ setTagsOptionsP =
     strToDiscNumber = strTo HTagLib.mkDiscNumber
     strTo mkData = fmap SetTagsOptions.Set . mkData <=< readMaybe
 
-filesOrDirectoryP :: Options.Parser FilesOrDirectory
-filesOrDirectoryP =
-  Options.hsubparser
-    ( Options.command
-        "files"
-        ( Options.info
-            (FDFiles . Files <$> someBaseFilesP)
-            (Options.progDesc "Process files")
-        )
-        <> Options.command
-          "directory"
-          ( Options.info
-              (mkDirectory <$> someBaseDirP <*> extensionsP)
-              ( Options.progDesc
-                  "Recursively process files in a directory with specified extensions"
-              )
-          )
-    )
-  where
-    mkDirectory directory extensions =
-      FDDirectory $ Directory directory extensions
+filesP :: Options.Parser Files
+filesP =
+  Files
+    <$> filesOrDirectoriesP
+    <*> extensionsP
 
-someBaseFilesP :: Options.Parser (NonEmpty (Path.SomeBase Path.File))
-someBaseFilesP =
-  Options.some1 $
-    Options.argument
-      (Options.maybeReader Path.parseSomeFile)
-      (Options.metavar "FILES" <> Options.action "file")
+filesOrDirectoriesP :: Options.Parser (NonEmpty Text)
+filesOrDirectoriesP =
+  Options.some1
+    ( fromString
+        <$> Options.argument
+          Options.str
+          (Options.metavar "FILE|DIRECTORY" <> Options.action "file")
+    )
 
 extensionsP :: Options.Parser (NonEmpty Text)
 extensionsP =
@@ -412,12 +386,6 @@ extensionsP =
     -- Default to a sensitive set of common audio file extensions
     <|> pure (fromList ["m4a", "mp3", "flac", "ogg", "wma"])
 
-someBaseDirP :: Options.Parser (Path.SomeBase Path.Dir)
-someBaseDirP =
-  Options.argument
-    (Options.maybeReader Path.parseSomeDir)
-    (Options.metavar "DIRECTORY" <> Options.action "directory")
-
 optionsP :: Options.Parser Command
 optionsP =
   Options.hsubparser
@@ -430,31 +398,31 @@ optionsP =
         <> Options.command
           "get"
           ( Options.info
-              (GetTags <$> filesOrDirectoryP)
+              (GetTags <$> filesP)
               (Options.progDesc "Get tags")
           )
         <> Options.command
           "set"
           ( Options.info
-              (SetTags <$> setTagsOptionsP <*> filesOrDirectoryP)
+              (SetTags <$> setTagsOptionsP <*> filesP)
               (Options.progDesc "Set tags")
           )
         <> Options.command
           "edit"
           ( Options.info
-              (Edit <$> filesOrDirectoryP)
+              (Edit <$> filesP)
               (Options.progDesc "Edit tags in $EDITOR")
           )
         <> Options.command
           "check"
           ( Options.info
-              (Check <$> checkOptionsP <*> filesOrDirectoryP)
+              (Check <$> checkOptionsP <*> filesP)
               (Options.progDesc "Check various properties of files")
           )
         <> Options.command
           "fix-paths"
           ( Options.info
-              (FixFilePaths <$> fixFilePathsOptionsP <*> filesOrDirectoryP)
+              (FixFilePaths <$> fixFilePathsOptionsP <*> filesP)
               (Options.progDesc "Fix file paths according to a pattern")
           )
     )

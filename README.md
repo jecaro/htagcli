@@ -19,24 +19,22 @@ file](./flake.nix).
 The basic syntax of `htagcli` is:
 
 ```
-$ htagcli COMMAND [OPTIONS] [files FILE1 FILE2 ...|directory --extension mp3 --extension flac DIR]
+$ htagcli COMMAND [OPTIONS] [FILE|DIRECTORY]
 ```
 
-You can specify the files to operate on in two ways:
-- With the `files` subcommand followed by a list of files
-- With the `directory` subcommand followed by a directory and optional 
-  `--extension` options to filter files by extension. If no extension is given, 
-  `htagcli` defaults to all audio file formats supported by [taglib].
+You can pass as many files or directories as needed. Directories are processed 
+recursively. For directories, only audio files with extensions supported by 
+[taglib] are considered. You can change this with the `--extension` option.
 
-`htagcli` supports the `--help` option at any level, command or subcommand. 
-When in doubt, use it to get detailed usage information.
+`htagcli` supports the `--help` option at any level. When in doubt, use it to 
+get detailed usage information.
 
 ## Tag operations
 
 To display the tags of one or more files, use the `get` command:
 
 ```
-$ htagcli get files ./data/sample.mp3
+$ htagcli get ./data/sample.mp3
 File: /path/to/htagcli/data/sample.mp3
 Title: title
 Artist: artist
@@ -51,14 +49,14 @@ To edit tags, use the `set` command. For example, to change the genre for all
 files in an album:
 
 ```
-$ htagcli set --genre "Avant-garde" directory ./data
+$ htagcli set --genre "Avant-garde" ./data
 ```
 
 It is also possible, to edit the tags in your `$EDITOR` with the `edit` 
 command:
 
 ```
-$ htagcli edit files ./data/sample.mp3
+$ htagcli edit ./data/sample.mp3
 ```
 
 This opens the tags of the specified files in your default text editor. Edit
@@ -114,7 +112,7 @@ the file path check passes. For example, to reorganize files by artist and
 album, use:
 
 ```
-$ htagcli fix-paths --base-dir ~/Music --pattern "{artist}/{album}/{track}-{title}" directory ./music-to-clean-up
+$ htagcli fix-paths --base-dir ~/Music --pattern "{artist}/{album}/{track}-{title}" ./music-to-clean-up
 ```
 
 This moves your files under `~/Music`, creating subdirectories for each artist
