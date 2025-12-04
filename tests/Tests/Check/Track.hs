@@ -1,7 +1,7 @@
 {- AUTOCOLLECT.TEST -}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Tests.Check.File
+module Tests.Check.Track
   (
   {- AUTOCOLLECT.TEST.export -}
   )

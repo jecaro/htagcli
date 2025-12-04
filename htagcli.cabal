@@ -120,7 +120,7 @@ test-suite tests
   other-modules:
     Tests.Check.Album
     Tests.Check.Artist
-    Tests.Check.File
+    Tests.Check.Track
     Tests.Commands
     Tests.Common
     Tests.Config
