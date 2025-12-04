@@ -41,7 +41,7 @@ test =
                 [fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Album]]
           )
           track
-          `shouldBe` Left (Track.FilenameMismatch "album"),
+          `shouldBe` Left (Track.FilenameMismatch "album.mp3"),
       Tasty.testCase
         "succeed if the file matches the pattern"
         $ Track.check

@@ -23,17 +23,17 @@ module Model.Pattern
   )
 where
 
-import Model.AudioTrack qualified as AudioTrack
 import Control.Applicative.Combinators.NonEmpty qualified as NonEmpty
 import Data.Foldable qualified as Foldable
 import Data.List.NonEmpty.Extra qualified as NonEmpty
 import Data.Text qualified as Text
+import Model.AudioTrack qualified as AudioTrack
+import Model.Tag qualified as Tag
 import Path ((</>))
 import Path qualified
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
 import System.FilePath qualified as FilePath
-import Model.Tag qualified as Tag
 import Text.Megaparsec qualified as Megaparsec
 import Text.Megaparsec.Char qualified as Megaparsec
 import Text.Printf qualified as Text
@@ -119,8 +119,9 @@ placeholderParser =
           Tag.parser
         <*> Megaparsec.takeWhileP Nothing (/= '}')
 
-format :: Formatting -> AudioTrack.AudioTrack -> Pattern -> Text
-format formatting = formatWith . formatPlaceholder formatting
+format :: Formatting -> AudioTrack.AudioTrack -> Pattern -> Maybe Text
+format formatting audioTrack pattern =
+  toText . Path.toFilePath <$> toPath formatting audioTrack pattern
 
 toPath ::
   Formatting ->
