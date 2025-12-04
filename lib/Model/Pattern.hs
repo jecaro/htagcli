@@ -64,7 +64,8 @@ data Padding
 data Formatting = Formatting
   { foCharActions :: [(Char, CharAction)],
     foPadTrackNumbers :: Padding,
-    foPadDiscNumbers :: Padding
+    foPadDiscNumbers :: Padding,
+    foPlaceholderMaxLength :: Int
   }
   deriving (Show, Eq)
 
@@ -73,7 +74,8 @@ noFormatting =
   Formatting
     { foCharActions = [('/', ChRemove)],
       foPadTrackNumbers = Pad 0,
-      foPadDiscNumbers = Pad 0
+      foPadDiscNumbers = Pad 0,
+      foPlaceholderMaxLength = 30
     }
 
 parser :: Parser Pattern
@@ -236,7 +238,7 @@ formatTag Formatting {..} AudioTrack.AudioTrack {..} Tag.Disc =
   maybe "" (numberFormat foPadDiscNumbers . HTagLib.unDiscNumber) atDisc
 
 textFormatter :: Formatting -> Text -> Text
-textFormatter Formatting {..} = applyUnwanted
+textFormatter Formatting {..} = Text.take foPlaceholderMaxLength . applyUnwanted
   where
     applyUnwanted = foldr ((.) . unwanted) id foCharActions
     unwanted :: (Char, CharAction) -> Text -> Text

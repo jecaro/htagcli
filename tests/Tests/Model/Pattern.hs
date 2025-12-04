@@ -370,10 +370,13 @@ test =
         filenameMatches
           trackDashTitle
           (Pattern.noFormatting {Pattern.foPadTrackNumbers = Pattern.Ignore})
-          ( (trackWithTitleAndFile "title" [absfile|/001-title.mp3|])
-              { AudioTrack.atAlbumArtist = ""
-              }
-          )
+          (trackWithTitleAndFile "title" [absfile|/001-title.mp3|])
+          `shouldBe` True,
+      Tasty.testCase "max placeholder length" $
+        filenameMatches
+          trackDashTitle
+          (Pattern.noFormatting {Pattern.foPlaceholderMaxLength = 5})
+          (trackWithTitleAndFile "123456789" [absfile|/1-12345.mp3|])
           `shouldBe` True
     ]
   where

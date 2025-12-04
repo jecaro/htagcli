@@ -48,6 +48,10 @@ pad_track_numbers = "2"
 # Same for disc numbers
 pad_disc_numbers = "ignore"
 
+# htagcli will truncate any placeholder value exceeding this length. Useful for
+# tracks with very long titles.
+placeholder_max_length = 30
+
 # Settings for the `fix-path` command
 [fix_paths]
 

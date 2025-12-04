@@ -24,7 +24,7 @@ data Error
   = MissingTags (NonEmpty Tag.Tag)
   | GenreMismatch (NonEmpty HTagLib.Genre) HTagLib.Genre
   | FilenameMismatch Text
-  | CantFormatFilename
+  | UnableToFormatFile
   deriving (Eq, Show)
 
 errorToText :: Error -> Text
@@ -38,8 +38,7 @@ errorToText (GenreMismatch expected genre) =
     <> HTagLib.unGenre genre
 errorToText (FilenameMismatch expected) =
   "Filename does not match the pattern, expected \"" <> expected <> "\""
-errorToText CantFormatFilename =
-  "Cannot format filename with the given pattern and track tags"
+errorToText UnableToFormatFile = "Unable to format file"
 
 check :: Check -> AudioTrack.AudioTrack -> Either Error ()
 check (TagsExist tags) track =
@@ -59,7 +58,7 @@ check (FilenameMatches pattern formatting) track = do
     check (TagsExist tags) track
   unless (Pattern.match formatting track pattern filename) $ do
     expected <-
-      maybeToRight CantFormatFilename $
+      maybeToRight UnableToFormatFile $
         Pattern.format formatting track pattern
     Left $ FilenameMismatch expected
   where

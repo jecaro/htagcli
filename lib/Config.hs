@@ -326,6 +326,7 @@ formattingC =
         )
     <*> paddingC "pad_track_numbers" .= Pattern.foPadTrackNumbers
     <*> paddingC "pad_disc_numbers" .= Pattern.foPadDiscNumbers
+    <*> Toml.int "placeholder_max_length" .= Pattern.foPlaceholderMaxLength
 
 charAndCharActionC :: Toml.TomlCodec (Char, Pattern.CharAction)
 charAndCharActionC = Toml.pair (charC "char") (charActionC "action")

@@ -249,6 +249,13 @@ formattingP =
     <$> charToCharActionP
     <*> paddingP "pad track"
     <*> paddingP "pad disc"
+    <*> Options.option
+      Options.auto
+      ( Options.long "placeholder-max-length"
+          <> Options.metavar "N"
+          <> Options.help
+            "Maximum length of placeholder values after the formatting"
+      )
 
 charToCharActionP :: Options.Parser [(Char, Pattern.CharAction)]
 charToCharActionP =
