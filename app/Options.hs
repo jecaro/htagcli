@@ -12,7 +12,6 @@ import Check.Album qualified as Album
 import Check.Artist qualified as Artist
 import Check.Track qualified as Track
 import Config qualified
-import Data.List.Extra qualified as List
 import Data.Text qualified as Text
 import Model.Cover qualified as Cover
 import Model.Pattern qualified as Pattern
@@ -33,7 +32,6 @@ data Files = Files
 
 data CheckOptions = CheckOptions
   { chChecks :: Config.Checks,
-    chFormatting :: Maybe Pattern.Formatting,
     chFilematches :: Maybe Pattern.Pattern
   }
   deriving (Show)
@@ -41,7 +39,6 @@ data CheckOptions = CheckOptions
 data FixFilePathsOptions = FixFilePathsOptions
   { foDryRun :: Bool,
     foBaseDirectory :: Maybe (Path.SomeBase Path.Dir),
-    foFormatting :: Maybe Pattern.Formatting,
     foPattern :: Maybe Pattern.Pattern
   }
   deriving (Show)
@@ -65,10 +62,9 @@ checks
   config@(Config.Config {coFilename = Config.Filename {..}})
   (Options.CheckOptions {..})
     | not $ Config.haveChecks chChecks = Config.factorChecks config
-    | otherwise = Config.factorChecks' pattern formatting chChecks
+    | otherwise = Config.factorChecks' pattern fiFormatting chChecks
     where
       pattern = fromMaybe fiPattern chFilematches
-      formatting = fromMaybe fiFormatting chFormatting
 
 optionsInfo :: Options.ParserInfo Command
 optionsInfo = Options.info (optionsP <**> Options.helper) Options.idm
@@ -77,7 +73,6 @@ checkOptionsP :: Options.Parser CheckOptions
 checkOptionsP =
   CheckOptions
     <$> checksP
-    <*> Options.optional formattingP
     <*> Options.optional filematchesP
 
 checksP :: Options.Parser Config.Checks
@@ -97,7 +92,6 @@ fixFilePathsOptionsP =
   FixFilePathsOptions
     <$> dryRunP
     <*> optional baseDirectoryP
-    <*> optional formattingP
     <*> optional filematchesP
 
 dryRunP :: Options.Parser Bool
@@ -242,50 +236,6 @@ filematchesP =
     )
   where
     parse = Megaparsec.parseMaybe Pattern.parser
-
-formattingP :: Options.Parser Pattern.Formatting
-formattingP =
-  Pattern.Formatting
-    <$> charToCharActionP
-    <*> paddingP "pad track"
-    <*> paddingP "pad disc"
-    <*> Options.option
-      Options.auto
-      ( Options.long "placeholder-max-length"
-          <> Options.metavar "N"
-          <> Options.help
-            "Maximum length of placeholder values after the formatting"
-      )
-
-charToCharActionP :: Options.Parser [(Char, Pattern.CharAction)]
-charToCharActionP =
-  Pattern.addSlashIfNeeded
-    <$> Options.many
-      ( (,Pattern.ChRemove)
-          <$> Options.option
-            Options.auto
-            (Options.long "remove" <> Options.metavar "CHAR")
-            <|> second Pattern.ChReplace
-          <$> Options.option
-            (Options.eitherReader $ first toString . parse)
-            (Options.long "replace" <> Options.metavar "CHAR:CHAR")
-      )
-  where
-    parse :: String -> Either Text (Char, Char)
-    parse [c1, ':', c2] = Right (c1, c2)
-    parse _ = Left "Must be in the form 'x:y'"
-
-paddingP :: String -> Options.Parser Pattern.Padding
-paddingP label =
-  Options.option
-    (Options.eitherReader $ first toString . Pattern.parsePadding . toText)
-    ( Options.long option
-        <> Options.metavar "N"
-        <> Options.help
-          ("Number of digits to " <> label <> " numbers to")
-    )
-  where
-    option = List.replace " " "-" label
 
 setTagsOptionsP :: Options.Parser SetTagsOptions.SetTagsOptions
 setTagsOptionsP =

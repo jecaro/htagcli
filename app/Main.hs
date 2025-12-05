@@ -126,15 +126,14 @@ main = do
         when (total > 0) $ System.exitWith $ System.ExitFailure total
       Options.FixFilePaths Options.FixFilePathsOptions {..} files -> do
         Config.Config {coFilename = Config.Filename {..}, ..} <- Config.readConfig
-        let formatting = fromMaybe fiFormatting foFormatting
-            pattern = fromMaybe fiPattern foPattern
+        let pattern = fromMaybe fiPattern foPattern
         -- Get the base directory from the cli and fallback to the config file
         baseDir <- maybe (pure coFixPaths) Path.makeAbsolute foBaseDirectory
         let fixFilePathOptions =
               Commands.FixFilePathsOptions
                 { Commands.fiDryRun = foDryRun,
                   Commands.fiBaseDirectory = baseDir,
-                  Commands.fiFormatting = formatting,
+                  Commands.fiFormatting = fiFormatting,
                   Commands.fiPattern = pattern
                 }
 
