@@ -3,6 +3,8 @@ module Options
     Command (..),
     Files (..),
     FixFilePathsOptions (..),
+    SearchOptions (..),
+    SearchSource (..),
     optionsInfo,
     checks,
   )
@@ -44,6 +46,17 @@ data FixFilePathsOptions = FixFilePathsOptions
   }
   deriving (Show)
 
+data SearchOptions = SearchOptions
+  { seMaxResults :: Int,
+    seSource :: SearchSource
+  }
+  deriving (Show)
+
+data SearchSource
+  = SearchFromFiles Files
+  | SearchFromArgs HTagLib.AlbumArtist HTagLib.Album
+  deriving (Show)
+
 data Command
   = CreateConfig
   | GetTags Files
@@ -51,6 +64,7 @@ data Command
   | Edit Files
   | Check CheckOptions Files
   | FixFilePaths FixFilePathsOptions Files
+  | Search SearchOptions
   deriving (Show)
 
 -- | Get checks from the CLI, and fall back to the config file if none are
@@ -96,6 +110,39 @@ fixFilePathsOptionsP =
     <$> dryRunP
     <*> optional baseDirectoryP
     <*> optional filematchesP
+
+searchOptionsP :: Options.Parser SearchOptions
+searchOptionsP =
+  SearchOptions
+    <$> Options.option
+      Options.auto
+      ( Options.long "max-results"
+          <> Options.metavar "N"
+          <> Options.value 3
+          <> Options.showDefault
+          <> Options.help "Maximum number of results to display"
+      )
+    <*> searchSourceP
+
+searchSourceP :: Options.Parser SearchSource
+searchSourceP = searchFromArgsP <|> searchFromFilesP
+
+searchFromFilesP :: Options.Parser SearchSource
+searchFromFilesP = SearchFromFiles <$> filesP
+
+searchFromArgsP :: Options.Parser SearchSource
+searchFromArgsP =
+  SearchFromArgs
+    <$> Options.strOption
+      ( Options.long "artist"
+          <> Options.metavar "ARTIST"
+          <> Options.help "Artist name to search for"
+      )
+    <*> Options.strOption
+      ( Options.long "album"
+          <> Options.metavar "ALBUM"
+          <> Options.help "Album name to search for"
+      )
 
 dryRunP :: Options.Parser Bool
 dryRunP =
@@ -406,5 +453,11 @@ optionsP =
           ( Options.info
               (FixFilePaths <$> fixFilePathsOptionsP <*> filesP)
               (Options.progDesc "Fix file paths according to a pattern")
+          )
+        <> Options.command
+          "search"
+          ( Options.info
+              (Search <$> searchOptionsP)
+              (Options.progDesc "Search MusicBrainz for releases")
           )
     )

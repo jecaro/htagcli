@@ -1,4 +1,12 @@
-module ConduitUtils (runConduitWithProgress, discC, albumC, artistC) where
+module ConduitUtils
+  ( runConduitWithProgress,
+    filesC,
+    discC,
+    albumC,
+    artistC,
+    oneC,
+  )
+where
 
 import Conduit ((.|))
 import Conduit qualified
@@ -12,6 +20,7 @@ import Path qualified
 import Path.IO qualified as Path
 import Progress qualified
 import System.FilePath qualified as FilePath
+import UnliftIO.Exception qualified as Exception
 
 runConduitWithProgress ::
   Options.Files ->
@@ -51,6 +60,25 @@ albumC ::
   (Monad m) =>
   Conduit.ConduitT Disc.Disc Album.Album m ()
 albumC = clusterC Album.mkAlbum Album.addDisc
+
+oneC ::
+  ( Conduit.MonadThrow m,
+    Conduit.MonadIO m,
+    Exception nothing,
+    Exception moreThanOne
+  ) =>
+  nothing ->
+  moreThanOne ->
+  Conduit.ConduitT album Void m album
+oneC nothing moreThanOne = do
+  mbFirst <- Conduit.await
+  case mbFirst of
+    Nothing -> Exception.throwIO nothing
+    Just album -> do
+      mbSecond <- Conduit.await
+      case mbSecond of
+        Nothing -> pure album
+        Just _ -> Exception.throwIO moreThanOne
 
 artistC ::
   (Monad m) =>

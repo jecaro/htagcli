@@ -7,8 +7,10 @@ import Data.Conduit.Combinators qualified as Conduit
 import Data.Either.Extra qualified as Either
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
+import Model.Album qualified as Album
 import Model.AudioTrack qualified as AudioTrack
 import Model.Cover qualified as Cover
+import MusicBrainz qualified
 import Options qualified
 import Options.Applicative qualified as Options
 import Path.IO qualified as Path
@@ -28,6 +30,8 @@ data Error
   | MoveCoverWithoutCheck
   | EditorExitError
   | ParseError (Megaparsec.ParseErrorBundle Text.Text Void)
+  | NoAudioFiles
+  | NotSameAlbum
   deriving (Show)
 
 instance Exception.Exception Error
@@ -40,6 +44,8 @@ errorToText (ParseError parseError) =
     <> Text.pack (Megaparsec.errorBundlePretty parseError)
 errorToText MoveCoverWithoutCheck =
   "move_cover is enabled but checks.disc_cover is disabled."
+errorToText NoAudioFiles = "No audio files found"
+errorToText NotSameAlbum = "Input files are not from the same album"
 
 main :: IO ()
 main = do
@@ -167,10 +173,26 @@ main = do
         ConduitUtils.runConduitWithProgress files $
           Conduit.mapM_C $
             Commands.fixFilePaths fixFilePathOptions
+      Options.Search Options.SearchOptions {..} -> case seSource of
+        Options.SearchFromFiles files -> do
+          album <- collectAlbum files
+          MusicBrainz.searchAlbum seMaxResults album
+        Options.SearchFromArgs albumArtist album ->
+          MusicBrainz.search seMaxResults albumArtist album
   where
     getTagsAsText filename = do
       content <- encodeUtf8 . AudioTrack.asText <$> AudioTrack.getTags filename
       pure $ content <> "\n"
+
+    collectAlbum :: Options.Files -> IO Album.Album
+    collectAlbum files =
+      Conduit.runResourceT $
+        Conduit.runConduit $
+          ConduitUtils.filesC files
+            .| Conduit.mapM AudioTrack.getTags
+            .| ConduitUtils.discC
+            .| ConduitUtils.albumC
+            .| ConduitUtils.oneC NoAudioFiles NotSameAlbum
 
 exceptions :: SomeException -> IO ()
 exceptions someException
@@ -188,4 +210,6 @@ exceptions someException
           Config.errorToText configException <> "\n"
       | Just commandsException <- fromException someException =
           Commands.errorToText commandsException <> "\n"
+      | Just mbException <- fromException someException =
+          MusicBrainz.errorToText mbException <> "\n"
       | otherwise = "Unknown exception: " <> show someException <> "\n"
