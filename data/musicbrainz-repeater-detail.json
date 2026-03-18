@@ -1,0 +1,564 @@
+{
+  "asin": null,
+  "packaging": "Jewel Case",
+  "artist-credit": [
+    {
+      "artist": {
+        "name": "Fugazi",
+        "country": "US",
+        "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+        "type": "Group",
+        "sort-name": "Fugazi",
+        "disambiguation": "",
+        "id": "233fc3f3-6de2-465c-985e-e721dbabbace"
+      },
+      "name": "Fugazi",
+      "joinphrase": ""
+    }
+  ],
+  "packaging-id": "ec27701a-4a22-37f4-bfac-6616e0f9750a",
+  "status": "Official",
+  "release-events": [
+    {
+      "area": {
+        "iso-3166-1-codes": [
+          "US"
+        ],
+        "name": "United States",
+        "type": null,
+        "type-id": null,
+        "sort-name": "United States",
+        "disambiguation": "",
+        "id": "489ce91b-6658-3307-9877-795b68554c98"
+      },
+      "date": "1990"
+    }
+  ],
+  "quality": "normal",
+  "title": "Repeater",
+  "cover-art-archive": {
+    "front": true,
+    "artwork": true,
+    "count": 6,
+    "darkened": false,
+    "back": true
+  },
+  "media": [
+    {
+      "track-count": 11,
+      "title": "",
+      "tracks": [
+        {
+          "recording": {
+            "artist-credit": [
+              {
+                "joinphrase": "",
+                "artist": {
+                  "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                  "type": "Group",
+                  "disambiguation": "",
+                  "sort-name": "Fugazi",
+                  "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                  "name": "Fugazi",
+                  "country": "US"
+                },
+                "name": "Fugazi"
+              }
+            ],
+            "length": 256026,
+            "id": "3f0bd23d-0f71-40a8-8407-5fb31d9421ba",
+            "video": false,
+            "disambiguation": "",
+            "title": "Turnover",
+            "first-release-date": "1990-01"
+          },
+          "title": "Turnover",
+          "artist-credit": [
+            {
+              "joinphrase": "",
+              "artist": {
+                "country": "US",
+                "name": "Fugazi",
+                "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                "type": "Group",
+                "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                "disambiguation": "",
+                "sort-name": "Fugazi"
+              },
+              "name": "Fugazi"
+            }
+          ],
+          "number": "A1",
+          "id": "270f219a-99f6-3aa9-af1f-e7e35aae4eea",
+          "position": 1,
+          "length": 258000
+        },
+        {
+          "number": "A2",
+          "artist-credit": [
+            {
+              "artist": {
+                "country": "US",
+                "name": "Fugazi",
+                "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                "disambiguation": "",
+                "sort-name": "Fugazi",
+                "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                "type": "Group"
+              },
+              "name": "Fugazi",
+              "joinphrase": ""
+            }
+          ],
+          "id": "075a5048-3296-3a92-91e0-8e39ea03fd56",
+          "position": 2,
+          "length": 183000,
+          "title": "Repeater",
+          "recording": {
+            "title": "Repeater",
+            "first-release-date": "1990-01",
+            "artist-credit": [
+              {
+                "name": "Fugazi",
+                "artist": {
+                  "name": "Fugazi",
+                  "country": "US",
+                  "type": "Group",
+                  "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                  "disambiguation": "",
+                  "sort-name": "Fugazi",
+                  "id": "233fc3f3-6de2-465c-985e-e721dbabbace"
+                },
+                "joinphrase": ""
+              }
+            ],
+            "video": false,
+            "disambiguation": "",
+            "length": 181200,
+            "id": "e7860b1e-f08e-4b85-a34c-68290032e373"
+          }
+        },
+        {
+          "id": "d64e94e8-f4da-393d-ae4e-5b25f838f521",
+          "position": 3,
+          "length": 155000,
+          "number": "A3",
+          "artist-credit": [
+            {
+              "joinphrase": "",
+              "artist": {
+                "name": "Fugazi",
+                "country": "US",
+                "sort-name": "Fugazi",
+                "disambiguation": "",
+                "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                "type": "Group"
+              },
+              "name": "Fugazi"
+            }
+          ],
+          "title": "Brendan #1",
+          "recording": {
+            "artist-credit": [
+              {
+                "name": "Fugazi",
+                "artist": {
+                  "country": "US",
+                  "name": "Fugazi",
+                  "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                  "disambiguation": "",
+                  "sort-name": "Fugazi",
+                  "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                  "type": "Group"
+                },
+                "joinphrase": ""
+              }
+            ],
+            "length": 152333,
+            "id": "2b87333b-b4e3-4106-ab3d-d54664456d95",
+            "video": false,
+            "disambiguation": "",
+            "title": "Brendan #1",
+            "first-release-date": "1990-01"
+          }
+        },
+        {
+          "number": "A4",
+          "artist-credit": [
+            {
+              "name": "Fugazi",
+              "artist": {
+                "type": "Group",
+                "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                "disambiguation": "",
+                "sort-name": "Fugazi",
+                "country": "US",
+                "name": "Fugazi"
+              },
+              "joinphrase": ""
+            }
+          ],
+          "id": "e9f18682-a890-377b-bf63-4d8bf44df815",
+          "position": 4,
+          "length": 181000,
+          "recording": {
+            "first-release-date": "1990-01",
+            "title": "Merchandise",
+            "length": 179133,
+            "id": "d730a8b0-4dc0-473b-bb4b-136d48290abf",
+            "disambiguation": "",
+            "video": false,
+            "artist-credit": [
+              {
+                "joinphrase": "",
+                "name": "Fugazi",
+                "artist": {
+                  "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                  "type": "Group",
+                  "sort-name": "Fugazi",
+                  "disambiguation": "",
+                  "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                  "name": "Fugazi",
+                  "country": "US"
+                }
+              }
+            ]
+          },
+          "title": "Merchandise"
+        },
+        {
+          "title": "Blueprint",
+          "recording": {
+            "video": false,
+            "disambiguation": "",
+            "id": "7dcd724c-6cb8-4e6c-88e1-89644839048c",
+            "length": 232840,
+            "artist-credit": [
+              {
+                "name": "Fugazi",
+                "artist": {
+                  "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                  "type": "Group",
+                  "disambiguation": "",
+                  "sort-name": "Fugazi",
+                  "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                  "name": "Fugazi",
+                  "country": "US"
+                },
+                "joinphrase": ""
+              }
+            ],
+            "first-release-date": "1990-01",
+            "title": "Blueprint"
+          },
+          "artist-credit": [
+            {
+              "artist": {
+                "country": "US",
+                "name": "Fugazi",
+                "type": "Group",
+                "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                "disambiguation": "",
+                "sort-name": "Fugazi"
+              },
+              "name": "Fugazi",
+              "joinphrase": ""
+            }
+          ],
+          "number": "A5",
+          "position": 5,
+          "id": "ec222978-ba05-3997-bd3e-cf7e0d33e897",
+          "length": 235000
+        },
+        {
+          "recording": {
+            "artist-credit": [
+              {
+                "artist": {
+                  "type": "Group",
+                  "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                  "sort-name": "Fugazi",
+                  "disambiguation": "",
+                  "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                  "name": "Fugazi",
+                  "country": "US"
+                },
+                "name": "Fugazi",
+                "joinphrase": ""
+              }
+            ],
+            "id": "a3af445b-4b04-40d9-a9f1-a1149d715c27",
+            "length": 204000,
+            "video": false,
+            "disambiguation": "",
+            "title": "Sieve-Fisted Find",
+            "first-release-date": "1990-01"
+          },
+          "title": "Sieve-Fisted Find",
+          "id": "d686a261-98a2-3daa-97b2-a44783042b67",
+          "position": 6,
+          "length": 206000,
+          "artist-credit": [
+            {
+              "name": "Fugazi",
+              "artist": {
+                "country": "US",
+                "name": "Fugazi",
+                "type": "Group",
+                "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                "sort-name": "Fugazi",
+                "disambiguation": ""
+              },
+              "joinphrase": ""
+            }
+          ],
+          "number": "B1"
+        },
+        {
+          "number": "B2",
+          "artist-credit": [
+            {
+              "artist": {
+                "type": "Group",
+                "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                "sort-name": "Fugazi",
+                "disambiguation": "",
+                "country": "US",
+                "name": "Fugazi"
+              },
+              "name": "Fugazi",
+              "joinphrase": ""
+            }
+          ],
+          "position": 7,
+          "length": 110000,
+          "id": "0459b700-303b-3ae5-bc20-028ad8eb0f56",
+          "title": "Greed",
+          "recording": {
+            "first-release-date": "1990-01",
+            "title": "Greed",
+            "length": 107426,
+            "id": "1d3cf800-6dc4-4bb7-82cf-0c293480632f",
+            "disambiguation": "",
+            "video": false,
+            "artist-credit": [
+              {
+                "joinphrase": "",
+                "name": "Fugazi",
+                "artist": {
+                  "name": "Fugazi",
+                  "country": "US",
+                  "disambiguation": "",
+                  "sort-name": "Fugazi",
+                  "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                  "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                  "type": "Group"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": "B3",
+          "artist-credit": [
+            {
+              "joinphrase": "",
+              "name": "Fugazi",
+              "artist": {
+                "name": "Fugazi",
+                "country": "US",
+                "type": "Group",
+                "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                "disambiguation": "",
+                "sort-name": "Fugazi",
+                "id": "233fc3f3-6de2-465c-985e-e721dbabbace"
+              }
+            }
+          ],
+          "id": "8e5cdd6a-8191-307b-be87-4c4485732787",
+          "position": 8,
+          "length": 210000,
+          "recording": {
+            "length": 208000,
+            "id": "df579190-394e-44e2-a764-8109b4fd1108",
+            "disambiguation": "",
+            "video": false,
+            "artist-credit": [
+              {
+                "name": "Fugazi",
+                "artist": {
+                  "sort-name": "Fugazi",
+                  "disambiguation": "",
+                  "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                  "type": "Group",
+                  "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                  "name": "Fugazi",
+                  "country": "US"
+                },
+                "joinphrase": ""
+              }
+            ],
+            "first-release-date": "1990-01",
+            "title": "Two Beats Off"
+          },
+          "title": "Two Beats Off"
+        },
+        {
+          "number": "B4",
+          "artist-credit": [
+            {
+              "name": "Fugazi",
+              "artist": {
+                "type": "Group",
+                "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                "sort-name": "Fugazi",
+                "disambiguation": "",
+                "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                "name": "Fugazi",
+                "country": "US"
+              },
+              "joinphrase": ""
+            }
+          ],
+          "length": 157000,
+          "position": 9,
+          "id": "0be6d47e-486d-3b04-bf2c-810fafad74a4",
+          "title": "Styrofoam",
+          "recording": {
+            "disambiguation": "",
+            "video": false,
+            "id": "b1f6344b-4cf1-4c60-9683-b58204da6dc9",
+            "length": 154906,
+            "artist-credit": [
+              {
+                "joinphrase": "",
+                "artist": {
+                  "country": "US",
+                  "name": "Fugazi",
+                  "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                  "sort-name": "Fugazi",
+                  "disambiguation": "",
+                  "type": "Group",
+                  "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                },
+                "name": "Fugazi"
+              }
+            ],
+            "first-release-date": "1990-01",
+            "title": "Styrofoam"
+          }
+        },
+        {
+          "title": "Reprovisional",
+          "recording": {
+            "artist-credit": [
+              {
+                "name": "Fugazi",
+                "artist": {
+                  "name": "Fugazi",
+                  "country": "US",
+                  "type": "Group",
+                  "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                  "disambiguation": "",
+                  "sort-name": "Fugazi",
+                  "id": "233fc3f3-6de2-465c-985e-e721dbabbace"
+                },
+                "joinphrase": ""
+              }
+            ],
+            "id": "eca7fea2-dca1-4e7d-bc45-d00e24efd72e",
+            "length": 137893,
+            "disambiguation": "",
+            "video": false,
+            "title": "Reprovisional",
+            "first-release-date": "1990-01"
+          },
+          "artist-credit": [
+            {
+              "joinphrase": "",
+              "artist": {
+                "name": "Fugazi",
+                "country": "US",
+                "sort-name": "Fugazi",
+                "disambiguation": "",
+                "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                "type": "Group",
+                "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+              },
+              "name": "Fugazi"
+            }
+          ],
+          "number": "B5",
+          "id": "ec78c044-e767-3e29-9b02-fc2a0625d227",
+          "position": 10,
+          "length": 140000
+        },
+        {
+          "title": "Shut the Door",
+          "recording": {
+            "id": "8455897c-41c1-4adb-879d-5f4fa67dd6c3",
+            "length": 291000,
+            "disambiguation": "",
+            "video": false,
+            "artist-credit": [
+              {
+                "artist": {
+                  "type": "Group",
+                  "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                  "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                  "disambiguation": "",
+                  "sort-name": "Fugazi",
+                  "country": "US",
+                  "name": "Fugazi"
+                },
+                "name": "Fugazi",
+                "joinphrase": ""
+              }
+            ],
+            "first-release-date": "1990-01",
+            "title": "Shut the Door"
+          },
+          "artist-credit": [
+            {
+              "name": "Fugazi",
+              "artist": {
+                "type": "Group",
+                "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b",
+                "disambiguation": "",
+                "sort-name": "Fugazi",
+                "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+                "name": "Fugazi",
+                "country": "US"
+              },
+              "joinphrase": ""
+            }
+          ],
+          "number": "B6",
+          "id": "52114f2c-b006-3cb2-96f9-fe0924efbc1a",
+          "position": 11,
+          "length": 291000
+        }
+      ],
+      "format": "Cassette",
+      "track-offset": 0,
+      "id": "97057de6-6514-3972-9b79-b4481b5e3ba0",
+      "position": 1,
+      "format-id": "f5e6e254-8f39-331c-936b-9c69d686dc47"
+    }
+  ],
+  "id": "00baa173-29db-33a9-af6d-fe109e53a211",
+  "disambiguation": "",
+  "text-representation": {
+    "script": "Latn",
+    "language": "eng"
+  },
+  "date": "1990",
+  "country": "US",
+  "barcode": "",
+  "status-id": "4e304316-386d-3409-af2e-78857eec5cfe"
+}

@@ -1,0 +1,84 @@
+{
+  "created": "2026-06-24T12:54:30.758Z",
+  "count": 1,
+  "offset": 0,
+  "releases": [
+    {
+      "id": "2b06e322-88e4-465c-b53d-1f82271e6131",
+      "score": 100,
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "artist-credit-id": "949a7fd5-fe73-3e8f-922e-01ff4ca958f7",
+      "count": 1,
+      "title": "Dischord 1981: The Year in Seven Inches",
+      "status": "Official",
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "artist-credit": [
+        {
+          "name": "Various Artists",
+          "artist": {
+            "id": "89ad4ac3-39f7-470e-963a-56509c546377",
+            "name": "Various Artists",
+            "sort-name": "Various Artists",
+            "disambiguation": "add compilations to this artist"
+          }
+        }
+      ],
+      "release-group": {
+        "id": "c61c1544-c22d-3b2d-bcd7-ab0dc38e6210",
+        "type-id": "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "title": "Dischord 1981: The Year in Seven Inches",
+        "primary-type": "Album",
+        "secondary-types": [
+          "Compilation"
+        ],
+        "secondary-type-ids": [
+          "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+        ]
+      },
+      "date": "1995-10",
+      "country": "US",
+      "release-events": [
+        {
+          "date": "1995-10",
+          "area": {
+            "id": "489ce91b-6658-3307-9877-795b68554c98",
+            "name": "United States",
+            "sort-name": "United States",
+            "iso-3166-1-codes": [
+              "US"
+            ]
+          }
+        }
+      ],
+      "barcode": "",
+      "label-info": [
+        {
+          "catalog-number": "DIS014CD",
+          "label": {
+            "id": "2954d038-b2af-495a-b3b7-ab8028c672c4",
+            "name": "Dischord Records"
+          }
+        }
+      ],
+      "track-count": 48,
+      "media": [
+        {
+          "id": "a40c730a-6290-31b0-b6d8-fd72f97ab90d",
+          "format": "CD",
+          "disc-count": 2,
+          "track-count": 48
+        }
+      ],
+      "tags": [
+        {
+          "count": 1,
+          "name": "punk"
+        }
+      ]
+    }
+  ]
+}

@@ -10,6 +10,7 @@ import Tests.Config as Config
 import Tests.Model.AudioTrack qualified as Model.AudioTrack
 import Tests.Model.Pattern qualified as Model.Pattern
 import Tests.Model.Tag qualified as Model.Tag
+import Tests.MusicBrainz qualified as MusicBrainz
 
 main :: IO ()
 main =
@@ -24,5 +25,6 @@ main =
         Check.Disc.test,
         Check.Album.test,
         Check.Artist.test,
-        Check.Track.test
+        Check.Track.test,
+        MusicBrainz.test
       ]

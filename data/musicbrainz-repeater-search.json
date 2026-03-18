@@ -1,0 +1,73 @@
+{
+  "created": "2026-06-24T12:54:15.623Z",
+  "count": 7,
+  "offset": 0,
+  "releases": [
+    {
+      "id": "37e6a462-1417-45dc-9d88-4ef9aff4bc19",
+      "score": 100,
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "packaging-id": "ec27701a-4a22-37f4-bfac-6616e0f9750a",
+      "artist-credit-id": "84181a38-c258-32ae-99eb-5bc06592b736",
+      "count": 1,
+      "title": "Repeater",
+      "status": "Official",
+      "packaging": "Jewel Case",
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "artist-credit": [
+        {
+          "name": "Fugazi",
+          "artist": {
+            "id": "233fc3f3-6de2-465c-985e-e721dbabbace",
+            "name": "Fugazi",
+            "sort-name": "Fugazi"
+          }
+        }
+      ],
+      "release-group": {
+        "id": "c7c2de8e-3c98-3923-a4d9-54c4295d20b4",
+        "type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "title": "Repeater",
+        "primary-type": "Album"
+      },
+      "date": "2005",
+      "country": "FR",
+      "release-events": [
+        {
+          "date": "2005",
+          "area": {
+            "id": "08310658-51eb-3801-80de-5a0739207115",
+            "name": "France",
+            "sort-name": "France",
+            "iso-3166-1-codes": [
+              "FR"
+            ]
+          }
+        }
+      ],
+      "barcode": "",
+      "label-info": [
+        {
+          "catalog-number": "DISCHORD 45",
+          "label": {
+            "id": "2954d038-b2af-495a-b3b7-ab8028c672c4",
+            "name": "Dischord Records"
+          }
+        }
+      ],
+      "track-count": 14,
+      "media": [
+        {
+          "id": "12f6cad0-e50c-3e25-9fab-e3fe898ff139",
+          "format": "CD",
+          "disc-count": 0,
+          "track-count": 14
+        }
+      ]
+    }
+  ]
+}

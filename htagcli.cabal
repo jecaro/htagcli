@@ -18,6 +18,7 @@ common defaults
     -Wredundant-constraints
 
   default-extensions:
+    DataKinds
     LambdaCase
     OverloadedStrings
     PackageImports
@@ -40,6 +41,12 @@ library
   hs-source-dirs:
     lib
 
+  autogen-modules:
+    Paths_htagcli
+
+  other-modules:
+    Paths_htagcli
+
   exposed-modules:
     Check.Album
     Check.Artist
@@ -56,12 +63,14 @@ library
     Model.Pattern
     Model.SetTagsOptions
     Model.Tag
+    MusicBrainz
     Path.IO.Extra
     Sound.HTagLib.Extra
     Toml.Extra
 
   build-depends:
     JuicyPixels,
+    aeson,
     extra,
     file-embed,
     filepath,
@@ -70,6 +79,8 @@ library
     parser-combinators,
     path,
     path-io,
+    req,
+    string-interpolate,
     tomland,
     transformers,
     unliftio,
@@ -131,8 +142,10 @@ test-suite tests
     Tests.Model.AudioTrack
     Tests.Model.Pattern
     Tests.Model.Tag
+    Tests.MusicBrainz
 
   build-depends:
+    aeson,
     hedgehog,
     hspec,
     hspec-expectations,
@@ -145,6 +158,7 @@ test-suite tests
     path,
     path-io,
     resourcet,
+    string-interpolate,
     tasty,
     tasty-expected-failure,
     tasty-hedgehog,
