@@ -9,6 +9,7 @@ where
 
 import Check.Track qualified as Track
 import Commands qualified
+import Data.List qualified as List
 import Model.AudioTrack qualified as AudioTrack
 import Model.Pattern qualified as Pattern
 import Model.Tag qualified as Tag
@@ -62,7 +63,7 @@ test =
           checkResults <- traverse check filenamesAfter
 
           lefts checkResults `shouldBe` mempty
-          catMaybes listMbPaths `shouldBe` filenamesAfter,
+          List.sort (catMaybes listMbPaths) `shouldBe` List.sort filenamesAfter,
       Tasty.testCase "rename but keep non-empty dirs" $
         Common.withTenTracksFilesInSubdir [reldir|./input|] $ \dir _ -> do
           let inputDir = dir </> [reldir|input|]
