@@ -13,16 +13,18 @@ pkgs.haskellPackages.generateOptparseApplicativeCompletions [ "htagcli" ] (
           dontDisableStatic = true;
           cmakeFlags = [ (pkgs.lib.cmakeBool "BUILD_SHARED_LIBS" false) ];
         });
-      # elfutils static lib in 25.05, doesn't include eu* symbols
+      # elfutils static lib in 26.05, doesn't include eu* symbols
       elfutilsStatic = (pkgs.elfutils.overrideAttrs (old: rec{
         dontDisableStatic = true;
-        version = "0.193";
+        version = "0.194";
 
         src = pkgs.fetchurl {
           url = "https://sourceware.org/elfutils/ftp/${version}/${old.pname}-${version}.tar.bz2";
-          hash = "sha256-eFf0S2JPTY1CHfhRqq57FALP5rzdLYBJ8V/AfT3edjU=";
+          hash = "sha256-CeL/Az05uqiziKLX+8U5C/3pmuO3xnx9qvdDP7zw8B4=";
         };
+
       }));
+      numactlStatic = pkgs.numactl.overrideAttrs (old: { dontDisableStatic = true; });
       zstdStatic = pkgs.zstd.override { enableStatic = true; };
       bzip2Static = pkgs.bzip2.override { enableStatic = true; };
       xzStatic = pkgs.xz.override { enableStatic = true; };
@@ -59,5 +61,7 @@ pkgs.haskellPackages.generateOptparseApplicativeCompletions [ "htagcli" ] (
         "--ghc-option=-optl-lbz2"
         "--extra-lib-dirs=${xzStatic.out}/lib"
         "--ghc-option=-optl-llzma"
+        "--extra-lib-dirs=${numactlStatic}/lib"
+        "--ghc-option=-optl-lnuma"
       ];
     }))
