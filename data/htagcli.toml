@@ -58,6 +58,12 @@ placeholder_max_length = 30
 # Directory where music files are moved when fixing their paths
 base_dir = "/absolute/path/to/your/Music"
 
+# Used to move cover files along the audio files. `checks.album_cover.filenames`
+# must be enabled for this to work.
+# Any file that matches `checks.album_cover.filenames` in the same directory as
+# the current audio file will be moved along with it.
+move_cover = true
+
 # Configuration for validation checks
 [checks]
 

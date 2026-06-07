@@ -121,6 +121,9 @@ and album.
 Use the `--dry-run` option to preview the planned changes without modifying
 any files. It’s a good idea to use it first to confirm everything looks right.
 
+Warning: `htagcli` will remove empty directories after moving the files to 
+their new location.
+
 # Hacking
 
 The project can be built with [nix].

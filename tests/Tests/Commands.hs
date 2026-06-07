@@ -16,6 +16,7 @@ import Model.Tag qualified as Tag
 import Path (reldir, relfile, (</>))
 import Path qualified
 import Path.IO qualified as Path
+import Relude.Unsafe qualified as Unsafe
 import System.IO qualified as System
 import Test.Hspec.Expectations (shouldBe)
 import Test.Tasty qualified as Tasty
@@ -33,7 +34,7 @@ test =
 
           result <-
             traverse
-              (Commands.fixFilePaths' $ fixFilePathsOptions True inputDir)
+              (Commands.fixFilePaths' $ fixFilePathsOptions True False inputDir)
               filenamesBefore
 
           -- All files would be renamed
@@ -48,7 +49,7 @@ test =
           filenamesInCurrentDirBefore <- snd <$> Path.listDir inputDir
           listMbPaths <-
             traverse
-              (Commands.fixFilePaths' $ fixFilePathsOptions False dir)
+              (Commands.fixFilePaths' $ fixFilePathsOptions False False dir)
               filenamesInCurrentDirBefore
 
           all isJust listMbPaths `shouldBe` True
@@ -76,13 +77,53 @@ test =
 
           listMbPaths <-
             traverse
-              (Commands.fixFilePaths' $ fixFilePathsOptions False dir)
+              (Commands.fixFilePaths' $ fixFilePathsOptions False False dir)
               filenamesInCurrentDirBefore
 
           all isJust listMbPaths `shouldBe` True
 
           exists <- Path.doesDirExist inputDir
-          exists `shouldBe` True
+          exists `shouldBe` True,
+      Tasty.testCase "rename but dont move the cover image" $ do
+        Common.withTenTracksFilesInSubdir [reldir|./input|] $ \dir _ -> do
+          let inputDir = dir </> [reldir|input|]
+              cover = inputDir </> [relfile|cover.jpg|]
+          Path.copyFile [relfile|./data/cover.png|] cover
+
+          filenamesInCurrentDirBefore <-
+            filter (/= cover) . snd
+              <$> Path.listDir inputDir
+
+          traverse_
+            (Commands.fixFilePaths' $ fixFilePathsOptions False False dir)
+            filenamesInCurrentDirBefore
+
+          exists <- Path.doesFileExist cover
+          exists `shouldBe` True,
+      Tasty.testCase "rename and move the cover image" $
+        Common.withTenTracksFilesInSubdir [reldir|./input|] $ \dir _ -> do
+          let inputDir = dir </> [reldir|input|]
+              relCover = [relfile|cover.png|]
+              cover = inputDir </> relCover
+          Path.copyFile [relfile|./data/cover.png|] cover
+
+          filenamesInCurrentDirBefore <-
+            filter (/= cover) . snd
+              <$> Path.listDir inputDir
+
+          listMbPaths <-
+            traverse
+              (Commands.fixFilePaths' $ fixFilePathsOptions False True dir)
+              filenamesInCurrentDirBefore
+
+          oldCoverExists <- Path.doesFileExist cover
+          oldCoverExists `shouldBe` False
+
+          let firstRenamedFile = Unsafe.fromJust $ asum listMbPaths
+              firstDir = Path.parent firstRenamedFile
+
+          newCoverExists <- Path.doesFileExist (firstDir </> relCover)
+          newCoverExists `shouldBe` True
     ]
 
 check :: (MonadIO m) => Path.Path Path.Abs Path.File -> m (Either Track.Error ())
@@ -105,11 +146,12 @@ pattern =
     ]
 
 fixFilePathsOptions ::
-  Bool -> Path.Path Path.Abs Path.Dir -> Commands.FixFilePathsOptions
-fixFilePathsOptions dryRun baseDir =
+  Bool -> Bool -> Path.Path Path.Abs Path.Dir -> Commands.FixFilePathsOptions
+fixFilePathsOptions dryRun moveCover baseDir =
   Commands.FixFilePathsOptions
     { fiDryRun = dryRun,
       fiBaseDirectory = baseDir </> [reldir|output|],
       fiFormatting = Pattern.noFormatting,
-      fiPattern = pattern
+      fiPattern = pattern,
+      fiCoverImages = guard moveCover *> Just (fromList [[relfile|cover.png|]])
     }
