@@ -9,6 +9,7 @@ common defaults
   default-language: GHC2021
   ghc-options:
     -Wall
+    -Werror
     -Wcompat
     -Widentities
     -Wincomplete-record-updates
