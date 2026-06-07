@@ -8,6 +8,7 @@ import Data.Either.Extra qualified as Either
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
 import Model.AudioTrack qualified as AudioTrack
+import Model.Cover qualified as Cover
 import Options qualified
 import Options.Applicative qualified as Options
 import Path.IO qualified as Path
@@ -24,6 +25,7 @@ import "conduit" Conduit qualified
 
 data Error
   = NoCheckInConfig
+  | MoveCoverWithoutCheck
   | EditorExitError
   | ParseError (Megaparsec.ParseErrorBundle Text.Text Void)
   deriving (Show)
@@ -36,6 +38,8 @@ errorToText EditorExitError = "The editor process exited with an error"
 errorToText (ParseError parseError) =
   "Failed to parse the edited tags:\n"
     <> Text.pack (Megaparsec.errorBundlePretty parseError)
+errorToText MoveCoverWithoutCheck =
+  "move_cover is enabled but checks.album_cover is disabled."
 
 main :: IO ()
 main = do
@@ -125,16 +129,26 @@ main = do
         let total = ceTrackErrors + ceAlbumErrors + ceArtistErrors
         when (total > 0) $ System.exitWith $ System.ExitFailure total
       Options.FixFilePaths Options.FixFilePathsOptions {..} files -> do
-        Config.Config {coFilename = Config.Filename {..}, ..} <- Config.readConfig
+        Config.Config
+          { coFilename = Config.Filename {..},
+            coFixPaths = Config.FixPaths {..},
+            coChecks = Config.Checks {..}
+          } <-
+          Config.readConfig
         let pattern = fromMaybe fiPattern foPattern
+            coverImages = guard fiMoveCover *> (Cover.coPaths <$> chAlbumHaveCover)
+        when (fiMoveCover && isNothing chAlbumHaveCover) $
+          Exception.throwIO MoveCoverWithoutCheck
+
         -- Get the base directory from the cli and fallback to the config file
-        baseDir <- maybe (pure coFixPaths) Path.makeAbsolute foBaseDirectory
+        baseDir <- maybe (pure fiBaseDir) Path.makeAbsolute foBaseDirectory
         let fixFilePathOptions =
               Commands.FixFilePathsOptions
                 { Commands.fiDryRun = foDryRun,
                   Commands.fiBaseDirectory = baseDir,
                   Commands.fiFormatting = fiFormatting,
-                  Commands.fiPattern = pattern
+                  Commands.fiPattern = pattern,
+                  Commands.fiCoverImages = coverImages
                 }
 
         ConduitUtils.runConduitWithProgress files $

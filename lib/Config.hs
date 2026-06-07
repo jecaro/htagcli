@@ -6,6 +6,7 @@ module Config
     Config (..),
     Checks (..),
     Filename (..),
+    FixPaths (..),
     haveChecks,
     readConfig,
     createConfig,
@@ -48,9 +49,15 @@ data Error
 
 instance Exception.Exception Error
 
+data FixPaths = FixPaths
+  { fiBaseDir :: Path.Path Path.Abs Path.Dir,
+    fiMoveCover :: Bool
+  }
+  deriving (Show)
+
 data Config = Config
   { coFilename :: Filename,
-    coFixPaths :: Path.Path Path.Abs Path.Dir,
+    coFixPaths :: FixPaths,
     coChecks :: Checks
   }
   deriving (Show)
@@ -197,8 +204,14 @@ configC :: Toml.TomlCodec Config
 configC =
   Config
     <$> Toml.table filenameC "filename" .= coFilename
-    <*> Toml.table (absDirC "base_dir") "fix_paths" .= coFixPaths
+    <*> Toml.table fixPathsC "fix_paths" .= coFixPaths
     <*> Toml.table checksC "checks" .= coChecks
+
+fixPathsC :: Toml.TomlCodec FixPaths
+fixPathsC =
+  FixPaths
+    <$> absDirC "base_dir" .= fiBaseDir
+    <*> Toml.bool "move_cover" .= fiMoveCover
 
 absDirC :: Toml.Key -> Toml.TomlCodec (Path.Path Path.Abs Path.Dir)
 absDirC =

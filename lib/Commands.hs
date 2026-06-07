@@ -111,7 +111,8 @@ data FixFilePathsOptions = FixFilePathsOptions
   { fiDryRun :: Bool,
     fiBaseDirectory :: Path.Path Path.Abs Path.Dir,
     fiFormatting :: Pattern.Formatting,
-    fiPattern :: Pattern.Pattern
+    fiPattern :: Pattern.Pattern,
+    fiCoverImages :: Maybe (NonEmpty (Path.Path Path.Rel Path.File))
   }
   deriving (Show)
 
@@ -133,8 +134,19 @@ fixFilePaths' FixFilePathsOptions {..} fromFile = do
     else do
       unless fiDryRun $ do
         Path.ensureDir $ Path.parent toFileAbs
+
         Path.renameFile fromFile toFileAbs
-        Path.removeDirAndParentsIfEmpty $ Path.parent fromFile
+
+        -- Move the cover if there
+        let parentDir = Path.parent fromFile
+        whenJust fiCoverImages $ \covers -> do
+          forM_ covers $ \cover -> do
+            whenM (Path.doesFileExist (parentDir </> cover)) $ do
+              Path.renameFile
+                (parentDir </> cover)
+                (Path.parent toFileAbs </> cover)
+
+        Path.removeDirAndParentsIfEmpty parentDir
 
       pure (Just toFileAbs)
 
