@@ -1,11 +1,6 @@
-{- AUTOCOLLECT.TEST -}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Tests.Commands
-  (
-  {- AUTOCOLLECT.TEST.export -}
-  )
-where
+module Tests.Commands (test) where
 
 import Check.Track qualified as Track
 import Commands qualified
@@ -23,8 +18,11 @@ import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty
 import Tests.Common qualified as Common
 
-test :: TestTree
-test =
+test :: Tasty.TestTree
+test = Tasty.testGroup "Commands" [testFixFilePaths]
+
+testFixFilePaths :: Tasty.TestTree
+testFixFilePaths =
   Tasty.testGroup
     "fixFilePaths"
     [ Tasty.testCase "dry run" $

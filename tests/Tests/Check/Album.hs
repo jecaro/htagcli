@@ -1,11 +1,6 @@
-{- AUTOCOLLECT.TEST -}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Tests.Check.Album
-  (
-  {- AUTOCOLLECT.TEST.export -}
-  )
-where
+module Tests.Check.Album (test) where
 
 import Check.Album qualified as Album
 import Data.List.NonEmpty ((<|))
@@ -23,8 +18,18 @@ import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty
 import Tests.Common qualified as Common
 
-test :: TestTree
+test :: Tasty.TestTree
 test =
+  Tasty.testGroup
+    "Check.Album"
+    [ testCheckCover,
+      testCheckDirectory,
+      testCheckSameTags,
+      testCheckSequential
+    ]
+
+testCheckCover :: Tasty.TestTree
+testCheckCover =
   Tasty.testGroup
     "check cover"
     [ Tasty.testCase "check an album without a cover.png" $
@@ -80,8 +85,8 @@ test =
         }
     covers = fromList [[relfile|cover.jpg|], [relfile|cover.png|]]
 
-test :: TestTree
-test =
+testCheckDirectory :: Tasty.TestTree
+testCheckDirectory =
   Tasty.testGroup
     "check directory"
     [ Tasty.testCase "an album is in a single directory" $ do
@@ -105,8 +110,8 @@ test =
         { AudioTrack.atFile = newDir </> Path.filename (AudioTrack.atFile track)
         }
 
-test :: TestTree
-test =
+testCheckSameTags :: Tasty.TestTree
+testCheckSameTags =
   Tasty.testGroup
     "check same tags"
     [ Tasty.testCase "all tracks have the same tags" $ do
@@ -120,8 +125,8 @@ test =
   where
     commonTags = fromList [Tag.Genre, Tag.Year, Tag.Artist, Tag.AlbumArtist]
 
-test :: TestTree
-test =
+testCheckSequential :: Tasty.TestTree
+testCheckSequential =
   Tasty.testGroup
     "check sequential tracks"
     [ Tasty.testCase "the tracks are sequential" $ do

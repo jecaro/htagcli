@@ -1,11 +1,6 @@
-{- AUTOCOLLECT.TEST -}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Tests.Model.Pattern
-  (
-  {- AUTOCOLLECT.TEST.export -}
-  )
-where
+module Tests.Model.Pattern (test) where
 
 import Check.Track qualified as Track
 import Hedgehog ((===))
@@ -25,6 +20,18 @@ import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty
 import Test.Tasty.Hedgehog qualified as Tasty
 import Text.Megaparsec qualified as Megaparsec
+
+test :: Tasty.TestTree
+test =
+  Tasty.testGroup
+    "Model.Pattern"
+    [ testParseRoundTrip,
+      testStaticPatterns,
+      testTagPattern,
+      testOtherPatterns,
+      testParser,
+      testFormatting
+    ]
 
 patternGen :: Hedgehog.Gen Pattern.Pattern
 patternGen = HedgehogGen.nonEmpty (HedgehogRange.linear 1 5) componentGen
@@ -62,15 +69,15 @@ textGen :: Hedgehog.Gen Text
 textGen =
   HedgehogGen.text (HedgehogRange.linear 1 10) HedgehogGen.alphaNum
 
-test :: TestTree
-test =
+testParseRoundTrip :: Tasty.TestTree
+testParseRoundTrip =
   Tasty.testPropertyNamed "parse" "test_parse_pattern" $ Hedgehog.property $ do
     pattern <- Hedgehog.forAll patternGen
     Megaparsec.parse Pattern.parser "" (Pattern.asText pattern)
       === Right pattern
 
-test :: TestTree
-test =
+testStaticPatterns :: Tasty.TestTree
+testStaticPatterns =
   Tasty.testGroup
     "Static patterns"
     [ testFileMatchesAndToPath
@@ -107,8 +114,8 @@ test =
         (trackWithFile [absfile|/some-path/to-somewhere/audio.mp3|])
     ]
 
-test :: TestTree
-test =
+testTagPattern :: Tasty.TestTree
+testTagPattern =
   Tasty.testGroup
     "Tag patterns"
     [ testFileMatchesAndToPath
@@ -225,8 +232,8 @@ testFileMatchesAndToPath text pattern track@AudioTrack.AudioTrack {..} =
   where
     root = [absdir|/|]
 
-test :: TestTree
-test =
+testOtherPatterns :: Tasty.TestTree
+testOtherPatterns =
   Tasty.testGroup
     "Other patterns"
     [ Tasty.testCase
@@ -241,8 +248,8 @@ test =
           `shouldBe` False
     ]
 
-test :: TestTree
-test =
+testParser :: Tasty.TestTree
+testParser =
   Tasty.testGroup
     "Pattern parser"
     [ Tasty.testCase "single text" $
@@ -287,8 +294,8 @@ test =
             ]
     ]
 
-test :: TestTree
-test =
+testFormatting :: Tasty.TestTree
+testFormatting =
   Tasty.testGroup
     "Formatting options"
     [ Tasty.testCase "no substitutions" $
