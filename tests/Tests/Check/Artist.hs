@@ -1,11 +1,6 @@
-{- AUTOCOLLECT.TEST -}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Tests.Check.Artist
-  (
-  {- AUTOCOLLECT.TEST.export -}
-  )
-where
+module Tests.Check.Artist (test) where
 
 import Check.Artist qualified as Artist
 import Model.Artist qualified as Artist
@@ -17,10 +12,10 @@ import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty
 import Tests.Common qualified as Common
 
-test :: TestTree
+test :: Tasty.TestTree
 test =
   Tasty.testGroup
-    "check artist"
+    "Check.Artist"
     [ Tasty.testCase "two albums of the same artist with the same genre" $ do
         let album1 = tenTracksAlbum (HTagLib.mkAlbum "album-1") rock
             album2 = tenTracksAlbum (HTagLib.mkAlbum "album-2") rock

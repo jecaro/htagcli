@@ -129,10 +129,6 @@ test-suite tests
     Tests.Model.Pattern
     Tests.Model.Tag
 
-  ghc-options:
-    -F
-    -pgmF=tasty-autocollect
-
   build-depends:
     hedgehog,
     hspec,
@@ -147,7 +143,6 @@ test-suite tests
     path-io,
     resourcet,
     tasty,
-    tasty-autocollect,
     tasty-expected-failure,
     tasty-hedgehog,
     tasty-hunit-compat,

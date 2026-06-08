@@ -1,11 +1,6 @@
-{- AUTOCOLLECT.TEST -}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Tests.Model.AudioTrack
-  (
-  {- AUTOCOLLECT.TEST.export -}
-  )
-where
+module Tests.Model.AudioTrack (test) where
 
 import Control.Monad.Morph qualified as Morph
 import Control.Monad.Trans.Resource qualified as Resource
@@ -24,6 +19,14 @@ import Sound.HTagLib.Extra qualified as HTagLib
 import Test.Tasty qualified as Tasty
 import Test.Tasty.Hedgehog qualified as Tasty
 import Text.Megaparsec qualified as Megaparsec
+
+test :: Tasty.TestTree
+test =
+  Tasty.testGroup
+    "Model.AudioTrack"
+    [ testParse,
+      testSetGetRoundTrip
+    ]
 
 audioTrackGen :: Hedgehog.Gen AudioTrack.AudioTrack
 audioTrackGen = do
@@ -60,8 +63,8 @@ absFileGen = do
     pathPieceGen =
       HedgehogGen.string (HedgehogRange.linear 1 20) HedgehogGen.alphaNum
 
-test :: TestTree
-test =
+testParse :: Tasty.TestTree
+testParse =
   Tasty.testGroup
     "Parse"
     [ Tasty.testPropertyNamed "one" "test_parse_one" $ Hedgehog.property $ do
@@ -77,8 +80,8 @@ test =
           === Right audioTracks
     ]
 
-test :: TestTree
-test =
+testSetGetRoundTrip :: Tasty.TestTree
+testSetGetRoundTrip =
   Tasty.testPropertyNamed "roundtrip" "test_set_get" $ do
     Hedgehog.property . Morph.hoist Resource.runResourceT $ do
       (_, tempDir) <-

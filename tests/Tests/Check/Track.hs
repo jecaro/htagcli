@@ -1,11 +1,6 @@
-{- AUTOCOLLECT.TEST -}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Tests.Check.Track
-  (
-  {- AUTOCOLLECT.TEST.export -}
-  )
-where
+module Tests.Check.Track (test) where
 
 import Check.Track qualified as Track
 import Model.AudioTrack qualified as AudioTrack
@@ -18,8 +13,15 @@ import Test.Hspec.Expectations (shouldBe)
 import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty
 
-test :: TestTree
+test :: Tasty.TestTree
 test =
+  Tasty.testGroup
+    "Check.Track"
+    [ testFilenameMatches
+    ]
+
+testFilenameMatches :: Tasty.TestTree
+testFilenameMatches =
   Tasty.testGroup
     "FilenameMatches"
     [ Tasty.testCase
