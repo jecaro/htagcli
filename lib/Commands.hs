@@ -7,6 +7,7 @@ module Commands
     FixFilePathsOptions (..),
     fixFilePaths,
     fixFilePaths',
+    Error (..),
     errorToText,
   )
 where
@@ -27,13 +28,16 @@ import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
 import UnliftIO.Exception qualified as Exception
 
-newtype Error = UnableToFormatFile (Path.Path Path.Abs Path.File)
-  deriving (Show)
+data Error
+  = UnableToFormatFile (Path.Path Path.Abs Path.File)
+  | TargetFileAlreadyExists (Path.Path Path.Abs Path.File)
+  deriving (Show, Eq)
 
 instance Exception.Exception Error
 
 errorToText :: Error -> Text
 errorToText (UnableToFormatFile file) = "Unable to format file: " <> show file
+errorToText (TargetFileAlreadyExists file) = "Target file already exists: " <> show file
 
 getTags :: (MonadIO m) => Path.Path Path.Abs Path.File -> m ()
 getTags = putTextLn . AudioTrack.asText <=< AudioTrack.getTags
@@ -132,6 +136,10 @@ fixFilePaths' FixFilePathsOptions {..} fromFile = do
   if toFileAbs == fromFile
     then pure Nothing
     else do
+      whenM (Path.doesFileExist toFileAbs) $
+        Exception.throwIO $
+          TargetFileAlreadyExists toFileAbs
+
       unless fiDryRun $ do
         Path.ensureDir $ Path.parent toFileAbs
 

@@ -5,6 +5,7 @@ module Tests.Common
     tenTracksAlbum',
     withTenTracksFiles,
     withTenTracksFilesInSubdir,
+    withOneTrackFile,
   )
 where
 
@@ -45,6 +46,28 @@ withTenTracksFiles ::
   (Path.Path Path.Abs Path.Dir -> Album.Album -> IO ()) -> Tasty.Assertion
 withTenTracksFiles withTempDirAndAlbum =
   withTenTracksFilesInSubdir [reldir|./|] withTempDirAndAlbum
+
+withOneTrackFile ::
+  (Path.Path Path.Abs Path.Dir -> Path.Path Path.Abs Path.File -> IO ()) ->
+  Tasty.Assertion
+withOneTrackFile action =
+  Path.withSystemTempDir "htagcli" $ \dir -> do
+    let file = dir </> [relfile|1-sample.mp3|]
+        track =
+          AudioTrack.AudioTrack
+            { AudioTrack.atFile = file,
+              AudioTrack.atTitle = HTagLib.mkTitle "Track 1",
+              AudioTrack.atArtist = HTagLib.mkArtist "Artist",
+              AudioTrack.atAlbumArtist = HTagLib.mkAlbumArtist "Album Artist",
+              AudioTrack.atAlbum = HTagLib.mkAlbum "Album",
+              AudioTrack.atGenre = HTagLib.mkGenre "Pop",
+              AudioTrack.atYear = HTagLib.mkYear 2025,
+              AudioTrack.atTrack = HTagLib.mkTrackNumber 1,
+              AudioTrack.atDisc = Nothing
+            }
+    Path.copyFile [relfile|./data/sample.mp3|] file
+    AudioTrack.setTags track
+    action dir file
 
 tenTracksAlbum :: Album.Album
 tenTracksAlbum =
