@@ -17,6 +17,7 @@ import Test.Hspec.Expectations (shouldBe)
 import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty
 import Tests.Common qualified as Common
+import UnliftIO.Exception qualified as Exception
 
 test :: Tasty.TestTree
 test = Tasty.testGroup "Commands" [testFixFilePaths]
@@ -98,6 +99,10 @@ testFixFilePaths =
 
           exists <- Path.doesFileExist cover
           exists `shouldBe` True,
+      Tasty.testCase "fails when target already exists" $
+        testTargetAlreadyExists False,
+      Tasty.testCase "fails when target already exists (dry run)" $
+        testTargetAlreadyExists True,
       Tasty.testCase "rename and move the cover image" $
         Common.withTenTracksFilesInSubdir [reldir|./input|] $ \dir _ -> do
           let inputDir = dir </> [reldir|input|]
@@ -123,6 +128,20 @@ testFixFilePaths =
           newCoverExists <- Path.doesFileExist (firstDir </> relCover)
           newCoverExists `shouldBe` True
     ]
+
+testTargetAlreadyExists :: Bool -> Tasty.Assertion
+testTargetAlreadyExists dryRun =
+  Common.withOneTrackFile $ \dir file -> do
+    targetFile <-
+      Unsafe.fromJust
+        <$> Commands.fixFilePaths' (fixFilePathsOptions True False dir) file
+    Path.ensureDir $ Path.parent targetFile
+    -- Create a dummy file where the file should be moved
+    System.writeFile (Path.toFilePath targetFile) ""
+    result <-
+      Exception.try $
+        Commands.fixFilePaths' (fixFilePathsOptions dryRun False dir) file
+    result `shouldBe` Left (Commands.TargetFileAlreadyExists targetFile)
 
 check :: (MonadIO m) => Path.Path Path.Abs Path.File -> m (Either Track.Error ())
 check filename = do
