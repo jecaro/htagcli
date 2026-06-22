@@ -245,6 +245,19 @@ testOtherPatterns =
                 ]
           )
           (trackWithFile [absfile|/1-title.mp3|])
+          `shouldBe` False,
+      Tasty.testCase
+        "fail if a path component only partially matches"
+        $ filenameMatchesNoFormatting
+          ( fromList
+              [ fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Artist],
+                fromList [Pattern.FrPlaceholder $ Pattern.PlTag Tag.Title]
+              ]
+          )
+          ( (trackWithFile [absfile|/artistExtra/title.mp3|])
+              { AudioTrack.atArtist = HTagLib.mkArtist "artist"
+              }
+          )
           `shouldBe` False
     ]
 
