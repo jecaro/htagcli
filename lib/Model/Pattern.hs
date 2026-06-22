@@ -273,7 +273,7 @@ match formatting track pattern filename =
         _ -> (False, path : paths)
     walk _ acc = acc
     withoutExtension = FilePath.dropExtension filename
-    allComponents = toText <$> FilePath.splitPath withoutExtension
+    allComponents = toText . FilePath.dropTrailingPathSeparator <$> FilePath.splitPath withoutExtension
 
 matchComponent ::
   Formatting ->
@@ -282,25 +282,32 @@ matchComponent ::
   Text ->
   -- | If matched, return the formatted component
   Maybe Text
-matchComponent formatting track component text =
-  fst $ foldl' matchFragment' (Just "", text) component
+matchComponent formatting track component text = do
+  (formatted, remaining) <- Foldable.foldlM matchFragment' ("", text) component
+  guard $
+    -- normal case: should consume all the text
+    Text.null remaining
+      -- optional case: remaining can be not null but formatted will be
+      -- because of the absence of the tag
+      || (optionalAbsent && Text.null formatted)
+  pure formatted
   where
-    matchFragment' :: (Maybe Text, Text) -> Fragment -> (Maybe Text, Text)
-    matchFragment' (Just formatted, remaining) fragment =
-      case matchFragment formatting track fragment remaining of
-        (formatted', Just rest) -> (Just (formatted <> formatted'), rest)
-        (_, Nothing) -> (Nothing, remaining)
-    matchFragment' acc _ = acc
+    optionalAbsent = case toList component of
+      [FrPlaceholder (PlOptional _ tag _)] -> not $ AudioTrack.haveTag tag track
+      _ -> False
+    matchFragment' :: (Text, Text) -> Fragment -> Maybe (Text, Text)
+    matchFragment' (formatted, remaining) fragment =
+      first (formatted <>) <$> matchFragment formatting track fragment remaining
 
 matchFragment ::
   Formatting ->
   AudioTrack.AudioTrack ->
   Fragment ->
   Text ->
-  -- | Return the formatted fragment and the remaining text if matched
-  (Text, Maybe Text)
+  -- | Formatted fragment text and remaining path text if matched
+  Maybe (Text, Text)
 matchFragment formatting track fragment txt =
-  (formatted, Text.stripPrefix formatted $ ignoreLeadingZeros txt)
+  (formatted,) <$> Text.stripPrefix formatted (ignoreLeadingZeros txt)
   where
     formatted = formatFragmentWith (formatPlaceholder formatting track) fragment
     ignoreLeadingZeros
