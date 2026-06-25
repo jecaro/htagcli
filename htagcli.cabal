@@ -47,6 +47,7 @@ library
     Commands
     Config
     Data.List.NonEmpty.Extra
+    Model.Album
     Model.Artist
     Model.AudioTrack
     Model.Cover

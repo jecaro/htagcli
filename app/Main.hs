@@ -111,6 +111,7 @@ main = do
             .| ConduitUtils.discC
             .| Conduit.iterM
               (addDiscErrors <=< Commands.checkDisc discChecks)
+            .| ConduitUtils.albumC
             .| ConduitUtils.artistC
             .| Conduit.mapM_C
               (flip when incArtistErrors <=< Commands.checkArtist mbArtistCheck)

@@ -8,6 +8,7 @@ where
 
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as Text
+import Model.Album qualified as Album
 import Model.Artist qualified as Artist
 import Model.AudioTrack qualified as AudioTrack
 import Model.Disc qualified as Disc
@@ -37,9 +38,10 @@ check (SameGenre artistToAllowedGenres) artist
       Right ()
   | otherwise = Left $ SameGenreError genres
   where
-    discs = Artist.discs artist
     genres =
-      NonEmpty.nubOrd $ AudioTrack.atGenre <$> (Disc.tracks =<< discs)
+      NonEmpty.nubOrd $
+        AudioTrack.atGenre
+          <$> (Disc.tracks =<< Album.discs =<< Artist.albums artist)
     albumArtistOrArtist = Artist.albumArtistOrArtist artist
     mbAllowedGenres =
       Map.lookup
