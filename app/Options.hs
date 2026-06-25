@@ -8,8 +8,8 @@ module Options
   )
 where
 
-import Check.Album qualified as Album
 import Check.Artist qualified as Artist
+import Check.Disc qualified as Disc
 import Check.Track qualified as Track
 import Config qualified
 import Data.Text qualified as Text
@@ -57,7 +57,7 @@ data Command
 checks ::
   Config.Config ->
   CheckOptions ->
-  ([Track.Check], [Album.Check], Maybe Artist.Check)
+  ([Track.Check], [Disc.Check], Maybe Artist.Check)
 checks
   config@(Config.Config {coFilename = Config.Filename {..}})
   (Options.CheckOptions {..})
@@ -81,10 +81,10 @@ checksP =
     <$> optional trackTagsP
     <*> optional trackGenreAmongP
     <*> trackFilenameP
-    <*> optional albumHaveCoverP
-    <*> albumSameDirP
-    <*> optional albumSameTagsP
-    <*> albumTracksSequentialP
+    <*> optional discHaveCoverP
+    <*> discSameDirP
+    <*> optional discSameTagsP
+    <*> discTracksSequentialP
     <*> artistSameGenreP
 
 fixFilePathsOptionsP :: Options.Parser FixFilePathsOptions
@@ -121,19 +121,19 @@ trackFilenameP =
           "Check that filenames match the specified pattern"
     )
 
-albumHaveCoverP :: Options.Parser Cover.Cover
-albumHaveCoverP =
+discHaveCoverP :: Options.Parser Cover.Cover
+discHaveCoverP =
   Cover.Cover
     <$> coverPathsP
-    <*> Options.optional (coverSizeP "album-cover-min-size")
-    <*> Options.optional (coverSizeP "album-cover-max-size")
+    <*> Options.optional (coverSizeP "disc-cover-min-size")
+    <*> Options.optional (coverSizeP "disc-cover-max-size")
 
 coverPathsP :: Options.Parser (NonEmpty (Path.Path Path.Rel Path.File))
 coverPathsP =
   Options.some1
     ( Options.option
         (Options.maybeReader Path.parseRelFile)
-        ( Options.long "album-cover-filename"
+        ( Options.long "disc-cover-filename"
             <> Options.metavar "FILENAME"
             <> Options.help "Check that the specified cover file exists"
         )
@@ -158,33 +158,33 @@ coverSizeP option =
             _ -> Left "Width and height must be integers"
         _ -> Left "Size must be in the form WIDTHxHEIGHT"
 
-albumSameDirP :: Options.Parser Bool
-albumSameDirP =
+discSameDirP :: Options.Parser Bool
+discSameDirP =
   Options.switch
-    ( Options.long "album-same-dir"
+    ( Options.long "disc-same-dir"
         <> Options.help "Check that all tracks are in the same directory"
     )
 
-albumSameTagsP :: Options.Parser (NonEmpty Tag.Tag)
-albumSameTagsP =
+discSameTagsP :: Options.Parser (NonEmpty Tag.Tag)
+discSameTagsP =
   Options.some1
     ( Options.option
         tagR
-        ( Options.long "album-same-tag"
+        ( Options.long "disc-same-tag"
             <> Options.metavar "TAG"
             <> Options.help
-              "Check that all tracks in the album have the same value for \
+              "Check that all tracks in the disc have the same value for \
               \the specified tag (title, artist, album, albumartist, genre, \
               \year, track)"
         )
     )
 
-albumTracksSequentialP :: Options.Parser Bool
-albumTracksSequentialP =
+discTracksSequentialP :: Options.Parser Bool
+discTracksSequentialP =
   Options.switch
-    ( Options.long "album-tracks-sequential"
+    ( Options.long "disc-tracks-sequential"
         <> Options.help
-          "Check that track numbers are sequential within the album"
+          "Check that track numbers are sequential within the disc"
     )
 
 artistSameGenreP :: Options.Parser (Maybe Artist.Check)

@@ -41,16 +41,16 @@ library
     lib
 
   exposed-modules:
-    Check.Album
     Check.Artist
+    Check.Disc
     Check.Track
     Commands
     Config
     Data.List.NonEmpty.Extra
-    Model.Album
     Model.Artist
     Model.AudioTrack
     Model.Cover
+    Model.Disc
     Model.Pattern
     Model.SetTagsOptions
     Model.Tag
@@ -119,8 +119,8 @@ test-suite tests
     Main.hs
 
   other-modules:
-    Tests.Check.Album
     Tests.Check.Artist
+    Tests.Check.Disc
     Tests.Check.Track
     Tests.Commands
     Tests.Common

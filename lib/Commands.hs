@@ -2,7 +2,7 @@ module Commands
   ( getTags,
     setTags,
     checkTrack,
-    checkAlbum,
+    checkDisc,
     checkArtist,
     FixFilePathsOptions (..),
     fixFilePaths,
@@ -12,12 +12,12 @@ module Commands
   )
 where
 
-import Check.Album qualified as Album
 import Check.Artist qualified as Artist
+import Check.Disc qualified as Disc
 import Check.Track qualified as Track
-import Model.Album qualified as Album
 import Model.Artist qualified as Artist
 import Model.AudioTrack qualified as AudioTrack
+import Model.Disc qualified as Disc
 import Model.Pattern qualified as Pattern
 import Model.SetTagsOptions qualified as SetTagsOptions
 import Path ((</>))
@@ -70,26 +70,26 @@ checkTrack checks track = countTrues <$> traverse checkPrintError checks
       pure $ isLeft result
     file = AudioTrack.atFile track
 
-checkAlbum :: (MonadIO m) => [Album.Check] -> Album.Album -> m Int
-checkAlbum checks album = countTrues <$> traverse checkPrintError checks
+checkDisc :: (MonadIO m) => [Disc.Check] -> Disc.Disc -> m Int
+checkDisc checks d = countTrues <$> traverse checkPrintError checks
   where
     checkPrintError check = do
-      result <- Album.check check album
+      result <- Disc.check check d
       whenLeft_ result $ \err ->
         putTextLn $
-          "Album "
+          "Disc "
             <> albumArtistOrArtistTxt
             <> albumTxt
             <> discTxt
             <> ": "
-            <> Album.errorToText err
+            <> Disc.errorToText err
       pure $ isLeft result
     albumArtistOrArtistTxt =
-      HTagLib.unAlbumArtistOrArtist $ Album.albumArtistOrArtist album
-    albumTxt = "/" <> HTagLib.unAlbum (Album.album album)
+      HTagLib.unAlbumArtistOrArtist $ Disc.albumArtistOrArtist d
+    albumTxt = "/" <> HTagLib.unAlbum (Disc.album d)
     discTxt
-      | Just disc <- Album.disc album =
-          "/Disc " <> show (HTagLib.unDiscNumber disc)
+      | Just discNum <- Disc.disc d =
+          "/Disc " <> show (HTagLib.unDiscNumber discNum)
       | otherwise = ""
 
 checkArtist ::

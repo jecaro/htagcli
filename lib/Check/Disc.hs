@@ -1,4 +1,4 @@
-module Check.Album
+module Check.Disc
   ( Check (..),
     Cover (..),
     Size (..),
@@ -12,9 +12,9 @@ import Codec.Picture qualified as Picture
 import Control.Monad.Extra qualified as Monad
 import Control.Monad.Trans.Except qualified as Except
 import Data.Text qualified as Text
-import Model.Album qualified as Album
 import Model.AudioTrack qualified as AudioTrack
 import Model.Cover as Cover
+import Model.Disc qualified as Disc
 import Model.Tag qualified as Tag
 import Path ((</>))
 import Path qualified
@@ -53,20 +53,20 @@ errorToText (UnableToReadCover file err) =
     <> ": "
     <> err
 errorToText (SameTagsError tags) =
-  "These tags are not the same for all tracks in the album: "
+  "These tags are not the same for all tracks in the disc: "
     <> Text.intercalate ", " (Tag.asText <$> toList tags)
 errorToText TracksNotSequential = "Tracks are not sequentially numbered"
 
 check ::
   (MonadIO m) =>
   Check ->
-  Album.Album ->
+  Disc.Disc ->
   m (Either Error ())
-check InSameDir album
-  | isJust $ Album.directory album = pure $ Right ()
+check InSameDir d
+  | isJust $ Disc.directory d = pure $ Right ()
   | otherwise = pure $ Left NotInSameDir
-check (HaveCover cover@Cover {..}) album
-  | Just dir <- Album.directory album = runExceptT $ do
+check (HaveCover cover@Cover {..}) d
+  | Just dir <- Disc.directory d = runExceptT $ do
       let absFiles = (dir </>) <$> coPaths
 
       coverFile <-
@@ -88,17 +88,17 @@ check (HaveCover cover@Cover {..}) album
   | otherwise = pure $ Left NotInSameDir
   where
     readImage = liftIO . Picture.readImage . Path.toFilePath
-check (SameTags tagsToCheck) album = pure $ case checkedTags of
+check (SameTags tagsToCheck) d = pure $ case checkedTags of
   [] -> Right ()
   (tag : tags) -> Left (SameTagsError (tag :| tags))
   where
-    checkedTags = mapMaybe (Album.haveSameTag' album) (toList tagsToCheck)
-check TracksSequential album = pure $ case mbNumbers of
+    checkedTags = mapMaybe (Disc.haveSameTag' d) (toList tagsToCheck)
+check TracksSequential d = pure $ case mbNumbers of
   Nothing -> Left TracksNotSequential
   Just numbers ->
     if sequential $ toList $ HTagLib.unTrackNumber <$> numbers
       then Right ()
       else Left TracksNotSequential
   where
-    mbNumbers = traverse AudioTrack.atTrack (Album.tracks album)
+    mbNumbers = traverse AudioTrack.atTrack (Disc.tracks d)
     sequential list = and $ zipWith (==) (sort list) [1 ..]

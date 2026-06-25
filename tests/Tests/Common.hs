@@ -1,16 +1,16 @@
 {-# LANGUAGE QuasiQuotes #-}
 
 module Tests.Common
-  ( tenTracksAlbum,
-    tenTracksAlbum',
+  ( tenTracksDisc,
+    tenTracksDisc',
     withTenTracksFiles,
     withTenTracksFilesInSubdir,
     withOneTrackFile,
   )
 where
 
-import Model.Album qualified as Album
 import Model.AudioTrack qualified as AudioTrack
+import Model.Disc qualified as Disc
 import Path (absdir, reldir, relfile, (</>))
 import Path qualified
 import Path.IO qualified as Path
@@ -24,28 +24,28 @@ import Test.Tasty.HUnit qualified as Tasty
 withTenTracksFilesInSubdir ::
   -- | Subdirectory to put the files in
   Path.Path Path.Rel Path.Dir ->
-  -- | Action to run with the temporary directory and the created album
-  (Path.Path Path.Abs Path.Dir -> Album.Album -> IO ()) ->
+  -- | Action to run with the temporary directory and the created disc
+  (Path.Path Path.Abs Path.Dir -> Disc.Disc -> IO ()) ->
   Tasty.Assertion
-withTenTracksFilesInSubdir subdir withTempDirAndAlbum =
+withTenTracksFilesInSubdir subdir withTempDirAndDisc =
   Path.withSystemTempDir "htagcli" $ \dir -> do
-    let album =
-          tenTracksAlbum'
+    let d =
+          tenTracksDisc'
             (dir </> subdir)
             (HTagLib.mkAlbum "Album")
             (HTagLib.mkGenre "Pop")
-    forM_ (Album.tracks album) $ \track -> do
+    forM_ (Disc.tracks d) $ \track -> do
       let dstAbsFile = AudioTrack.atFile track
       Path.ensureDir $ Path.parent dstAbsFile
       Path.copyFile [relfile|./data/sample.mp3|] dstAbsFile
       AudioTrack.setTags track
-    withTempDirAndAlbum dir album
+    withTempDirAndDisc dir d
 
 -- | Same with the files directly in the temporary directory
 withTenTracksFiles ::
-  (Path.Path Path.Abs Path.Dir -> Album.Album -> IO ()) -> Tasty.Assertion
-withTenTracksFiles withTempDirAndAlbum =
-  withTenTracksFilesInSubdir [reldir|./|] withTempDirAndAlbum
+  (Path.Path Path.Abs Path.Dir -> Disc.Disc -> IO ()) -> Tasty.Assertion
+withTenTracksFiles withTempDirAndDisc =
+  withTenTracksFilesInSubdir [reldir|./|] withTempDirAndDisc
 
 withOneTrackFile ::
   (Path.Path Path.Abs Path.Dir -> Path.Path Path.Abs Path.File -> IO ()) ->
@@ -69,16 +69,16 @@ withOneTrackFile action =
     AudioTrack.setTags track
     action dir file
 
-tenTracksAlbum :: Album.Album
-tenTracksAlbum =
-  tenTracksAlbum'
+tenTracksDisc :: Disc.Disc
+tenTracksDisc =
+  tenTracksDisc'
     [absdir|/path/to|]
     (HTagLib.mkAlbum "Album")
     (HTagLib.mkGenre "Pop")
 
-tenTracksAlbum' ::
-  Path.Path Path.Abs Path.Dir -> HTagLib.Album -> HTagLib.Genre -> Album.Album
-tenTracksAlbum' dir album genre = Unsafe.fromJust $ do
+tenTracksDisc' ::
+  Path.Path Path.Abs Path.Dir -> HTagLib.Album -> HTagLib.Genre -> Disc.Disc
+tenTracksDisc' dir album genre = Unsafe.fromJust $ do
   track <- forM (fromList [1 .. 10]) $ \i -> do
     dstRelFile <- (dir </>) <$> Path.parseRelFile (show i <> "-sample.mp3")
     pure $
@@ -93,4 +93,4 @@ tenTracksAlbum' dir album genre = Unsafe.fromJust $ do
           AudioTrack.atTrack = HTagLib.mkTrackNumber i,
           AudioTrack.atDisc = Nothing
         }
-  Album.mkAlbum track
+  Disc.mkDisc track

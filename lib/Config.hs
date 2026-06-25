@@ -17,8 +17,8 @@ module Config
   )
 where
 
-import Check.Album qualified as Album
 import Check.Artist qualified as Artist
+import Check.Disc qualified as Disc
 import Check.Track qualified as Track
 import Data.ByteString qualified as ByteString
 import Data.FileEmbed qualified as FileEmbed
@@ -80,15 +80,15 @@ data Checks = Checks
     -- one given in the formatting section. This way it is possible to ignore
     -- the padding when checking the filename and still have it when fixing it.
     chTrackFilename :: Bool,
-    -- | The album have a cover file
-    chAlbumHaveCover :: Maybe Cover.Cover,
-    -- | All the audio tracks of the album are in the same directory
-    chAlbumSameDir :: Bool,
-    -- | All the audio tracks of the album have the same value for the given
+    -- | The disc have a cover file
+    chDiscHaveCover :: Maybe Cover.Cover,
+    -- | All the audio tracks of the disc are in the same directory
+    chDiscSameDir :: Bool,
+    -- | All the audio tracks of the disc have the same value for the given
     -- tags
-    chAlbumSameTags :: Maybe (NonEmpty Tag.Tag),
-    -- | The tracks of the album have sequential track numbers
-    chAlbumTracksSequential :: Bool,
+    chDiscSameTags :: Maybe (NonEmpty Tag.Tag),
+    -- | The tracks of the disc have sequential track numbers
+    chDiscTracksSequential :: Bool,
     -- | All the tracks from the artist have the same genre
     chArtistSameGenre :: Maybe Artist.Check
   }
@@ -100,10 +100,10 @@ haveChecks (Checks {..}) =
     [ isJust chTrackTags,
       isJust chTrackGenreAmong,
       chTrackFilename,
-      isJust chAlbumHaveCover,
-      chAlbumSameDir,
-      isJust chAlbumSameTags,
-      chAlbumTracksSequential,
+      isJust chDiscHaveCover,
+      chDiscSameDir,
+      isJust chDiscSameTags,
+      chDiscTracksSequential,
       isJust chArtistSameGenre
     ]
 
@@ -117,19 +117,19 @@ trackChecks pattern formatting Checks {..} =
         else Just $ Track.FilenameMatches pattern formatting
     ]
 
-albumChecks :: Checks -> [Album.Check]
-albumChecks (Checks {..}) =
+discChecks :: Checks -> [Disc.Check]
+discChecks (Checks {..}) =
   catMaybes
-    [ Album.HaveCover <$> chAlbumHaveCover,
-      guarded (const chAlbumSameDir) Album.InSameDir,
-      Album.SameTags <$> chAlbumSameTags,
-      guarded (const chAlbumTracksSequential) Album.TracksSequential
+    [ Disc.HaveCover <$> chDiscHaveCover,
+      guarded (const chDiscSameDir) Disc.InSameDir,
+      Disc.SameTags <$> chDiscSameTags,
+      guarded (const chDiscTracksSequential) Disc.TracksSequential
     ]
 
 artistCheck :: Checks -> Maybe Artist.Check
 artistCheck (Checks {..}) = chArtistSameGenre
 
-factorChecks :: Config -> ([Track.Check], [Album.Check], Maybe Artist.Check)
+factorChecks :: Config -> ([Track.Check], [Disc.Check], Maybe Artist.Check)
 factorChecks Config {coFilename = Filename {..}, ..} =
   factorChecks' fiPattern fiFormatting coChecks
 
@@ -137,10 +137,10 @@ factorChecks' ::
   Pattern.Pattern ->
   Pattern.Formatting ->
   Checks ->
-  ([Track.Check], [Album.Check], Maybe Artist.Check)
+  ([Track.Check], [Disc.Check], Maybe Artist.Check)
 factorChecks' pattern formatting checks =
   ( trackChecks pattern formatting checks,
-    albumChecks checks,
+    discChecks checks,
     artistCheck checks
   )
 
@@ -242,17 +242,17 @@ checksC =
     <$> maybeValidatedC "track_tags" tagsC chTrackTags
     <*> maybeValidatedC "track_genre" amongC chTrackGenreAmong
     <*> trackFilenameC .= chTrackFilename
-    <*> maybeValidatedC "album_cover" albumHaveCoverC chAlbumHaveCover
-    <*> albumSameDirC .= chAlbumSameDir
-    <*> maybeValidatedC "album_tags" tagsC chAlbumSameTags
-    <*> albumTracksSequentialC .= chAlbumTracksSequential
+    <*> maybeValidatedC "disc_cover" discHaveCoverC chDiscHaveCover
+    <*> discSameDirC .= chDiscSameDir
+    <*> maybeValidatedC "disc_tags" tagsC chDiscSameTags
+    <*> discTracksSequentialC .= chDiscTracksSequential
     <*> maybeValidatedC "artist_same_genre" artistSameGenreC chArtistSameGenre
   where
     trackFilenameC = Toml.table (Toml.bool "enable") "track_filename"
-    albumSameDirC = Toml.table (Toml.bool "enable") "album_same_dir"
+    discSameDirC = Toml.table (Toml.bool "enable") "disc_same_dir"
     tagsC = Toml.arrayNonEmptyOf tagB "tags"
-    albumTracksSequentialC =
-      Toml.table (Toml.bool "enable") "album_tracks_sequential"
+    discTracksSequentialC =
+      Toml.table (Toml.bool "enable") "disc_tracks_sequential"
     artistSameGenreC =
       Toml.diwrap $
         Toml.map
@@ -260,7 +260,7 @@ checksC =
           (Toml.arrayNonEmptyOf genreB "genres")
           "except"
     amongC = Toml.arrayNonEmptyOf genreB "among"
-    albumHaveCoverC =
+    discHaveCoverC =
       Cover.Cover
         <$> filenamesC .= Cover.coPaths
         <*> Toml.dioptional (sizeC "min_size") .= Cover.coMinSize
