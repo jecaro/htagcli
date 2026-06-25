@@ -178,7 +178,7 @@ main = do
           album <- collectAlbum files
           MusicBrainz.searchAlbum seMaxResults album
         Options.SearchFromArgs albumArtist album ->
-          MusicBrainz.search seMaxResults albumArtist album
+          MusicBrainz.search seMaxResults albumArtist album Nothing
   where
     getTagsAsText filename = do
       content <- encodeUtf8 . AudioTrack.asText <$> AudioTrack.getTags filename
@@ -210,6 +210,4 @@ exceptions someException
           Config.errorToText configException <> "\n"
       | Just commandsException <- fromException someException =
           Commands.errorToText commandsException <> "\n"
-      | Just mbException <- fromException someException =
-          MusicBrainz.errorToText mbException <> "\n"
       | otherwise = "Unknown exception: " <> show someException <> "\n"

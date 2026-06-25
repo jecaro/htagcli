@@ -3,6 +3,7 @@ module Model.Album
     mkAlbum,
     addDisc,
     discs,
+    years,
     album,
     artist,
     albumArtist,
@@ -11,6 +12,7 @@ module Model.Album
   )
 where
 
+import Data.List.Extra qualified as List
 import Data.List.NonEmpty ((<|))
 import Model.Disc qualified as Disc
 import Model.Tag qualified as Tag
@@ -42,6 +44,9 @@ addDisc d (Album discs') = mkAlbum (d <| discs')
 
 discs :: Album -> NonEmpty Disc.Disc
 discs (Album discs') = discs'
+
+years :: Album -> [HTagLib.Year]
+years (Album discs') = List.nubSort $ concatMap Disc.years $ toList discs'
 
 album :: Album -> HTagLib.Album
 album (Album (d :| _)) = Disc.album d
