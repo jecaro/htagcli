@@ -41,6 +41,7 @@ library
     lib
 
   exposed-modules:
+    Check.Album
     Check.Artist
     Check.Disc
     Check.Track
@@ -120,6 +121,7 @@ test-suite tests
     Main.hs
 
   other-modules:
+    Tests.Check.Album
     Tests.Check.Artist
     Tests.Check.Disc
     Tests.Check.Track

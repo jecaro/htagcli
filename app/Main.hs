@@ -93,15 +93,22 @@ main = do
         config <- Config.readConfig
 
         -- Get the checks from the CLI and fallback to the config file
-        let (trackChecks, discChecks, mbArtistCheck) = Options.checks config options
+        let (trackChecks, discChecks, albumChecks, mbArtistCheck) =
+              Options.checks config options
 
-        when (null trackChecks && null discChecks && null mbArtistCheck) $
-          Exception.throwIO NoCheckInConfig
+        when
+          ( null trackChecks
+              && null discChecks
+              && null albumChecks
+              && null mbArtistCheck
+          )
+          $ Exception.throwIO NoCheckInConfig
 
         stats <- newIORef Stats.empty
         let modifyStats = modifyIORef' stats
             addTrackErrors = modifyStats . Stats.addTrackErrors
             addDiscErrors = modifyStats . Stats.addDiscErrors
+            addAlbumErrors = modifyStats . Stats.addAlbumErrors
             incArtistErrors = modifyStats Stats.incArtistErrors
 
         ConduitUtils.runConduitWithProgress files $
@@ -112,6 +119,8 @@ main = do
             .| Conduit.iterM
               (addDiscErrors <=< Commands.checkDisc discChecks)
             .| ConduitUtils.albumC
+            .| Conduit.iterM
+              (addAlbumErrors <=< Commands.checkAlbum albumChecks)
             .| ConduitUtils.artistC
             .| Conduit.mapM_C
               (flip when incArtistErrors <=< Commands.checkArtist mbArtistCheck)
@@ -123,11 +132,14 @@ main = do
         unless (null discChecks) $
           putTextLn $
             "Disc errors: " <> show ceDiscErrors
+        unless (null albumChecks) $
+          putTextLn $
+            "Album errors: " <> show ceAlbumErrors
         when (isJust mbArtistCheck) $
           putTextLn $
             "Artist errors: " <> show ceArtistErrors
 
-        let total = ceTrackErrors + ceDiscErrors + ceArtistErrors
+        let total = ceTrackErrors + ceDiscErrors + ceAlbumErrors + ceArtistErrors
         when (total > 0) $ System.exitWith $ System.ExitFailure total
       Options.FixFilePaths Options.FixFilePathsOptions {..} files -> do
         Config.Config

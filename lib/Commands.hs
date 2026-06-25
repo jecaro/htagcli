@@ -3,6 +3,7 @@ module Commands
     setTags,
     checkTrack,
     checkDisc,
+    checkAlbum,
     checkArtist,
     FixFilePathsOptions (..),
     fixFilePaths,
@@ -12,9 +13,11 @@ module Commands
   )
 where
 
+import Check.Album qualified as Album
 import Check.Artist qualified as Artist
 import Check.Disc qualified as Disc
 import Check.Track qualified as Track
+import Model.Album qualified as Album
 import Model.Artist qualified as Artist
 import Model.AudioTrack qualified as AudioTrack
 import Model.Disc qualified as Disc
@@ -91,6 +94,23 @@ checkDisc checks d = countTrues <$> traverse checkPrintError checks
       | Just discNum <- Disc.disc d =
           "/Disc " <> show (HTagLib.unDiscNumber discNum)
       | otherwise = ""
+
+checkAlbum :: (MonadIO m) => [Album.Check] -> Album.Album -> m Int
+checkAlbum checks a = countTrues <$> traverse checkPrintError checks
+  where
+    checkPrintError check = do
+      let result = Album.check check a
+      whenLeft_ result $ \err ->
+        putTextLn $
+          "Album "
+            <> albumArtistOrArtistTxt
+            <> albumTxt
+            <> ": "
+            <> Album.errorToText err
+      pure $ isLeft result
+    albumArtistOrArtistTxt =
+      HTagLib.unAlbumArtistOrArtist $ Album.albumArtistOrArtist a
+    albumTxt = "/" <> HTagLib.unAlbum (Album.album a)
 
 checkArtist ::
   (MonadIO m) =>
