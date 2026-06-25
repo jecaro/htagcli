@@ -1,8 +1,9 @@
-module ConduitUtils (runConduitWithProgress, discC, artistC) where
+module ConduitUtils (runConduitWithProgress, discC, albumC, artistC) where
 
 import Conduit ((.|))
 import Conduit qualified
 import Data.Text qualified as Text
+import Model.Album qualified as Album
 import Model.Artist qualified as Artist
 import Model.AudioTrack qualified as AudioTrack
 import Model.Disc qualified as Disc
@@ -46,10 +47,15 @@ discC ::
   Conduit.ConduitT AudioTrack.AudioTrack Disc.Disc m ()
 discC = clusterC Disc.mkDisc Disc.addTrack
 
+albumC ::
+  (Monad m) =>
+  Conduit.ConduitT Disc.Disc Album.Album m ()
+albumC = clusterC Album.mkAlbum Album.addDisc
+
 artistC ::
   (Monad m) =>
-  Conduit.ConduitT Disc.Disc Artist.Artist m ()
-artistC = clusterC Artist.mkArtist Artist.addDisc
+  Conduit.ConduitT Album.Album Artist.Artist m ()
+artistC = clusterC Artist.mkArtist Artist.addAlbum
 
 -- | Cluster incoming items into groups using the provided 'mk' and 'add'
 -- functions
