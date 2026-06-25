@@ -17,6 +17,7 @@ module Config
   )
 where
 
+import Check.Album qualified as Album
 import Check.Artist qualified as Artist
 import Check.Disc qualified as Disc
 import Check.Track qualified as Track
@@ -89,6 +90,10 @@ data Checks = Checks
     chDiscSameTags :: Maybe (NonEmpty Tag.Tag),
     -- | The tracks of the disc have sequential track numbers
     chDiscTracksSequential :: Bool,
+    -- | The disc numbers of the album are sequential
+    chAlbumDiscsSequential :: Bool,
+    -- | All the discs of the album have the same value for the given tags
+    chAlbumSameTags :: Maybe (NonEmpty Tag.Tag),
     -- | All the tracks from the artist have the same genre
     chArtistSameGenre :: Maybe Artist.Check
   }
@@ -104,6 +109,8 @@ haveChecks (Checks {..}) =
       chDiscSameDir,
       isJust chDiscSameTags,
       chDiscTracksSequential,
+      chAlbumDiscsSequential,
+      isJust chAlbumSameTags,
       isJust chArtistSameGenre
     ]
 
@@ -126,10 +133,17 @@ discChecks (Checks {..}) =
       guarded (const chDiscTracksSequential) Disc.TracksSequential
     ]
 
+albumChecks :: Checks -> [Album.Check]
+albumChecks (Checks {..}) =
+  catMaybes
+    [ guarded (const chAlbumDiscsSequential) Album.DiscsSequential,
+      Album.SameTags <$> chAlbumSameTags
+    ]
+
 artistCheck :: Checks -> Maybe Artist.Check
 artistCheck (Checks {..}) = chArtistSameGenre
 
-factorChecks :: Config -> ([Track.Check], [Disc.Check], Maybe Artist.Check)
+factorChecks :: Config -> ([Track.Check], [Disc.Check], [Album.Check], Maybe Artist.Check)
 factorChecks Config {coFilename = Filename {..}, ..} =
   factorChecks' fiPattern fiFormatting coChecks
 
@@ -137,10 +151,11 @@ factorChecks' ::
   Pattern.Pattern ->
   Pattern.Formatting ->
   Checks ->
-  ([Track.Check], [Disc.Check], Maybe Artist.Check)
+  ([Track.Check], [Disc.Check], [Album.Check], Maybe Artist.Check)
 factorChecks' pattern formatting checks =
   ( trackChecks pattern formatting checks,
     discChecks checks,
+    albumChecks checks,
     artistCheck checks
   )
 
@@ -246,6 +261,8 @@ checksC =
     <*> discSameDirC .= chDiscSameDir
     <*> maybeValidatedC "disc_tags" tagsC chDiscSameTags
     <*> discTracksSequentialC .= chDiscTracksSequential
+    <*> albumDiscsSequentialC .= chAlbumDiscsSequential
+    <*> maybeValidatedC "album_tags" tagsC chAlbumSameTags
     <*> maybeValidatedC "artist_same_genre" artistSameGenreC chArtistSameGenre
   where
     trackFilenameC = Toml.table (Toml.bool "enable") "track_filename"
@@ -253,6 +270,8 @@ checksC =
     tagsC = Toml.arrayNonEmptyOf tagB "tags"
     discTracksSequentialC =
       Toml.table (Toml.bool "enable") "disc_tracks_sequential"
+    albumDiscsSequentialC =
+      Toml.table (Toml.bool "enable") "album_discs_sequential"
     artistSameGenreC =
       Toml.diwrap $
         Toml.map

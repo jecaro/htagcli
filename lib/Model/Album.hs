@@ -7,11 +7,13 @@ module Model.Album
     artist,
     albumArtist,
     albumArtistOrArtist,
+    haveSameTag',
   )
 where
 
 import Data.List.NonEmpty ((<|))
 import Model.Disc qualified as Disc
+import Model.Tag qualified as Tag
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
 
@@ -49,3 +51,9 @@ albumArtist (Album (d :| _)) = Disc.albumArtist d
 
 albumArtistOrArtist :: Album -> HTagLib.AlbumArtistOrArtist
 albumArtistOrArtist (Album (d :| _)) = Disc.albumArtistOrArtist d
+
+haveSameTag' :: Album -> Tag.Tag -> Maybe Tag.Tag
+haveSameTag' a = guarded (not . haveSameTag a)
+
+haveSameTag :: Album -> Tag.Tag -> Bool
+haveSameTag (Album discs') tag = all (`Disc.haveSameTag` tag) discs'

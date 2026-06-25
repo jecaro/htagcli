@@ -115,6 +115,15 @@ tags = ["albumartist", "album", "year", "genre"]
 [checks.disc_tracks_sequential]
 enable = true
 
+# Verify that disc numbers within an album are sequential starting from 1
+[checks.album_discs_sequential]
+enable = true
+
+# Verify that album-level tags are consistent across all discs of an album
+[checks.album_tags]
+enable = true
+tags = ["albumartist", "album", "year", "genre"]
+
 # Verify that all tracks from an artist have the same genre
 [checks.artist_same_genre]
 enable = true

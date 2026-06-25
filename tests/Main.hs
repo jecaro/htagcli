@@ -1,6 +1,7 @@
 module Main (main) where
 
 import Test.Tasty (defaultMain, testGroup)
+import Tests.Check.Album qualified as Check.Album
 import Tests.Check.Artist qualified as Check.Artist
 import Tests.Check.Disc qualified as Check.Disc
 import Tests.Check.Track qualified as Check.Track
@@ -21,6 +22,7 @@ main =
         Model.Pattern.test,
         Model.Tag.test,
         Check.Disc.test,
+        Check.Album.test,
         Check.Artist.test,
         Check.Track.test
       ]

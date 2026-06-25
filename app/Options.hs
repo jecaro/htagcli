@@ -8,6 +8,7 @@ module Options
   )
 where
 
+import Check.Album qualified as Album
 import Check.Artist qualified as Artist
 import Check.Disc qualified as Disc
 import Check.Track qualified as Track
@@ -57,7 +58,7 @@ data Command
 checks ::
   Config.Config ->
   CheckOptions ->
-  ([Track.Check], [Disc.Check], Maybe Artist.Check)
+  ([Track.Check], [Disc.Check], [Album.Check], Maybe Artist.Check)
 checks
   config@(Config.Config {coFilename = Config.Filename {..}})
   (Options.CheckOptions {..})
@@ -85,6 +86,8 @@ checksP =
     <*> discSameDirP
     <*> optional discSameTagsP
     <*> discTracksSequentialP
+    <*> albumDiscsSequentialP
+    <*> optional albumSameTagsP
     <*> artistSameGenreP
 
 fixFilePathsOptionsP :: Options.Parser FixFilePathsOptions
@@ -185,6 +188,28 @@ discTracksSequentialP =
     ( Options.long "disc-tracks-sequential"
         <> Options.help
           "Check that track numbers are sequential within the disc"
+    )
+
+albumDiscsSequentialP :: Options.Parser Bool
+albumDiscsSequentialP =
+  Options.switch
+    ( Options.long "album-discs-sequential"
+        <> Options.help
+          "Check that disc numbers are sequential within the album"
+    )
+
+albumSameTagsP :: Options.Parser (NonEmpty Tag.Tag)
+albumSameTagsP =
+  Options.some1
+    ( Options.option
+        tagR
+        ( Options.long "album-same-tag"
+            <> Options.metavar "TAG"
+            <> Options.help
+              "Check that all discs in the album have the same value for \
+              \the specified tag (title, artist, album, albumartist, genre, \
+              \year, track)"
+        )
     )
 
 artistSameGenreP :: Options.Parser (Maybe Artist.Check)
