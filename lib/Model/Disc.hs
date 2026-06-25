@@ -3,6 +3,7 @@ module Model.Disc
     mkDisc,
     addTrack,
     tracks,
+    years,
     artist,
     album,
     albumArtist,
@@ -14,6 +15,7 @@ module Model.Disc
   )
 where
 
+import Data.List.Extra qualified as List
 import Data.List.NonEmpty ((<|))
 import Model.AudioTrack qualified as AudioTrack
 import Model.Tag qualified as Tag
@@ -56,6 +58,9 @@ addTrack track (Disc tracks') = mkDisc (track <| tracks')
 
 tracks :: Disc -> NonEmpty AudioTrack.AudioTrack
 tracks (Disc tracks') = tracks'
+
+years :: Disc -> [HTagLib.Year]
+years (Disc tracks') = List.nubSort $ mapMaybe AudioTrack.atYear $ toList tracks'
 
 albumArtistOrArtist :: Disc -> HTagLib.AlbumArtistOrArtist
 albumArtistOrArtist (Disc (track :| _)) = AudioTrack.albumArtistOrArtist track

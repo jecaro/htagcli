@@ -81,6 +81,7 @@ library
     path-io,
     req,
     string-interpolate,
+    text-metrics,
     tomland,
     transformers,
     unliftio,
