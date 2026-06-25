@@ -58,9 +58,9 @@ placeholder_max_length = 30
 # Directory where music files are moved when fixing their paths
 base_dir = "/absolute/path/to/your/Music"
 
-# Used to move cover files along the audio files. `checks.album_cover.filenames`
+# Used to move cover files along the audio files. `checks.disc_cover.filenames`
 # must be enabled for this to work.
-# Any file that matches `checks.album_cover.filenames` in the same directory as
+# Any file that matches `checks.disc_cover.filenames` in the same directory as
 # the current audio file will be moved along with it.
 move_cover = true
 
@@ -91,8 +91,8 @@ among = [
 [checks.track_filename]
 enable = true
 
-# Verify that each album directory contains a cover image
-[checks.album_cover]
+# Verify that each disc directory contains a cover image
+[checks.disc_cover]
 enable = true
 filenames = ["cover.jpg", "cover.png", "cover.gif"]
 # optional size constraints in pixels, not taken into account if left
@@ -101,18 +101,18 @@ filenames = ["cover.jpg", "cover.png", "cover.gif"]
 min_size = { width = 300, height = 300 }
 max_size = { width = 1000, height = 1000 }
 
-# Verify that all tracks from the same album reside in a single directory
-# Note: htagcli groups files by album while scanning input paths recursively.
-[checks.album_same_dir]
+# Verify that all tracks from the same disc reside in a single directory
+# Note: htagcli groups files by disc while scanning input paths recursively.
+[checks.disc_same_dir]
 enable = true
 
-# Verify that album-level tags are consistent across all tracks of an album
-[checks.album_tags]
+# Verify that disc-level tags are consistent across all tracks of a disc
+[checks.disc_tags]
 enable = true
 tags = ["albumartist", "album", "year", "genre"]
 
-# Verify that track numbers in each album are sequential starting from 1
-[checks.album_tracks_sequential]
+# Verify that track numbers in each disc are sequential starting from 1
+[checks.disc_tracks_sequential]
 enable = true
 
 # Verify that all tracks from an artist have the same genre

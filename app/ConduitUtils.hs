@@ -1,11 +1,11 @@
-module ConduitUtils (runConduitWithProgress, albumC, artistC) where
+module ConduitUtils (runConduitWithProgress, discC, artistC) where
 
 import Conduit ((.|))
 import Conduit qualified
 import Data.Text qualified as Text
-import Model.Album qualified as Album
 import Model.Artist qualified as Artist
 import Model.AudioTrack qualified as AudioTrack
+import Model.Disc qualified as Disc
 import Options qualified
 import Path qualified
 import Path.IO qualified as Path
@@ -41,15 +41,15 @@ filesC Options.Files {..} = do
             )
           .| Conduit.mapMC Path.parseAbsFile
 
-albumC ::
+discC ::
   (Monad m) =>
-  Conduit.ConduitT AudioTrack.AudioTrack Album.Album m ()
-albumC = clusterC Album.mkAlbum Album.addTrack
+  Conduit.ConduitT AudioTrack.AudioTrack Disc.Disc m ()
+discC = clusterC Disc.mkDisc Disc.addTrack
 
 artistC ::
   (Monad m) =>
-  Conduit.ConduitT Album.Album Artist.Artist m ()
-artistC = clusterC Artist.mkArtist Artist.addAlbum
+  Conduit.ConduitT Disc.Disc Artist.Artist m ()
+artistC = clusterC Artist.mkArtist Artist.addDisc
 
 -- | Cluster incoming items into groups using the provided 'mk' and 'add'
 -- functions

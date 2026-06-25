@@ -90,12 +90,12 @@ collection clean and well-organized. Available checks include:
     - Missing tags: Detects files with missing tag fields
     - Genre: Verifies that the genre exists in a predefined list
     - File path: Ensures that the file path follows a given pattern
-- Album level:
-    - Album directory: Checks that all files from an album are stored in the 
+- Disc level:
+    - Disc directory: Checks that all files from a disc are stored in the 
       same directory
-    - Cover file: Checks the presence of a cover image in the album directory. 
+    - Cover file: Checks the presence of a cover image in the disc directory. 
       Also verifies that the cover image size is within specified limits.
-    - Album tags: Checks that the tags from all files in an album are the same
+    - Disc tags: Checks that the tags from all files in a disc are the same
 - Artist level:
     - Genre: Ensures that all tracks from an artist share the same genre
 

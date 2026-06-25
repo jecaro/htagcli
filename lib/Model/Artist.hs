@@ -1,43 +1,41 @@
 module Model.Artist
   ( Artist,
     mkArtist,
-    addAlbum,
+    addDisc,
     albumArtistOrArtist,
-    albums,
+    discs,
   )
 where
 
 import Data.List.NonEmpty ((<|))
 import Data.Text qualified as Text
-import Model.Album qualified as Album
+import Model.Disc qualified as Disc
 import Sound.HTagLib.Extra qualified as HTagLib
 
-newtype Artist = Artist (NonEmpty Album.Album)
+newtype Artist = Artist (NonEmpty Disc.Disc)
   deriving (Eq, Show)
 
-mkArtist :: NonEmpty Album.Album -> Maybe Artist
-mkArtist albums'@(firstAlbum :| otherAlbums)
+mkArtist :: NonEmpty Disc.Disc -> Maybe Artist
+mkArtist discs'@(firstDisc :| otherDiscs)
   | ( allSameAlbumArtist
         && not (Text.null $ HTagLib.unAlbumArtist firstAlbumArtist)
         && (firstAlbumArtist /= "Various Artists")
     )
       || allSameArtist =
-      Just $ Artist albums'
+      Just $ Artist discs'
   | otherwise = Nothing
   where
-    firstAlbumArtist = Album.albumArtist firstAlbum
-    firstArtist = Album.artist firstAlbum
+    firstAlbumArtist = Disc.albumArtist firstDisc
+    firstArtist = Disc.artist firstDisc
     allSameAlbumArtist =
-      all
-        ((== firstAlbumArtist) . Album.albumArtist)
-        otherAlbums
-    allSameArtist = all ((== firstArtist) . Album.artist) otherAlbums
+      all ((== firstAlbumArtist) . Disc.albumArtist) otherDiscs
+    allSameArtist = all ((== firstArtist) . Disc.artist) otherDiscs
 
-addAlbum :: Album.Album -> Artist -> Maybe Artist
-addAlbum album (Artist albums') = mkArtist (album <| albums')
+addDisc :: Disc.Disc -> Artist -> Maybe Artist
+addDisc d (Artist discs') = mkArtist (d <| discs')
 
 albumArtistOrArtist :: Artist -> HTagLib.AlbumArtistOrArtist
-albumArtistOrArtist (Artist (album :| _)) = Album.albumArtistOrArtist album
+albumArtistOrArtist (Artist (d :| _)) = Disc.albumArtistOrArtist d
 
-albums :: Artist -> NonEmpty Album.Album
-albums (Artist albums') = albums'
+discs :: Artist -> NonEmpty Disc.Disc
+discs (Artist discs') = discs'

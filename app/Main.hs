@@ -39,7 +39,7 @@ errorToText (ParseError parseError) =
   "Failed to parse the edited tags:\n"
     <> Text.pack (Megaparsec.errorBundlePretty parseError)
 errorToText MoveCoverWithoutCheck =
-  "move_cover is enabled but checks.album_cover is disabled."
+  "move_cover is enabled but checks.disc_cover is disabled."
 
 main :: IO ()
 main = do
@@ -93,24 +93,24 @@ main = do
         config <- Config.readConfig
 
         -- Get the checks from the CLI and fallback to the config file
-        let (trackChecks, albumChecks, mbArtistCheck) = Options.checks config options
+        let (trackChecks, discChecks, mbArtistCheck) = Options.checks config options
 
-        when (null trackChecks && null albumChecks && null mbArtistCheck) $
+        when (null trackChecks && null discChecks && null mbArtistCheck) $
           Exception.throwIO NoCheckInConfig
 
         stats <- newIORef Stats.empty
         let modifyStats = modifyIORef' stats
             addTrackErrors = modifyStats . Stats.addTrackErrors
-            addAlbumErrors = modifyStats . Stats.addAlbumErrors
+            addDiscErrors = modifyStats . Stats.addDiscErrors
             incArtistErrors = modifyStats Stats.incArtistErrors
 
         ConduitUtils.runConduitWithProgress files $
           Conduit.mapM AudioTrack.getTags
             .| Conduit.iterM
               (addTrackErrors <=< Commands.checkTrack trackChecks)
-            .| ConduitUtils.albumC
+            .| ConduitUtils.discC
             .| Conduit.iterM
-              (addAlbumErrors <=< Commands.checkAlbum albumChecks)
+              (addDiscErrors <=< Commands.checkDisc discChecks)
             .| ConduitUtils.artistC
             .| Conduit.mapM_C
               (flip when incArtistErrors <=< Commands.checkArtist mbArtistCheck)
@@ -119,14 +119,14 @@ main = do
         unless (null trackChecks) $
           putTextLn $
             "Track errors: " <> show ceTrackErrors
-        unless (null albumChecks) $
+        unless (null discChecks) $
           putTextLn $
-            "Album errors: " <> show ceAlbumErrors
+            "Disc errors: " <> show ceDiscErrors
         when (isJust mbArtistCheck) $
           putTextLn $
             "Artist errors: " <> show ceArtistErrors
 
-        let total = ceTrackErrors + ceAlbumErrors + ceArtistErrors
+        let total = ceTrackErrors + ceDiscErrors + ceArtistErrors
         when (total > 0) $ System.exitWith $ System.ExitFailure total
       Options.FixFilePaths Options.FixFilePathsOptions {..} files -> do
         Config.Config
@@ -136,8 +136,8 @@ main = do
           } <-
           Config.readConfig
         let pattern = fromMaybe fiPattern foPattern
-            coverImages = guard fiMoveCover *> (Cover.coPaths <$> chAlbumHaveCover)
-        when (fiMoveCover && isNothing chAlbumHaveCover) $
+            coverImages = guard fiMoveCover *> (Cover.coPaths <$> chDiscHaveCover)
+        when (fiMoveCover && isNothing chDiscHaveCover) $
           Exception.throwIO MoveCoverWithoutCheck
 
         -- Get the base directory from the cli and fallback to the config file

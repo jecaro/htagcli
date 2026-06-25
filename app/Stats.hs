@@ -2,14 +2,14 @@ module Stats
   ( CheckErrors (..),
     Stats.empty,
     addTrackErrors,
-    addAlbumErrors,
+    addDiscErrors,
     incArtistErrors,
   )
 where
 
 data CheckErrors = CheckErrors
   { ceTrackErrors :: Int,
-    ceAlbumErrors :: Int,
+    ceDiscErrors :: Int,
     ceArtistErrors :: Int
   }
 
@@ -19,8 +19,8 @@ empty = CheckErrors 0 0 0
 addTrackErrors :: Int -> CheckErrors -> CheckErrors
 addTrackErrors n errors = errors {ceTrackErrors = ceTrackErrors errors + n}
 
-addAlbumErrors :: Int -> CheckErrors -> CheckErrors
-addAlbumErrors n errors = errors {ceAlbumErrors = ceAlbumErrors errors + n}
+addDiscErrors :: Int -> CheckErrors -> CheckErrors
+addDiscErrors n errors = errors {ceDiscErrors = ceDiscErrors errors + n}
 
 incArtistErrors :: CheckErrors -> CheckErrors
 incArtistErrors errors = errors {ceArtistErrors = ceArtistErrors errors + 1}

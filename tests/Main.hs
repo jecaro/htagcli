@@ -1,8 +1,8 @@
 module Main (main) where
 
 import Test.Tasty (defaultMain, testGroup)
-import Tests.Check.Album qualified as Check.Album
 import Tests.Check.Artist qualified as Check.Artist
+import Tests.Check.Disc qualified as Check.Disc
 import Tests.Check.Track qualified as Check.Track
 import Tests.Commands as Commands
 import Tests.Config as Config
@@ -20,7 +20,7 @@ main =
         Model.AudioTrack.test,
         Model.Pattern.test,
         Model.Tag.test,
-        Check.Album.test,
+        Check.Disc.test,
         Check.Artist.test,
         Check.Track.test
       ]

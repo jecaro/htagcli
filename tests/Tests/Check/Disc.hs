@@ -1,13 +1,13 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Tests.Check.Album (test) where
+module Tests.Check.Disc (test) where
 
-import Check.Album qualified as Album
+import Check.Disc qualified as Disc
 import Data.List.NonEmpty ((<|))
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Maybe qualified as Maybe
-import Model.Album qualified as Album
 import Model.AudioTrack qualified as AudioTrack
+import Model.Disc qualified as Disc
 import Model.Tag qualified as Tag
 import Path (reldir, relfile, (</>))
 import Path qualified
@@ -21,7 +21,7 @@ import Tests.Common qualified as Common
 test :: Tasty.TestTree
 test =
   Tasty.testGroup
-    "Check.Album"
+    "Check.Disc"
     [ testCheckCover,
       testCheckDirectory,
       testCheckSameTags,
@@ -32,56 +32,56 @@ testCheckCover :: Tasty.TestTree
 testCheckCover =
   Tasty.testGroup
     "check cover"
-    [ Tasty.testCase "check an album without a cover.png" $
+    [ Tasty.testCase "check a disc without a cover.png" $
         Common.withTenTracksFiles $
-          \dir album -> do
-            result <- Album.check (Album.HaveCover coverNoSize) album
-            result `shouldBe` Left (Album.MissingCover dir),
-      Tasty.testCase "check an album with a cover.png" $
+          \dir disc -> do
+            result <- Disc.check (Disc.HaveCover coverNoSize) disc
+            result `shouldBe` Left (Disc.MissingCover dir),
+      Tasty.testCase "check a disc with a cover.png" $
         Common.withTenTracksFiles $
-          \dir album -> do
+          \dir disc -> do
             let coverFile = [relfile|./data/cover.png|]
             Path.copyFile coverFile $ dir </> Path.filename coverFile
 
-            result <- Album.check (Album.HaveCover coverNoSize) album
+            result <- Disc.check (Disc.HaveCover coverNoSize) disc
             result `shouldBe` Right (),
-      Tasty.testCase "check an album with a cover.png but too small" $
+      Tasty.testCase "check a disc with a cover.png but too small" $
         Common.withTenTracksFiles $
-          \dir album -> do
+          \dir disc -> do
             let coverFile = [relfile|./data/cover.png|]
             Path.copyFile coverFile $ dir </> Path.filename coverFile
 
-            result <- Album.check (Album.HaveCover coverTooSmall) album
+            result <- Disc.check (Disc.HaveCover coverTooSmall) disc
             result `shouldSatisfy` isBadCoverSize,
-      Tasty.testCase "check an album with a cover.png but too big" $
+      Tasty.testCase "check a disc with a cover.png but too big" $
         Common.withTenTracksFiles $
-          \dir album -> do
+          \dir disc -> do
             let coverFile = [relfile|./data/cover.png|]
             Path.copyFile coverFile $ dir </> Path.filename coverFile
 
-            result <- Album.check (Album.HaveCover coverTooBig) album
+            result <- Disc.check (Disc.HaveCover coverTooBig) disc
             result `shouldSatisfy` isBadCoverSize
     ]
   where
-    isBadCoverSize (Left (Album.BadCoverSize _ _)) = True
+    isBadCoverSize (Left (Disc.BadCoverSize _ _)) = True
     isBadCoverSize _ = False
     coverNoSize =
-      Album.Cover
-        { Album.coPaths = covers,
-          Album.coMinSize = Nothing,
-          Album.coMaxSize = Nothing
+      Disc.Cover
+        { Disc.coPaths = covers,
+          Disc.coMinSize = Nothing,
+          Disc.coMaxSize = Nothing
         }
     coverTooSmall =
-      Album.Cover
-        { Album.coPaths = covers,
-          Album.coMinSize = Just (Album.Size 200 200),
-          Album.coMaxSize = Nothing
+      Disc.Cover
+        { Disc.coPaths = covers,
+          Disc.coMinSize = Just (Disc.Size 200 200),
+          Disc.coMaxSize = Nothing
         }
     coverTooBig =
-      Album.Cover
-        { Album.coPaths = covers,
-          Album.coMinSize = Nothing,
-          Album.coMaxSize = Just (Album.Size 50 50)
+      Disc.Cover
+        { Disc.coPaths = covers,
+          Disc.coMinSize = Nothing,
+          Disc.coMaxSize = Just (Disc.Size 50 50)
         }
     covers = fromList [[relfile|cover.jpg|], [relfile|cover.png|]]
 
@@ -89,20 +89,20 @@ testCheckDirectory :: Tasty.TestTree
 testCheckDirectory =
   Tasty.testGroup
     "check directory"
-    [ Tasty.testCase "an album is in a single directory" $ do
-        result <- Album.check Album.InSameDir Common.tenTracksAlbum
+    [ Tasty.testCase "a disc is in a single directory" $ do
+        result <- Disc.check Disc.InSameDir Common.tenTracksDisc
         result `shouldBe` Right (),
-      Tasty.testCase "an album is in multiple directories" $ do
-        let album = Common.tenTracksAlbum
-            tracksDir = Maybe.fromJust $ Album.directory album
+      Tasty.testCase "a disc is in multiple directories" $ do
+        let d = Common.tenTracksDisc
+            tracksDir = Maybe.fromJust $ Disc.directory d
             otherDir = Path.parent tracksDir </> [reldir|other|]
-            (firstHalf, secondHalf) = NonEmpty.splitAt 5 (Album.tracks album)
+            (firstHalf, secondHalf) = NonEmpty.splitAt 5 (Disc.tracks d)
             secondHalfMoved = moveTo otherDir <$> secondHalf
-            album' =
+            d' =
               Maybe.fromJust $
-                Album.mkAlbum (fromList $ firstHalf <> secondHalfMoved)
-        result <- Album.check Album.InSameDir album'
-        result `shouldBe` Left Album.NotInSameDir
+                Disc.mkDisc (fromList $ firstHalf <> secondHalfMoved)
+        result <- Disc.check Disc.InSameDir d'
+        result `shouldBe` Left Disc.NotInSameDir
     ]
   where
     moveTo newDir track =
@@ -115,12 +115,12 @@ testCheckSameTags =
   Tasty.testGroup
     "check same tags"
     [ Tasty.testCase "all tracks have the same tags" $ do
-        result <- Album.check (Album.SameTags commonTags) Common.tenTracksAlbum
+        result <- Disc.check (Disc.SameTags commonTags) Common.tenTracksDisc
         result `shouldBe` Right (),
       Tasty.testCase "some tracks have a different tag" $ do
-        let album = Common.tenTracksAlbum
-        result <- Album.check (Album.SameTags $ Tag.Track <| commonTags) album
-        result `shouldBe` Left (Album.SameTagsError $ fromList [Tag.Track])
+        let d = Common.tenTracksDisc
+        result <- Disc.check (Disc.SameTags $ Tag.Track <| commonTags) d
+        result `shouldBe` Left (Disc.SameTagsError $ fromList [Tag.Track])
     ]
   where
     commonTags = fromList [Tag.Genre, Tag.Year, Tag.Artist, Tag.AlbumArtist]
@@ -130,13 +130,13 @@ testCheckSequential =
   Tasty.testGroup
     "check sequential tracks"
     [ Tasty.testCase "the tracks are sequential" $ do
-        result <- Album.check Album.TracksSequential Common.tenTracksAlbum
+        result <- Disc.check Disc.TracksSequential Common.tenTracksDisc
         result `shouldBe` Right (),
       Tasty.testCase "there are two tracks number 10" $ do
-        let (track :| tracks) = Album.tracks Common.tenTracksAlbum
+        let (track :| tracks) = Disc.tracks Common.tenTracksDisc
             otherTen = track {AudioTrack.atTrack = HTagLib.mkTrackNumber 10}
             tracks' = otherTen :| tracks
-            album' = Maybe.fromJust $ Album.mkAlbum tracks'
-        result <- Album.check Album.TracksSequential album'
-        result `shouldBe` Left Album.TracksNotSequential
+            d' = Maybe.fromJust $ Disc.mkDisc tracks'
+        result <- Disc.check Disc.TracksSequential d'
+        result `shouldBe` Left Disc.TracksNotSequential
     ]
