@@ -34,7 +34,11 @@ mkDisc tracks'@(firstTrack :| otherTracks)
            )
              || allSameArtist
          ) =
-      Just $ Disc tracks'
+      Just $
+        Disc $
+          NonEmpty.sortOn
+            (fmap HTagLib.unTrackNumber . AudioTrack.atTrack)
+            tracks'
   | otherwise = Nothing
   where
     firstAlbum = AudioTrack.atAlbum firstTrack

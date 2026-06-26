@@ -16,6 +16,7 @@ import Model.Disc qualified as Disc
 import Model.Tag qualified as Tag
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
+import "extra" Data.List.NonEmpty.Extra qualified as NonEmpty
 
 newtype Album = Album (NonEmpty Disc.Disc)
   deriving (Eq, Show)
@@ -24,7 +25,9 @@ mkAlbum :: NonEmpty Disc.Disc -> Maybe Album
 mkAlbum discs'@(firstDisc :| otherDiscs)
   | allSameAlbum
       && (allSameAlbumArtist || allSameArtist) =
-      Just $ Album discs'
+      Just $
+        Album $
+          NonEmpty.sortOn (fmap HTagLib.unDiscNumber . Disc.disc) discs'
   | otherwise = Nothing
   where
     firstAlbum = Disc.album firstDisc
