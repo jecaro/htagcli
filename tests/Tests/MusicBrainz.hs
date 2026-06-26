@@ -2,7 +2,7 @@ module Tests.MusicBrainz (test) where
 
 import Data.Aeson qualified as Aeson
 import Data.List.NonEmpty qualified as NonEmpty
-import MusicBrainz qualified
+import MusicBrainz.Types qualified as MusicBrainz
 import Test.Hspec.Expectations (shouldBe)
 import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty

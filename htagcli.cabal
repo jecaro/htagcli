@@ -64,6 +64,10 @@ library
     Model.SetTagsOptions
     Model.Tag
     MusicBrainz
+    MusicBrainz.Average
+    MusicBrainz.Req
+    MusicBrainz.Similarity
+    MusicBrainz.Types
     Path.IO.Extra
     Sound.HTagLib.Extra
     Toml.Extra
