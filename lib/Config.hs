@@ -7,6 +7,7 @@ module Config
     Checks (..),
     Filename (..),
     FixPaths (..),
+    AllChecks (..),
     haveChecks,
     readConfig,
     createConfig,
@@ -143,7 +144,14 @@ albumChecks (Checks {..}) =
 artistCheck :: Checks -> Maybe Artist.Check
 artistCheck (Checks {..}) = chArtistSameGenre
 
-factorChecks :: Config -> ([Track.Check], [Disc.Check], [Album.Check], Maybe Artist.Check)
+data AllChecks = AllChecks
+  { alTrack :: [Track.Check],
+    alDisc :: [Disc.Check],
+    alAlbum :: [Album.Check],
+    alArtist :: Maybe Artist.Check
+  }
+
+factorChecks :: Config -> AllChecks
 factorChecks Config {coFilename = Filename {..}, ..} =
   factorChecks' fiPattern fiFormatting coChecks
 
@@ -151,13 +159,14 @@ factorChecks' ::
   Pattern.Pattern ->
   Pattern.Formatting ->
   Checks ->
-  ([Track.Check], [Disc.Check], [Album.Check], Maybe Artist.Check)
+  AllChecks
 factorChecks' pattern formatting checks =
-  ( trackChecks pattern formatting checks,
-    discChecks checks,
-    albumChecks checks,
-    artistCheck checks
-  )
+  AllChecks
+    { alTrack = trackChecks pattern formatting checks,
+      alDisc = discChecks checks,
+      alAlbum = albumChecks checks,
+      alArtist = artistCheck checks
+    }
 
 errorToText :: Error -> Text
 errorToText (ErToml err) = "TOML error: \n" <> err

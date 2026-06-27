@@ -99,14 +99,13 @@ main = do
         config <- Config.readConfig
 
         -- Get the checks from the CLI and fallback to the config file
-        let (trackChecks, discChecks, albumChecks, mbArtistCheck) =
-              Options.checks config options
+        let Config.AllChecks {..} = Options.checks config options
 
         when
-          ( null trackChecks
-              && null discChecks
-              && null albumChecks
-              && null mbArtistCheck
+          ( null alTrack
+              && null alDisc
+              && null alAlbum
+              && null alArtist
           )
           $ Exception.throwIO NoCheckInConfig
 
@@ -120,28 +119,28 @@ main = do
         ConduitUtils.runConduitWithProgress files $
           Conduit.mapM AudioTrack.getTags
             .| Conduit.iterM
-              (addTrackErrors <=< Commands.checkTrack trackChecks)
+              (addTrackErrors <=< Commands.checkTrack alTrack)
             .| ConduitUtils.discC
             .| Conduit.iterM
-              (addDiscErrors <=< Commands.checkDisc discChecks)
+              (addDiscErrors <=< Commands.checkDisc alDisc)
             .| ConduitUtils.albumC
             .| Conduit.iterM
-              (addAlbumErrors <=< Commands.checkAlbum albumChecks)
+              (addAlbumErrors <=< Commands.checkAlbum alAlbum)
             .| ConduitUtils.artistC
             .| Conduit.mapM_C
-              (flip when incArtistErrors <=< Commands.checkArtist mbArtistCheck)
+              (flip when incArtistErrors <=< Commands.checkArtist alArtist)
 
         Stats.CheckErrors {..} <- readIORef stats
-        unless (null trackChecks) $
+        unless (null alTrack) $
           putTextLn $
             "Track errors: " <> show ceTrackErrors
-        unless (null discChecks) $
+        unless (null alDisc) $
           putTextLn $
             "Disc errors: " <> show ceDiscErrors
-        unless (null albumChecks) $
+        unless (null alAlbum) $
           putTextLn $
             "Album errors: " <> show ceAlbumErrors
-        when (isJust mbArtistCheck) $
+        when (isJust alArtist) $
           putTextLn $
             "Artist errors: " <> show ceArtistErrors
 

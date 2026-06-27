@@ -10,10 +10,8 @@ module Options
   )
 where
 
-import Check.Album qualified as Album
 import Check.Artist qualified as Artist
 import Check.Disc qualified as Disc
-import Check.Track qualified as Track
 import Config qualified
 import Data.Text qualified as Text
 import Model.Cover qualified as Cover
@@ -72,7 +70,7 @@ data Command
 checks ::
   Config.Config ->
   CheckOptions ->
-  ([Track.Check], [Disc.Check], [Album.Check], Maybe Artist.Check)
+  Config.AllChecks
 checks
   config@(Config.Config {coFilename = Config.Filename {..}})
   (Options.CheckOptions {..})
