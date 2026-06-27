@@ -172,12 +172,18 @@ main = do
         ConduitUtils.runConduitWithProgress files $
           Conduit.mapM_C $
             Commands.fixFilePaths fixFilePathOptions
-      Options.Search Options.SearchMany {..} -> case seSource of
-        Options.SearchManyFromFiles files -> do
-          album <- collectAlbum files
-          MusicBrainz.searchAlbum seMaxResults album
-        Options.SearchManyFromArgs albumArtist album ->
-          MusicBrainz.search seMaxResults albumArtist album Nothing
+      Options.Search options -> do
+        case options of
+          Options.SeSearchMany (Options.SearchMany {..}) ->
+            case smSource of
+              Options.SearchManyFromFiles files -> do
+                album <- collectAlbum files
+                MusicBrainz.searchAlbum smMaxResults album
+              Options.SearchManyFromArgs albumArtist album ->
+                MusicBrainz.search smMaxResults albumArtist album Nothing
+          Options.SeSearchOne (Options.SearchOne {..}) -> do
+            mbAlbum <- traverse collectAlbum soFiles
+            MusicBrainz.searchId soId mbAlbum
   where
     getTagsAsText filename = do
       content <- encodeUtf8 . AudioTrack.asText <$> AudioTrack.getTags filename
