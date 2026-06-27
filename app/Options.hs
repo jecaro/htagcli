@@ -16,6 +16,7 @@ import Check.Artist qualified as Artist
 import Check.Disc qualified as Disc
 import Config qualified
 import Data.Text qualified as Text
+import Data.UUID qualified as UUID
 import Model.Cover qualified as Cover
 import Model.Pattern qualified as Pattern
 import Model.SetTagsOptions qualified as SetTagsOptions
@@ -52,7 +53,7 @@ data SearchOptions
   deriving (Show)
 
 data SearchOne = SearchOne
-  { soId :: Text,
+  { soId :: UUID.UUID,
     soFiles :: Maybe Files
   }
   deriving (Show)
@@ -161,7 +162,8 @@ searchManyFromArgsP =
 searchOneP :: Options.Parser SearchOne
 searchOneP =
   SearchOne
-    <$> Options.strOption
+    <$> Options.option
+      (Options.maybeReader UUID.fromString)
       ( Options.long "id"
           <> Options.metavar "ID"
           <> Options.help "MusicBrainz release ID to search for"
