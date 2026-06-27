@@ -35,22 +35,22 @@ search maxResults albumArtist album mbLocalAlbum = do
     -- Official MusicBrainz API rate limit
     Concurrent.threadDelay 1_000_000
     detail <- Req.lookupRelease $ MusicBrainz.reId release
-    displayRelease idx (release, detail) mbLocalAlbum
+    displayRelease idx detail mbLocalAlbum
   where
     albumArtistText = HTagLib.unAlbumArtist albumArtist
     albumText = HTagLib.unAlbum album
 
 displayRelease ::
   Int ->
-  (MusicBrainz.Release, MusicBrainz.ReleaseDetail) ->
+  MusicBrainz.ReleaseDetail ->
   Maybe Album.Album ->
   IO ()
-displayRelease idx (MusicBrainz.Release {..}, detail) mbAlbum = do
+displayRelease idx detail@(MusicBrainz.ReleaseDetail {..}) mbAlbum = do
   putTextLn
     [__i|
-      #{idx}. ID: #{reId} #{overallSuffix}
+      #{idx}. ID: #{rdId} #{overallSuffix}
          Artist: #{artist} #{artistSuffix}
-         Album: #{reTitle} #{titleSuffix}
+         Album: #{rdTitle} #{titleSuffix}
          Year: #{year} #{yearSuffix}
          Discs: #{mediaCount} #{mediaCountSuffix}
          Tracks: #{trackCount} #{trackCountSuffix}
@@ -59,33 +59,33 @@ displayRelease idx (MusicBrainz.Release {..}, detail) mbAlbum = do
 
   traverse_ (uncurry displayMedia) mediaAndDiscs
   where
-    medias = toList $ MusicBrainz.rdMedia detail
+    medias = toList rdMedia
     discs = orMempty (fmap Just . toList . Album.discs) mbAlbum
     mediaAndDiscs = zip medias (discs <> repeat Nothing)
 
     overallSuffix =
       inParensMaybe (percentage . Similarity.detailAndAlbum detail) mbAlbum
 
-    artist = MusicBrainz.artistCreditToText reArtistCredit
+    artist = MusicBrainz.artistCreditToText rdArtistCredit
     localArtist = HTagLib.unAlbumArtist . Album.albumArtist <$> mbAlbum
     artistSuffix = orMempty (similaritySuffix artist) localArtist
 
     localTitle = HTagLib.unAlbum . Album.album <$> mbAlbum
-    titleSuffix = orMempty (similaritySuffix reTitle) localTitle
+    titleSuffix = orMempty (similaritySuffix rdTitle) localTitle
 
     year :: Text
-    year = maybe "unknown" show reDate
+    year = maybe "unknown" show rdDate
     localYears = orMempty (fmap HTagLib.unYear . Album.years) mbAlbum
     yearSuffix
-      | null localYears || localYears == maybeToList reDate = ""
+      | null localYears || localYears == maybeToList rdDate = ""
       | otherwise = inParens $ Text.intercalate ", " $ show <$> localYears
 
     localDiscCount = length . Album.discs <$> mbAlbum
-    mediaCount = length $ MusicBrainz.rdMedia detail
+    mediaCount = length medias
     mediaCountSuffix = orMempty (showIfDifferent mediaCount) localDiscCount
 
     trackCount =
-      sum $ length . MusicBrainz.meTracks <$> toList (MusicBrainz.rdMedia detail)
+      sum $ length . MusicBrainz.meTracks <$> medias
     localTrackCount = length . (Disc.tracks <=< Album.discs) <$> mbAlbum
     trackCountSuffix = orMempty (showIfDifferent trackCount) localTrackCount
 
