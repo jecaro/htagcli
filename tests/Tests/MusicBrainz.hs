@@ -2,7 +2,9 @@ module Tests.MusicBrainz (test) where
 
 import Data.Aeson qualified as Aeson
 import Data.List.NonEmpty qualified as NonEmpty
+import Data.UUID qualified as UUID
 import MusicBrainz.Types qualified as MusicBrainz
+import Relude.Unsafe qualified as Unsafe
 import Test.Hspec.Expectations (shouldBe)
 import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty
@@ -22,7 +24,9 @@ testParseJSON =
             MusicBrainz.SearchResponse
               { MusicBrainz.srReleases =
                   [ MusicBrainz.Release
-                      { MusicBrainz.reId = "37e6a462-1417-45dc-9d88-4ef9aff4bc19",
+                      { MusicBrainz.reId =
+                          Unsafe.fromJust $
+                            UUID.fromString "37e6a462-1417-45dc-9d88-4ef9aff4bc19",
                         MusicBrainz.reTitle = "Repeater",
                         MusicBrainz.reArtistCredit = mkArtistCredit "Fugazi",
                         MusicBrainz.reDate = Just 2005,
@@ -39,7 +43,10 @@ testParseJSON =
             MusicBrainz.SearchResponse
               { MusicBrainz.srReleases =
                   [ MusicBrainz.Release
-                      { MusicBrainz.reId = "2b06e322-88e4-465c-b53d-1f82271e6131",
+                      { MusicBrainz.reId =
+                          Unsafe.fromJust $
+                            UUID.fromString $
+                              "2b06e322-88e4-465c-b53d-1f82271e6131",
                         MusicBrainz.reTitle = "Dischord 1981: The Year in Seven Inches",
                         MusicBrainz.reArtistCredit = mkArtistCredit "Various Artists",
                         MusicBrainz.reDate = Just 1995,

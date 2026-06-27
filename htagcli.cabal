@@ -89,6 +89,7 @@ library
     tomland,
     transformers,
     unliftio,
+    uuid,
     validation-selective,
 
 executable htagcli
@@ -122,6 +123,7 @@ executable htagcli
     text,
     typed-process,
     unliftio,
+    uuid,
 
 test-suite tests
   import:
@@ -169,3 +171,4 @@ test-suite tests
     tasty-hedgehog,
     tasty-hunit-compat,
     unliftio,
+    uuid,

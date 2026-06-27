@@ -13,6 +13,7 @@ where
 import Data.Aeson ((.:), (.:?))
 import Data.Aeson qualified as Aeson
 import Data.Text qualified as Text
+import Data.UUID qualified as UUID
 
 data ArtistCredit = ArtistCredit
   { acName :: Text,
@@ -22,7 +23,7 @@ data ArtistCredit = ArtistCredit
 
 -- | A release from MusicBrainz search results
 data Release = Release
-  { reId :: Text,
+  { reId :: UUID.UUID,
     reTitle :: Text,
     reArtistCredit :: NonEmpty ArtistCredit,
     -- | Year parsed from MusicBrainz date field (format: YYYY, YYYY-MM, or

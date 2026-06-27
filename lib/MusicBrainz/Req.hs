@@ -8,6 +8,7 @@ where
 
 import Data.Aeson qualified as Aeson
 import Data.String.Interpolate (i)
+import Data.UUID qualified as UUID
 import Data.Version qualified as Version
 import MusicBrainz.Types qualified as MusicBrainz
 import Network.HTTP.Req ((/:), (=:))
@@ -54,13 +55,13 @@ searchReleases limit albumArtist album = do
     query = [i|artist:"#{albumArtistText}" AND release:"#{albumText}"|]
 
 -- | Lookup a release by MBID
-lookupRelease :: Text -> IO MusicBrainz.ReleaseDetail
-lookupRelease mbid = do
+lookupRelease :: UUID.UUID -> IO MusicBrainz.ReleaseDetail
+lookupRelease releaseId = do
   response <-
     Req.runReq Req.defaultHttpConfig $
       Req.req
         Req.GET
-        (baseUrl /: "release" /: mbid)
+        (baseUrl /: "release" /: UUID.toText releaseId)
         Req.NoReqBody
         Req.bsResponse
         ( headers

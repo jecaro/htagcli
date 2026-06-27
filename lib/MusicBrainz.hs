@@ -5,6 +5,7 @@ module MusicBrainz (search, searchId, searchAlbum) where
 import Control.Concurrent qualified as Concurrent
 import Data.String.Interpolate (i, __i)
 import Data.Text qualified as Text
+import Data.UUID qualified as UUID
 import Model.Album qualified as Album
 import Model.AudioTrack qualified as AudioTrack
 import Model.Disc qualified as Disc
@@ -40,7 +41,7 @@ search maxResults albumArtist album mbLocalAlbum = do
     albumArtistText = HTagLib.unAlbumArtist albumArtist
     albumText = HTagLib.unAlbum album
 
-searchId :: Text -> Maybe Album.Album -> IO ()
+searchId :: UUID.UUID -> Maybe Album.Album -> IO ()
 searchId releaseId mbLocalAlbum = do
   detail <- Req.lookupRelease releaseId
   displayRelease 1 detail mbLocalAlbum
