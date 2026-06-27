@@ -395,20 +395,18 @@ filesP =
 filesOrDirectoriesP :: Options.Parser (NonEmpty Text)
 filesOrDirectoriesP =
   Options.some1
-    ( fromString
-        <$> Options.argument
-          Options.str
-          (Options.metavar "FILE|DIRECTORY" <> Options.action "file")
+    ( Options.argument
+        Options.str
+        (Options.metavar "FILE|DIRECTORY" <> Options.action "file")
     )
 
 extensionsP :: Options.Parser (NonEmpty Text)
 extensionsP =
   Options.some1
-    ( fromString
-        <$> Options.strOption
-          ( Options.long "extension"
-              <> Options.metavar "EXTENSION"
-          )
+    ( Options.strOption
+        ( Options.long "extension"
+            <> Options.metavar "EXTENSION"
+        )
     )
     -- Default to a sensitive set of common audio file extensions
     <|> pure (fromList ["m4a", "mp3", "flac", "ogg", "wma"])
