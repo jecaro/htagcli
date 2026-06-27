@@ -3,8 +3,8 @@ module Options
     Command (..),
     Files (..),
     FixFilePathsOptions (..),
-    SearchOptions (..),
-    SearchSource (..),
+    SearchMany (..),
+    SearchManySource (..),
     optionsInfo,
     checks,
   )
@@ -44,15 +44,15 @@ data FixFilePathsOptions = FixFilePathsOptions
   }
   deriving (Show)
 
-data SearchOptions = SearchOptions
+data SearchMany = SearchMany
   { seMaxResults :: Int,
-    seSource :: SearchSource
+    seSource :: SearchManySource
   }
   deriving (Show)
 
-data SearchSource
-  = SearchFromFiles Files
-  | SearchFromArgs HTagLib.AlbumArtist HTagLib.Album
+data SearchManySource
+  = SearchManyFromFiles Files
+  | SearchManyFromArgs HTagLib.AlbumArtist HTagLib.Album
   deriving (Show)
 
 data Command
@@ -62,7 +62,7 @@ data Command
   | Edit Files
   | Check CheckOptions Files
   | FixFilePaths FixFilePathsOptions Files
-  | Search SearchOptions
+  | Search SearchMany
   deriving (Show)
 
 -- | Get checks from the CLI, and fall back to the config file if none are
@@ -109,9 +109,9 @@ fixFilePathsOptionsP =
     <*> optional baseDirectoryP
     <*> optional filematchesP
 
-searchOptionsP :: Options.Parser SearchOptions
-searchOptionsP =
-  SearchOptions
+searchManyP :: Options.Parser SearchMany
+searchManyP =
+  SearchMany
     <$> Options.option
       Options.auto
       ( Options.long "max-results"
@@ -120,17 +120,17 @@ searchOptionsP =
           <> Options.showDefault
           <> Options.help "Maximum number of results to display"
       )
-    <*> searchSourceP
+    <*> searchManySourceP
 
-searchSourceP :: Options.Parser SearchSource
-searchSourceP = searchFromArgsP <|> searchFromFilesP
+searchManySourceP :: Options.Parser SearchManySource
+searchManySourceP = searchManyFromArgsP <|> searchManyFromFilesP
 
-searchFromFilesP :: Options.Parser SearchSource
-searchFromFilesP = SearchFromFiles <$> filesP
+searchManyFromFilesP :: Options.Parser SearchManySource
+searchManyFromFilesP = SearchManyFromFiles <$> filesP
 
-searchFromArgsP :: Options.Parser SearchSource
-searchFromArgsP =
-  SearchFromArgs
+searchManyFromArgsP :: Options.Parser SearchManySource
+searchManyFromArgsP =
+  SearchManyFromArgs
     <$> Options.strOption
       ( Options.long "artist"
           <> Options.metavar "ARTIST"
@@ -453,7 +453,7 @@ optionsP =
         <> Options.command
           "search"
           ( Options.info
-              (Search <$> searchOptionsP)
+              (Search <$> searchManyP)
               (Options.progDesc "Search MusicBrainz for releases")
           )
     )
