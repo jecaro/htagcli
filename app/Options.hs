@@ -3,8 +3,10 @@ module Options
     Command (..),
     Files (..),
     FixFilePathsOptions (..),
+    SearchOptions (..),
     SearchMany (..),
     SearchManySource (..),
+    SearchOne (..),
     optionsInfo,
     checks,
   )
@@ -44,9 +46,20 @@ data FixFilePathsOptions = FixFilePathsOptions
   }
   deriving (Show)
 
+data SearchOptions
+  = SeSearchMany SearchMany
+  | SeSearchOne SearchOne
+  deriving (Show)
+
+data SearchOne = SearchOne
+  { soId :: Text,
+    soFiles :: Maybe Files
+  }
+  deriving (Show)
+
 data SearchMany = SearchMany
-  { seMaxResults :: Int,
-    seSource :: SearchManySource
+  { smMaxResults :: Int,
+    smSource :: SearchManySource
   }
   deriving (Show)
 
@@ -62,7 +75,7 @@ data Command
   | Edit Files
   | Check CheckOptions Files
   | FixFilePaths FixFilePathsOptions Files
-  | Search SearchMany
+  | Search SearchOptions
   deriving (Show)
 
 -- | Get checks from the CLI, and fall back to the config file if none are
@@ -109,6 +122,9 @@ fixFilePathsOptionsP =
     <*> optional baseDirectoryP
     <*> optional filematchesP
 
+searchOptionsP :: Options.Parser SearchOptions
+searchOptionsP = SeSearchMany <$> searchManyP <|> SeSearchOne <$> searchOneP
+
 searchManyP :: Options.Parser SearchMany
 searchManyP =
   SearchMany
@@ -141,6 +157,16 @@ searchManyFromArgsP =
           <> Options.metavar "ALBUM"
           <> Options.help "Album name to search for"
       )
+
+searchOneP :: Options.Parser SearchOne
+searchOneP =
+  SearchOne
+    <$> Options.strOption
+      ( Options.long "id"
+          <> Options.metavar "ID"
+          <> Options.help "MusicBrainz release ID to search for"
+      )
+    <*> Options.optional filesP
 
 dryRunP :: Options.Parser Bool
 dryRunP =
@@ -453,7 +479,7 @@ optionsP =
         <> Options.command
           "search"
           ( Options.info
-              (Search <$> searchManyP)
+              (Search <$> searchOptionsP)
               (Options.progDesc "Search MusicBrainz for releases")
           )
     )
