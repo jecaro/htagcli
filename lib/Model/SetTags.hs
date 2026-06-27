@@ -1,7 +1,6 @@
 module Model.SetTags
   ( SetTags (..),
     SetOrRemove (..),
-    noSetTags,
     setter,
   )
 where
@@ -23,19 +22,6 @@ data SetTags = SetTags
     seTrack :: Maybe (SetOrRemove HTagLib.TrackNumber)
   }
   deriving (Show)
-
-noSetTags :: SetTags
-noSetTags =
-  SetTags
-    { seTitle = Nothing,
-      seArtist = Nothing,
-      seAlbum = Nothing,
-      seAlbumArtist = Nothing,
-      seGenre = Nothing,
-      seYear = Nothing,
-      seTrack = Nothing,
-      seDisc = Nothing
-    }
 
 setter :: SetTags -> HTagLib.TagSetter
 setter SetTags {..} =
