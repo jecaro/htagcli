@@ -3,10 +3,11 @@ module Options
     Command (..),
     Files (..),
     FixFilePathsOptions (..),
-    SearchOptions (..),
     SearchMany (..),
     SearchManySource (..),
     SearchOne (..),
+    SearchOptions (..),
+    SetTagsOptions (..),
     optionsInfo,
     checks,
   )
@@ -69,10 +70,15 @@ data SearchManySource
   | SearchManyFromArgs HTagLib.AlbumArtist HTagLib.Album
   deriving (Show)
 
+data SetTagsOptions
+  = SetTagsFromArgs SetTags.SetTags
+  | SetTagsFromId UUID.UUID
+  deriving (Show)
+
 data Command
   = CreateConfig
   | GetTags Files
-  | SetTags SetTags.SetTags Files
+  | SetTags SetTagsOptions Files
   | Edit Files
   | Check CheckOptions Files
   | FixFilePaths FixFilePathsOptions Files
@@ -160,15 +166,7 @@ searchManyFromArgsP =
       )
 
 searchOneP :: Options.Parser SearchOne
-searchOneP =
-  SearchOne
-    <$> Options.option
-      (Options.maybeReader UUID.fromString)
-      ( Options.long "id"
-          <> Options.metavar "ID"
-          <> Options.help "MusicBrainz release ID to search for"
-      )
-    <*> Options.optional filesP
+searchOneP = SearchOne <$> musicBrainzIdP <*> Options.optional filesP
 
 dryRunP :: Options.Parser Bool
 dryRunP =
@@ -335,6 +333,18 @@ filematchesP =
   where
     parse = Megaparsec.parseMaybe Pattern.parser
 
+setTagsOptionsP :: Options.Parser SetTagsOptions
+setTagsOptionsP = SetTagsFromArgs <$> setTagsP <|> SetTagsFromId <$> musicBrainzIdP
+
+musicBrainzIdP :: Options.Parser UUID.UUID
+musicBrainzIdP =
+  Options.option
+    (Options.maybeReader UUID.fromString)
+    ( Options.long "id"
+        <> Options.metavar "ID"
+        <> Options.help "MusicBrainz release ID"
+    )
+
 setTagsP :: Options.Parser SetTags.SetTags
 setTagsP =
   SetTags.SetTags
@@ -457,7 +467,7 @@ optionsP =
         <> Options.command
           "set"
           ( Options.info
-              (SetTags <$> setTagsP <*> filesP)
+              (SetTags <$> setTagsOptionsP <*> filesP)
               (Options.progDesc "Set tags")
           )
         <> Options.command

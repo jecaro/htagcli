@@ -57,10 +57,15 @@ main = do
       Options.GetTags files ->
         ConduitUtils.runConduitWithProgress files $
           Conduit.mapM_C Commands.getTags
-      Options.SetTags setTags files ->
-        ConduitUtils.runConduitWithProgress files $
-          Conduit.mapM_C $
-            Commands.setTags setTags
+      Options.SetTags fromOptions files ->
+        case fromOptions of
+          Options.SetTagsFromArgs options ->
+            ConduitUtils.runConduitWithProgress files $
+              Conduit.mapM_C $
+                Commands.setTags options
+          Options.SetTagsFromId releaseId -> do
+            album <- collectAlbum files
+            MusicBrainz.setTags releaseId album
       Options.Edit files -> do
         (editedContent, tempFilename) <- Temporary.withSystemTempFile "htagcli-edit-temp" $
           \tempFilename tempHandle -> do
@@ -215,4 +220,6 @@ exceptions someException
           Config.errorToText configException <> "\n"
       | Just commandsException <- fromException someException =
           Commands.errorToText commandsException <> "\n"
+      | Just musicBrainzException <- fromException someException =
+          MusicBrainz.errorToText musicBrainzException <> "\n"
       | otherwise = "Unknown exception: " <> show someException <> "\n"

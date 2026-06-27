@@ -1,8 +1,17 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module MusicBrainz (search, searchId, searchAlbum) where
+module MusicBrainz
+  ( Error (..),
+    errorToText,
+    search,
+    searchAlbum,
+    searchId,
+    setTags,
+  )
+where
 
 import Control.Concurrent qualified as Concurrent
+import Data.List.NonEmpty qualified as NonEmpty
 import Data.String.Interpolate (i, __i)
 import Data.Text qualified as Text
 import Data.UUID qualified as UUID
@@ -15,6 +24,73 @@ import MusicBrainz.Similarity qualified as Similarity
 import MusicBrainz.Types qualified as MusicBrainz
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
+import UnliftIO.Exception qualified as Exception
+
+data Error
+  = MismatchedMediaCount
+  | MismatchedTrackCount Int
+  deriving (Show)
+
+instance Exception.Exception Error
+
+errorToText :: Error -> Text
+errorToText MismatchedMediaCount =
+  "Number of discs doesn't match MusicBrainz release"
+errorToText (MismatchedTrackCount discId) =
+  "Number of tracks on disc "
+    <> show discId
+    <> " doesn't match MusicBrainz release"
+
+tagAlbum ::
+  MusicBrainz.ReleaseDetail ->
+  Album.Album ->
+  Either Error (NonEmpty AudioTrack.AudioTrack)
+tagAlbum detail@MusicBrainz.ReleaseDetail {..} album = do
+  when (length (Album.discs album) /= length rdMedia) $
+    Left MismatchedMediaCount
+  listOfListOfAudioTracks <-
+    traverse (tagDisc detail) (NonEmpty.zip (Album.discs album) rdMedia)
+  pure $ join listOfListOfAudioTracks
+
+tagDisc ::
+  MusicBrainz.ReleaseDetail ->
+  (Disc.Disc, MusicBrainz.Media) ->
+  Either Error (NonEmpty AudioTrack.AudioTrack)
+tagDisc detail (disc, media@MusicBrainz.Media {..}) = do
+  when (length (Disc.tracks disc) /= length meTracks) $
+    Left (MismatchedTrackCount mePosition)
+  pure $ (tagTrack detail media) <$> NonEmpty.zip (Disc.tracks disc) meTracks
+
+tagTrack ::
+  MusicBrainz.ReleaseDetail ->
+  MusicBrainz.Media ->
+  (AudioTrack.AudioTrack, MusicBrainz.Track) ->
+  AudioTrack.AudioTrack
+tagTrack
+  MusicBrainz.ReleaseDetail {..}
+  MusicBrainz.Media {..}
+  (audioTrack, MusicBrainz.Track {trRecording = MusicBrainz.Recording {..}, ..}) =
+    audioTrack
+      { AudioTrack.atTitle = HTagLib.mkTitle rcTitle,
+        AudioTrack.atArtist = HTagLib.mkArtist artist,
+        AudioTrack.atAlbumArtist = HTagLib.mkAlbumArtist albumArtist,
+        AudioTrack.atAlbum = HTagLib.mkAlbum rdTitle,
+        AudioTrack.atYear = HTagLib.mkYear =<< rdDate,
+        AudioTrack.atTrack = HTagLib.mkTrackNumber trPosition,
+        AudioTrack.atDisc =
+          if length rdMedia > 1
+            then HTagLib.mkDiscNumber mePosition
+            else Nothing
+      }
+    where
+      artist = MusicBrainz.artistCreditToText rcArtistCredit
+      albumArtist = MusicBrainz.artistCreditToText rdArtistCredit
+
+setTags :: UUID.UUID -> Album.Album -> IO ()
+setTags releaseId album = do
+  details <- Req.lookupRelease releaseId
+  audioTracks <- Exception.fromEither $ tagAlbum details album
+  traverse_ AudioTrack.setTags audioTracks
 
 searchAlbum :: Int -> Album.Album -> IO ()
 searchAlbum maxResults album =
