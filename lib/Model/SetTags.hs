@@ -1,7 +1,7 @@
-module Model.SetTagsOptions
-  ( SetTagsOptions (..),
+module Model.SetTags
+  ( SetTags (..),
     SetOrRemove (..),
-    noSetTagsOptions,
+    noSetTags,
     setter,
   )
 where
@@ -12,7 +12,7 @@ import Sound.HTagLib.Extra qualified as HTagLib
 data SetOrRemove a = Set a | Remove
   deriving (Show)
 
-data SetTagsOptions = SetTagsOptions
+data SetTags = SetTags
   { seTitle :: Maybe HTagLib.Title,
     seArtist :: Maybe HTagLib.Artist,
     seAlbumArtist :: Maybe HTagLib.AlbumArtist,
@@ -24,9 +24,9 @@ data SetTagsOptions = SetTagsOptions
   }
   deriving (Show)
 
-noSetTagsOptions :: SetTagsOptions
-noSetTagsOptions =
-  SetTagsOptions
+noSetTags :: SetTags
+noSetTags =
+  SetTags
     { seTitle = Nothing,
       seArtist = Nothing,
       seAlbum = Nothing,
@@ -37,8 +37,8 @@ noSetTagsOptions =
       seDisc = Nothing
     }
 
-setter :: SetTagsOptions -> HTagLib.TagSetter
-setter SetTagsOptions {..} =
+setter :: SetTags -> HTagLib.TagSetter
+setter SetTags {..} =
   fold $
     catMaybes
       [ HTagLib.titleSetter <$> seTitle,

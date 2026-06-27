@@ -61,7 +61,7 @@ library
     Model.Cover
     Model.Disc
     Model.Pattern
-    Model.SetTagsOptions
+    Model.SetTags
     Model.Tag
     MusicBrainz
     MusicBrainz.Average

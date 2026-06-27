@@ -57,10 +57,10 @@ main = do
       Options.GetTags files ->
         ConduitUtils.runConduitWithProgress files $
           Conduit.mapM_C Commands.getTags
-      Options.SetTags setTagsOptions files ->
+      Options.SetTags setTags files ->
         ConduitUtils.runConduitWithProgress files $
           Conduit.mapM_C $
-            Commands.setTags setTagsOptions
+            Commands.setTags setTags
       Options.Edit files -> do
         (editedContent, tempFilename) <- Temporary.withSystemTempFile "htagcli-edit-temp" $
           \tempFilename tempHandle -> do

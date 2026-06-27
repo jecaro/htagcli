@@ -22,7 +22,7 @@ import Model.Artist qualified as Artist
 import Model.AudioTrack qualified as AudioTrack
 import Model.Disc qualified as Disc
 import Model.Pattern qualified as Pattern
-import Model.SetTagsOptions qualified as SetTagsOptions
+import Model.SetTags qualified as SetTags
 import Path ((</>))
 import Path qualified
 import Path.IO qualified as Path
@@ -47,14 +47,14 @@ getTags = putTextLn . AudioTrack.asText <=< AudioTrack.getTags
 
 setTags ::
   (MonadIO m) =>
-  SetTagsOptions.SetTagsOptions ->
+  SetTags.SetTags ->
   Path.Path Path.Abs Path.File ->
   m ()
 setTags options filename =
   HTagLib.setTags
     (Path.toFilePath filename)
     Nothing
-    (SetTagsOptions.setter options)
+    (SetTags.setter options)
 
 countTrues :: [Bool] -> Int
 countTrues = length . filter id
