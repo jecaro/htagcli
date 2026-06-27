@@ -172,11 +172,11 @@ main = do
         ConduitUtils.runConduitWithProgress files $
           Conduit.mapM_C $
             Commands.fixFilePaths fixFilePathOptions
-      Options.Search Options.SearchOptions {..} -> case seSource of
-        Options.SearchFromFiles files -> do
+      Options.Search Options.SearchMany {..} -> case seSource of
+        Options.SearchManyFromFiles files -> do
           album <- collectAlbum files
           MusicBrainz.searchAlbum seMaxResults album
-        Options.SearchFromArgs albumArtist album ->
+        Options.SearchManyFromArgs albumArtist album ->
           MusicBrainz.search seMaxResults albumArtist album Nothing
   where
     getTagsAsText filename = do
