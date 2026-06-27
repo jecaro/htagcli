@@ -12,7 +12,7 @@ where
 
 import Data.Set qualified as Set
 import Data.Text qualified as Text
-import Model.SetTagsOptions qualified as SetTagsOptions
+import Model.SetTags qualified as SetTags
 import Model.Tag qualified as Tag
 import Path qualified
 import Sound.HTagLib qualified as HTagLib
@@ -134,8 +134,8 @@ setTags track@AudioTrack {..} =
 
 setter :: AudioTrack -> HTagLib.TagSetter
 setter AudioTrack {..} =
-  SetTagsOptions.setter $
-    SetTagsOptions.SetTagsOptions
+  SetTags.setter $
+    SetTags.SetTags
       { seTitle = Just atTitle,
         seArtist = Just atArtist,
         seAlbum = Just atAlbum,
@@ -146,7 +146,7 @@ setter AudioTrack {..} =
         seDisc = setOrRemove atDisc
       }
   where
-    setOrRemove = Just . maybe SetTagsOptions.Remove SetTagsOptions.Set
+    setOrRemove = Just . maybe SetTags.Remove SetTags.Set
 
 haveTag :: Tag.Tag -> AudioTrack -> Bool
 haveTag Tag.Title = not . Text.null . HTagLib.unTitle . atTitle

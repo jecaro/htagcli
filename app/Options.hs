@@ -19,7 +19,7 @@ import Data.Text qualified as Text
 import Data.UUID qualified as UUID
 import Model.Cover qualified as Cover
 import Model.Pattern qualified as Pattern
-import Model.SetTagsOptions qualified as SetTagsOptions
+import Model.SetTags qualified as SetTags
 import Model.Tag qualified as Tag
 import Options.Applicative qualified as Options
 import Options.Applicative.NonEmpty qualified as Options
@@ -72,7 +72,7 @@ data SearchManySource
 data Command
   = CreateConfig
   | GetTags Files
-  | SetTags SetTagsOptions.SetTagsOptions Files
+  | SetTags SetTags.SetTags Files
   | Edit Files
   | Check CheckOptions Files
   | FixFilePaths FixFilePathsOptions Files
@@ -335,9 +335,9 @@ filematchesP =
   where
     parse = Megaparsec.parseMaybe Pattern.parser
 
-setTagsOptionsP :: Options.Parser SetTagsOptions.SetTagsOptions
-setTagsOptionsP =
-  SetTagsOptions.SetTagsOptions
+setTagsP :: Options.Parser SetTags.SetTags
+setTagsP =
+  SetTags.SetTags
     <$> optional
       ( Options.strOption
           ( Options.long "title"
@@ -374,7 +374,7 @@ setTagsOptionsP =
               <> Options.help "Set the disc number"
           )
           <|> Options.flag'
-            SetTagsOptions.Remove
+            SetTags.Remove
             (Options.long "nodisc" <> Options.help "Unset the disc")
       )
     <*> optional
@@ -392,7 +392,7 @@ setTagsOptionsP =
               <> Options.help "Set the year"
           )
           <|> Options.flag'
-            SetTagsOptions.Remove
+            SetTags.Remove
             ( Options.long "noyear"
                 <> Options.help "Unset the year"
             )
@@ -405,14 +405,14 @@ setTagsOptionsP =
               <> Options.help "Set the track number"
           )
           <|> Options.flag'
-            SetTagsOptions.Remove
+            SetTags.Remove
             (Options.long "notrack" <> Options.help "Unset the track")
       )
   where
     strToYear = strTo HTagLib.mkYear
     strToTrackNumber = strTo HTagLib.mkTrackNumber
     strToDiscNumber = strTo HTagLib.mkDiscNumber
-    strTo mkData = fmap SetTagsOptions.Set . mkData <=< readMaybe
+    strTo mkData = fmap SetTags.Set . mkData <=< readMaybe
 
 filesP :: Options.Parser Files
 filesP =
@@ -457,7 +457,7 @@ optionsP =
         <> Options.command
           "set"
           ( Options.info
-              (SetTags <$> setTagsOptionsP <*> filesP)
+              (SetTags <$> setTagsP <*> filesP)
               (Options.progDesc "Set tags")
           )
         <> Options.command
