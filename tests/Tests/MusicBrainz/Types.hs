@@ -1,4 +1,4 @@
-module Tests.MusicBrainz (test) where
+module Tests.MusicBrainz.Types (test) where
 
 import Data.Aeson qualified as Aeson
 import Data.List.NonEmpty qualified as NonEmpty
@@ -10,7 +10,7 @@ import Test.Tasty qualified as Tasty
 import Test.Tasty.HUnit qualified as Tasty
 
 test :: Tasty.TestTree
-test = Tasty.testGroup "MusicBrainz" [testParseJSON]
+test = Tasty.testGroup "MusicBrainz.Types" [testParseJSON]
 
 testParseJSON :: Tasty.TestTree
 testParseJSON =
