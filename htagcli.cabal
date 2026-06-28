@@ -149,7 +149,7 @@ test-suite tests
     Tests.Model.AudioTrack
     Tests.Model.Pattern
     Tests.Model.Tag
-    Tests.MusicBrainz
+    Tests.MusicBrainz.Types
 
   build-depends:
     aeson,
