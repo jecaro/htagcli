@@ -7,6 +7,7 @@ module MusicBrainz
     searchAlbum,
     searchId,
     setTags,
+    tagAlbum,
   )
 where
 
@@ -29,7 +30,7 @@ import UnliftIO.Exception qualified as Exception
 data Error
   = MismatchedMediaCount
   | MismatchedTrackCount Int
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance Exception.Exception Error
 
