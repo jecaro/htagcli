@@ -65,6 +65,99 @@ accordingly.
 
 Delete the whole file content before quitting to cancel the operation.
 
+## Setting tags with MusicBrainz
+
+`htagcli` can fetch tags from [MusicBrainz][musicbrainz] to automatically set 
+the tags of your files. To do this, one can search for an album/artist using 
+the `search` command:
+
+```
+$ htagcli search --album repeater --artist fugazi
+Searching: "fugazi" - "repeater"
+
+3 releases found
+
+1. ID: 37e6a462-1417-45dc-9d88-4ef9aff4bc19
+   Artist: Fugazi
+   Album: Repeater
+   Year: 2005
+   Discs: 1
+   Tracks: 14
+
+   Disc 1: Tracks: 14
+
+     1. Turnover
+     2. Repeater
+     3. Brendan #1
+...
+```
+
+If the search is run against an existing album, `htagcli` will show similarity 
+values to help you choose the best match. In the following case, the first 
+result shows a low similarity because the number of tracks is different from 
+the actual album. The second result is a perfect match.
+
+```
+$ htagcli search ./repeater/
+Searching: "Fugazi" - "Repeater"
+
+3 releases found
+
+1. ID: 37e6a462-1417-45dc-9d88-4ef9aff4bc19 (87%)
+   Artist: Fugazi (100%)
+   Album: Repeater (100%)
+   Year: 2005 (1990)
+   Discs: 1
+   Tracks: 14 (11)
+
+   Disc 1: (79%) - Tracks: 14 (11)
+
+     1. Turnover (100%)
+     2. Repeater (100%)
+     3. Brendan #1 (100%)
+     4. Merchandise (100%)
+     5. Blueprint (100%)
+     6. Sieve-Fisted Find (100%)
+     7. Greed (100%)
+     8. Two Beats Off (100%)
+     9. Styrofoam (100%)
+     10. Reprovisional (100%)
+     11. Shut the Door (100%)
+     12. Song #1
+     13. Joe #1
+     14. Break-In
+
+2. ID: 00baa173-29db-33a9-af6d-fe109e53a211 (100%)
+   Artist: Fugazi (100%)
+   Album: Repeater (100%)
+   Year: 1990
+   Discs: 1
+   Tracks: 11
+
+   Disc 1: (100%) - Tracks: 11
+
+     1. Turnover (100%)
+     2. Repeater (100%)
+     3. Brendan #1 (100%)
+     4. Merchandise (100%)
+     5. Blueprint (100%)
+     6. Sieve-Fisted Find (100%)
+     7. Greed (100%)
+     8. Two Beats Off (100%)
+     9. Styrofoam (100%)
+     10. Reprovisional (100%)
+     11. Shut the Door (100%)
+
+...
+```
+
+Once you found a matching release, you can set the tags using the ID of the 
+release:
+
+```
+$ htagcli set --id 00baa173-29db-33a9-af6d-fe109e53a211 ./repeater/
+```
+
 ## Configuration
 
 The next commands require a configuration file. You can generate [a default 
@@ -96,6 +189,12 @@ collection clean and well-organized. Available checks include:
     - Cover file: Checks the presence of a cover image in the disc directory. 
       Also verifies that the cover image size is within specified limits.
     - Disc tags: Checks that the tags from all files in a disc are the same
+    - Track numbers: Checks that the track numbers are sequential and start 
+      from 1
+- Album level:
+    - Disc numbers: Checks that the disc numbers are sequential and start from 
+      1
+    - Album tags: Checks that the tags from all files in an album are the same
 - Artist level:
     - Genre: Ensures that all tracks from an artist share the same genre
 
@@ -158,6 +257,7 @@ This project uses [htaglib] as the underlying library to manipulate audio file.
 
 [demo]: ./demo.png
 [htaglib]: https://github.com/mrkkrp/htaglib
+[musicbrainz]: https://musicbrainz.org/
 [nix]: https://nixos.org/
 [releases]: https://github.com/jecaro/htagcli/releases
 [status-nix-png]: https://github.com/jecaro/htagcli/workflows/nix/badge.svg
