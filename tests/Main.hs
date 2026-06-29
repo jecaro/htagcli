@@ -7,7 +7,10 @@ import Tests.Check.Disc qualified as Check.Disc
 import Tests.Check.Track qualified as Check.Track
 import Tests.Commands as Commands
 import Tests.Config as Config
+import Tests.Model.Album qualified as Model.Album
+import Tests.Model.Artist qualified as Model.Artist
 import Tests.Model.AudioTrack qualified as Model.AudioTrack
+import Tests.Model.Disc qualified as Model.Disc
 import Tests.Model.Pattern qualified as Model.Pattern
 import Tests.Model.Tag qualified as Model.Tag
 import Tests.MusicBrainz qualified as MusicBrainz
@@ -18,15 +21,18 @@ main =
   defaultMain $
     testGroup
       "Tests"
-      [ Commands.test,
-        Config.test,
-        Model.AudioTrack.test,
-        Model.Pattern.test,
-        Model.Tag.test,
+      [ Check.Album.test,
         Check.Artist.test,
-        Check.Album.test,
         Check.Disc.test,
         Check.Track.test,
-        MusicBrainz.test,
-        MusicBrainz.Types.test
+        Commands.test,
+        Config.test,
+        Model.Album.test,
+        Model.Artist.test,
+        Model.AudioTrack.test,
+        Model.Disc.test,
+        Model.Pattern.test,
+        Model.Tag.test,
+        MusicBrainz.Types.test,
+        MusicBrainz.test
       ]
