@@ -23,13 +23,13 @@ text a b =
 mediaAndDisc :: MusicBrainz.Media -> Disc.Disc -> Average.Average
 mediaAndDisc MusicBrainz.Media {..} disc =
   Average.Average
-    { avSum = sum (zipWith text localTracks tracks),
+    { avSum = sum (NonEmpty.zipWith text localTracks tracks),
       avCount = max (length localTracks) (length tracks)
     }
   where
-    tracks = toList $ MusicBrainz.rcTitle . MusicBrainz.trRecording <$> meTracks
+    tracks = MusicBrainz.trTitle <$> meTracks
     localTracks =
-      toList $ HTagLib.unTitle . AudioTrack.atTitle <$> Disc.tracks disc
+      HTagLib.unTitle . AudioTrack.atTitle <$> Disc.tracks disc
 
 -- | Weighted similarity between a local album and a MusicBrainz release detail.
 -- Weights: artist 20%, title 20%, tracks from discs 60%.

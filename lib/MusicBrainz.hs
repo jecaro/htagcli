@@ -70,9 +70,9 @@ tagTrack ::
 tagTrack
   MusicBrainz.ReleaseDetail {..}
   MusicBrainz.Media {..}
-  (audioTrack, MusicBrainz.Track {trRecording = MusicBrainz.Recording {..}, ..}) =
+  (audioTrack, MusicBrainz.Track {..}) =
     audioTrack
-      { AudioTrack.atTitle = HTagLib.mkTitle rcTitle,
+      { AudioTrack.atTitle = HTagLib.mkTitle trTitle,
         AudioTrack.atArtist = HTagLib.mkArtist artist,
         AudioTrack.atAlbumArtist = HTagLib.mkAlbumArtist albumArtist,
         AudioTrack.atAlbum = HTagLib.mkAlbum rdTitle,
@@ -84,7 +84,7 @@ tagTrack
             else Nothing
       }
     where
-      artist = MusicBrainz.artistCreditToText rcArtistCredit
+      artist = MusicBrainz.artistCreditToText trArtistCredit
       albumArtist = MusicBrainz.artistCreditToText rdArtistCredit
 
 setTags :: UUID.UUID -> Album.Album -> IO ()
@@ -180,9 +180,9 @@ displayMedia media@MusicBrainz.Media {..} mDisc = do
   forM_ tracksAndLocalTracks $ \(MusicBrainz.Track {..}, mLocalTitle) -> do
     let trackSuffix =
           orMempty
-            (similaritySuffix (MusicBrainz.rcTitle trRecording))
+            (similaritySuffix trTitle)
             mLocalTitle
-        title = MusicBrainz.rcTitle trRecording
+        title = trTitle
     putTextLn [i|     #{trPosition}. #{title} #{trackSuffix}|]
 
   putTextLn ""
