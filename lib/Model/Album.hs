@@ -14,6 +14,7 @@ where
 
 import Data.List.Extra qualified as List
 import Data.List.NonEmpty ((<|))
+import Data.Text qualified as Text
 import Model.Disc qualified as Disc
 import Model.Tag qualified as Tag
 import Sound.HTagLib qualified as HTagLib
@@ -25,8 +26,7 @@ newtype Album = Album (NonEmpty Disc.Disc)
 
 mkAlbum :: NonEmpty Disc.Disc -> Maybe Album
 mkAlbum discs'@(firstDisc :| otherDiscs)
-  | allSameAlbum
-      && (allSameAlbumArtist || allSameArtist) =
+  | allSameAlbum && allSameAlbumArtistOrArtist =
       Just $
         Album $
           NonEmpty.sortOn (fmap HTagLib.unDiscNumber . Disc.disc) discs'
@@ -35,9 +35,14 @@ mkAlbum discs'@(firstDisc :| otherDiscs)
     firstAlbum = Disc.album firstDisc
     firstAlbumArtist = Disc.albumArtist firstDisc
     firstArtist = Disc.artist firstDisc
+    haveAlbumArtist = not $ Text.null $ HTagLib.unAlbumArtist firstAlbumArtist
     allSameAlbum = all ((== firstAlbum) . Disc.album) otherDiscs
     allSameAlbumArtist = all ((== firstAlbumArtist) . Disc.albumArtist) otherDiscs
     allSameArtist = all ((== firstArtist) . Disc.artist) otherDiscs
+    allSameAlbumArtistOrArtist =
+      if haveAlbumArtist
+        then allSameAlbumArtist
+        else allSameArtist
 
 addDisc :: Disc.Disc -> Album -> Maybe Album
 addDisc d (Album discs') = mkAlbum (d <| discs')
@@ -46,7 +51,7 @@ discs :: Album -> NonEmpty Disc.Disc
 discs (Album discs') = discs'
 
 years :: Album -> [HTagLib.Year]
-years (Album discs') = List.nubSort $ concatMap Disc.years $ toList discs'
+years (Album discs') = List.nubSort $ foldMap Disc.years $ toList discs'
 
 album :: Album -> HTagLib.Album
 album (Album (d :| _)) = Disc.album d
