@@ -4,6 +4,7 @@ module Model.Disc
     addTrack,
     tracks,
     years,
+    genres,
     artist,
     album,
     albumArtist,
@@ -29,13 +30,7 @@ newtype Disc = Disc (NonEmpty AudioTrack.AudioTrack)
 
 mkDisc :: NonEmpty AudioTrack.AudioTrack -> Maybe Disc
 mkDisc tracks'@(firstTrack :| otherTracks)
-  | allSameAlbum
-      && allSameDisc
-      && ( ( AudioTrack.haveTag Tag.AlbumArtist firstTrack
-               && allSameAlbumArtist
-           )
-             || allSameArtist
-         ) =
+  | allSameAlbum && allSameDisc && allSameAlbumArtistOrArtist =
       Just $
         Disc $
           NonEmpty.sortOn
@@ -52,6 +47,10 @@ mkDisc tracks'@(firstTrack :| otherTracks)
     allSameAlbumArtist =
       all ((== firstAlbumArtist) . AudioTrack.atAlbumArtist) otherTracks
     allSameArtist = all ((== firstArtist) . AudioTrack.atArtist) otherTracks
+    allSameAlbumArtistOrArtist =
+      if AudioTrack.haveTag Tag.AlbumArtist firstTrack
+        then allSameAlbumArtist
+        else allSameArtist
 
 addTrack :: AudioTrack.AudioTrack -> Disc -> Maybe Disc
 addTrack track (Disc tracks') = mkDisc (track <| tracks')
@@ -76,6 +75,9 @@ disc (Disc (track :| _)) = AudioTrack.atDisc track
 
 album :: Disc -> HTagLib.Album
 album (Disc (track :| _)) = AudioTrack.atAlbum track
+
+genres :: Disc -> NonEmpty HTagLib.Genre
+genres (Disc tracks') = NonEmpty.nubOrd $ AudioTrack.atGenre <$> tracks'
 
 -- | Return the directory if all tracks are in the same one
 directory :: Disc -> Maybe (Path.Path Path.Abs Path.Dir)

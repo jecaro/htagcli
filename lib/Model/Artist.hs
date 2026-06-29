@@ -17,19 +17,20 @@ newtype Artist = Artist (NonEmpty Album.Album)
 
 mkArtist :: NonEmpty Album.Album -> Maybe Artist
 mkArtist albums'@(firstAlbum :| otherAlbums)
-  | ( allSameAlbumArtist
-        && not (Text.null $ HTagLib.unAlbumArtist firstAlbumArtist)
-        && (firstAlbumArtist /= "Various Artists")
-    )
-      || allSameArtist =
-      Just $ Artist albums'
+  | allSameAlbumArtistOrArtist = Just $ Artist albums'
   | otherwise = Nothing
   where
     firstAlbumArtist = Album.albumArtist firstAlbum
     firstArtist = Album.artist firstAlbum
+    haveAlbumArtist =
+      not $ Text.null $ HTagLib.unAlbumArtist firstAlbumArtist
     allSameAlbumArtist =
       all ((== firstAlbumArtist) . Album.albumArtist) otherAlbums
     allSameArtist = all ((== firstArtist) . Album.artist) otherAlbums
+    allSameAlbumArtistOrArtist =
+      if haveAlbumArtist
+        then allSameAlbumArtist && firstAlbumArtist /= "Various Artists"
+        else allSameArtist
 
 addAlbum :: Album.Album -> Artist -> Maybe Artist
 addAlbum a (Artist albums') = mkArtist (a <| albums')
