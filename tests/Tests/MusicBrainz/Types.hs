@@ -102,9 +102,6 @@ mkTrack :: Int -> Text -> MusicBrainz.Track
 mkTrack n title =
   MusicBrainz.Track
     { MusicBrainz.trPosition = n,
-      MusicBrainz.trRecording =
-        MusicBrainz.Recording
-          { MusicBrainz.rcTitle = title,
-            MusicBrainz.rcArtistCredit = mkArtistCredit "Fugazi"
-          }
+      MusicBrainz.trTitle = title,
+      MusicBrainz.trArtistCredit = mkArtistCredit "Fugazi"
     }

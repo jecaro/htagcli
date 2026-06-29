@@ -1,7 +1,6 @@
 module MusicBrainz.Types
   ( ArtistCredit (..),
     Media (..),
-    Recording (..),
     Release (..),
     ReleaseDetail (..),
     SearchResponse (..),
@@ -35,16 +34,11 @@ data Release = Release
   }
   deriving (Show, Eq)
 
-data Recording = Recording
-  { rcTitle :: Text,
-    rcArtistCredit :: NonEmpty ArtistCredit
-  }
-  deriving (Show, Eq)
-
 -- | A track from MusicBrainz release lookup
 data Track = Track
   { trPosition :: Int,
-    trRecording :: Recording
+    trTitle :: Text,
+    trArtistCredit :: NonEmpty ArtistCredit
   }
   deriving (Show, Eq)
 
@@ -111,14 +105,9 @@ instance Aeson.FromJSON Media where
 instance Aeson.FromJSON Track where
   parseJSON = Aeson.withObject "Track" $ \o -> do
     trPosition <- o .: "position"
-    trRecording <- o .: "recording"
+    trTitle <- o .: "title"
+    trArtistCredit <- o .: "artist-credit"
     pure Track {..}
-
-instance Aeson.FromJSON Recording where
-  parseJSON = Aeson.withObject "Recording" $ \o -> do
-    rcTitle <- o .: "title"
-    rcArtistCredit <- o .: "artist-credit"
-    pure Recording {..}
 
 parseDate :: Text -> Maybe Int
 parseDate = readMaybe . toString . Text.take 4

@@ -77,9 +77,6 @@ mkTrack :: Int -> MusicBrainz.Track
 mkTrack n =
   MusicBrainz.Track
     { MusicBrainz.trPosition = n,
-      MusicBrainz.trRecording =
-        MusicBrainz.Recording
-          { MusicBrainz.rcTitle = "Test Track " <> show n,
-            MusicBrainz.rcArtistCredit = mkArtistCredit "Test Track Artist"
-          }
+      MusicBrainz.trTitle = "Test Track " <> show n,
+      MusicBrainz.trArtistCredit = mkArtistCredit "Test Track Artist"
     }
