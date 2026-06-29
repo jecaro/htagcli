@@ -174,7 +174,7 @@ displayRelease idx detail@(MusicBrainz.ReleaseDetail {..}) mbAlbum = do
 
 displayMedia :: MusicBrainz.Media -> Maybe Disc.Disc -> IO ()
 displayMedia media@MusicBrainz.Media {..} mDisc = do
-  putTextLn [i|   Disc #{mePosition}: #{discSimilarity} - Tracks: #{trackCount} #{trackCountSuffix}|]
+  putTextLn [i|   Disc #{mePosition}: #{discSimilarity}Tracks: #{trackCount} #{trackCountSuffix}|]
   putTextLn ""
 
   forM_ tracksAndLocalTracks $ \(MusicBrainz.Track {..}, mLocalTitle) -> do
@@ -191,8 +191,11 @@ displayMedia media@MusicBrainz.Media {..} mDisc = do
     tracksAndLocalTracks = zip tracks $ localTitles <> repeat Nothing
 
     discSimilarity =
-      inParensMaybe
-        (percentage . Average.toDouble . Similarity.mediaAndDisc media)
+      orMempty
+        ( (<> " - ")
+            . inParens
+            . (percentage . Average.toDouble . Similarity.mediaAndDisc media)
+        )
         mDisc
 
     trackCount = length tracks
