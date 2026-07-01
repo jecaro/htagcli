@@ -159,17 +159,22 @@ fixFilePaths
           TargetFileAlreadyExists toFileAbs
 
       fiEnsureDir $ Path.parent toFileAbs
+      putTextLn $
+        fromString (Path.toFilePath fromFile)
+          <> " -> "
+          <> fromString (Path.toFilePath toFileAbs)
       fiRenameFile fromFile toFileAbs
 
       let parentDir = Path.parent fromFile
       whenJust fiCoverImages $ \covers ->
         forM_ covers $ \cover ->
-          whenM (fiDoesFileExist (parentDir </> cover)) $
-            fiRenameFile (parentDir </> cover) (Path.parent toFileAbs </> cover)
+          whenM (fiDoesFileExist (parentDir </> cover)) $ do
+            let coverFrom = parentDir </> cover
+                coverTo = Path.parent toFileAbs </> cover
+            putTextLn $
+              fromString (Path.toFilePath coverFrom)
+                <> " -> "
+                <> fromString (Path.toFilePath coverTo)
+            fiRenameFile coverFrom coverTo
 
       FileSystem.removeDirAndParentsIfEmpty fileSystem parentDir
-
-      putTextLn $
-        fromString (Path.toFilePath fromFile)
-          <> " -> "
-          <> fromString (Path.toFilePath toFileAbs)

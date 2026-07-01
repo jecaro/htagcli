@@ -29,6 +29,7 @@ removeDirAndParentsIfEmpty ::
   m ()
 removeDirAndParentsIfEmpty fs@FileSystem {..} dir =
   whenM (fiIsDirEmpty dir) $ do
+    putTextLn $ fromString (Path.toFilePath dir) <> " (deleted)"
     fiRemoveDir dir
     let parent = Path.parent dir
     when (parent /= dir) $ removeDirAndParentsIfEmpty fs parent
