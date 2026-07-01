@@ -7,7 +7,6 @@ module Commands
     checkArtist,
     FixFilePathsOptions (..),
     fixFilePaths,
-    fixFilePaths',
     Error (..),
     errorToText,
   )
@@ -138,13 +137,13 @@ data FixFilePathsOptions = FixFilePathsOptions
   }
   deriving (Show)
 
-fixFilePaths' ::
+fixFilePaths ::
   (MonadIO m) =>
   FileSystem.FileSystem m ->
   FixFilePathsOptions ->
   Path.Path Path.Abs Path.File ->
-  m (Maybe (Path.Path Path.Abs Path.File))
-fixFilePaths'
+  m ()
+fixFilePaths
   fileSystem@FileSystem.FileSystem {..}
   FixFilePathsOptions {..}
   fromFile = do
@@ -154,36 +153,23 @@ fixFilePaths'
         maybeToRight (UnableToFormatFile fromFile) $
           Pattern.toPath fiFormatting track fiPattern
     let toFileAbs = fiBaseDirectory </> toFile
-    if toFileAbs == fromFile
-      then pure Nothing
-      else do
-        whenM (fiDoesFileExist toFileAbs) $
-          Exception.throwIO $
-            TargetFileAlreadyExists toFileAbs
+    unless (toFileAbs == fromFile) $ do
+      whenM (fiDoesFileExist toFileAbs) $
+        Exception.throwIO $
+          TargetFileAlreadyExists toFileAbs
 
-        fiEnsureDir $ Path.parent toFileAbs
-        fiRenameFile fromFile toFileAbs
+      fiEnsureDir $ Path.parent toFileAbs
+      fiRenameFile fromFile toFileAbs
 
-        let parentDir = Path.parent fromFile
-        whenJust fiCoverImages $ \covers ->
-          forM_ covers $ \cover ->
-            whenM (fiDoesFileExist (parentDir </> cover)) $
-              fiRenameFile (parentDir </> cover) (Path.parent toFileAbs </> cover)
+      let parentDir = Path.parent fromFile
+      whenJust fiCoverImages $ \covers ->
+        forM_ covers $ \cover ->
+          whenM (fiDoesFileExist (parentDir </> cover)) $
+            fiRenameFile (parentDir </> cover) (Path.parent toFileAbs </> cover)
 
-        FileSystem.removeDirAndParentsIfEmpty fileSystem parentDir
+      FileSystem.removeDirAndParentsIfEmpty fileSystem parentDir
 
-        pure (Just toFileAbs)
-
-fixFilePaths ::
-  (MonadIO m) =>
-  FileSystem.FileSystem m ->
-  FixFilePathsOptions ->
-  Path.Path Path.Abs Path.File ->
-  m ()
-fixFilePaths fileSystem options fromFile = do
-  mbNewPath <- fixFilePaths' fileSystem options fromFile
-  whenJust mbNewPath $ \toFile ->
-    putTextLn $
-      fromString (Path.toFilePath fromFile)
-        <> " -> "
-        <> fromString (Path.toFilePath toFile)
+      putTextLn $
+        fromString (Path.toFilePath fromFile)
+          <> " -> "
+          <> fromString (Path.toFilePath toFileAbs)
