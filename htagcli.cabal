@@ -20,6 +20,7 @@ common defaults
   default-extensions:
     DataKinds
     LambdaCase
+    MultiWayIf
     OverloadedStrings
     PackageImports
     RecordWildCards
@@ -53,6 +54,7 @@ library
     Check.Disc
     Check.Track
     Commands
+    Commands.FileSystem
     Config
     Data.List.NonEmpty.Extra
     Model.Album
@@ -68,13 +70,13 @@ library
     MusicBrainz.Req
     MusicBrainz.Similarity
     MusicBrainz.Types
-    Path.IO.Extra
     Sound.HTagLib.Extra
     Toml.Extra
 
   build-depends:
     JuicyPixels,
     aeson,
+    containers,
     extra,
     file-embed,
     filepath,

@@ -4,6 +4,7 @@ module Tests.Commands (test) where
 
 import Check.Track qualified as Track
 import Commands qualified
+import Commands.FileSystem qualified as FileSystem
 import Data.List qualified as List
 import Model.AudioTrack qualified as AudioTrack
 import Model.Pattern qualified as Pattern
@@ -31,9 +32,10 @@ testFixFilePaths =
           let inputDir = dir
           filenamesBefore <- snd <$> Path.listDir inputDir
 
+          fileSystem <- FileSystem.mkOverlay
           result <-
             traverse
-              (Commands.fixFilePaths' $ fixFilePathsOptions True False inputDir)
+              (Commands.fixFilePaths' fileSystem $ fixFilePathsOptions False inputDir)
               filenamesBefore
 
           -- All files would be renamed
@@ -48,7 +50,7 @@ testFixFilePaths =
           filenamesInCurrentDirBefore <- snd <$> Path.listDir inputDir
           listMbPaths <-
             traverse
-              (Commands.fixFilePaths' $ fixFilePathsOptions False False dir)
+              (Commands.fixFilePaths' FileSystem.mkReal $ fixFilePathsOptions False dir)
               filenamesInCurrentDirBefore
 
           all isJust listMbPaths `shouldBe` True
@@ -76,7 +78,7 @@ testFixFilePaths =
 
           listMbPaths <-
             traverse
-              (Commands.fixFilePaths' $ fixFilePathsOptions False False dir)
+              (Commands.fixFilePaths' FileSystem.mkReal $ fixFilePathsOptions False dir)
               filenamesInCurrentDirBefore
 
           all isJust listMbPaths `shouldBe` True
@@ -94,7 +96,7 @@ testFixFilePaths =
               <$> Path.listDir inputDir
 
           traverse_
-            (Commands.fixFilePaths' $ fixFilePathsOptions False False dir)
+            (Commands.fixFilePaths' FileSystem.mkReal $ fixFilePathsOptions False dir)
             filenamesInCurrentDirBefore
 
           exists <- Path.doesFileExist cover
@@ -116,7 +118,7 @@ testFixFilePaths =
 
           listMbPaths <-
             traverse
-              (Commands.fixFilePaths' $ fixFilePathsOptions False True dir)
+              (Commands.fixFilePaths' FileSystem.mkReal $ fixFilePathsOptions True dir)
               filenamesInCurrentDirBefore
 
           oldCoverExists <- Path.doesFileExist cover
@@ -132,15 +134,19 @@ testFixFilePaths =
 testTargetAlreadyExists :: Bool -> Tasty.Assertion
 testTargetAlreadyExists dryRun =
   Common.withOneTrackFile $ \dir file -> do
+    -- Get the target file path where the file would be moved with the overlay
+    -- file system
+    fileSystem <- FileSystem.mkOverlay
     targetFile <-
       Unsafe.fromJust
-        <$> Commands.fixFilePaths' (fixFilePathsOptions True False dir) file
+        <$> Commands.fixFilePaths' fileSystem (fixFilePathsOptions False dir) file
     Path.ensureDir $ Path.parent targetFile
     -- Create a dummy file where the file should be moved
     System.writeFile (Path.toFilePath targetFile) ""
+    fileSystem' <- if dryRun then FileSystem.mkOverlay else pure FileSystem.mkReal
     result <-
       Exception.try $
-        Commands.fixFilePaths' (fixFilePathsOptions dryRun False dir) file
+        Commands.fixFilePaths' fileSystem' (fixFilePathsOptions False dir) file
     result `shouldBe` Left (Commands.TargetFileAlreadyExists targetFile)
 
 check :: (MonadIO m) => Path.Path Path.Abs Path.File -> m (Either Track.Error ())
@@ -163,11 +169,10 @@ pattern =
     ]
 
 fixFilePathsOptions ::
-  Bool -> Bool -> Path.Path Path.Abs Path.Dir -> Commands.FixFilePathsOptions
-fixFilePathsOptions dryRun moveCover baseDir =
+  Bool -> Path.Path Path.Abs Path.Dir -> Commands.FixFilePathsOptions
+fixFilePathsOptions moveCover baseDir =
   Commands.FixFilePathsOptions
-    { fiDryRun = dryRun,
-      fiBaseDirectory = baseDir </> [reldir|output|],
+    { fiBaseDirectory = baseDir </> [reldir|output|],
       fiFormatting = Pattern.noFormatting,
       fiPattern = pattern,
       fiCoverImages = guard moveCover *> Just (fromList [[relfile|cover.png|]])

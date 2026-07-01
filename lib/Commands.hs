@@ -17,6 +17,7 @@ import Check.Album qualified as Album
 import Check.Artist qualified as Artist
 import Check.Disc qualified as Disc
 import Check.Track qualified as Track
+import Commands.FileSystem qualified as FileSystem
 import Model.Album qualified as Album
 import Model.Artist qualified as Artist
 import Model.AudioTrack qualified as AudioTrack
@@ -25,8 +26,6 @@ import Model.Pattern qualified as Pattern
 import Model.SetTags qualified as SetTags
 import Path ((</>))
 import Path qualified
-import Path.IO qualified as Path
-import Path.IO.Extra qualified as Path
 import Sound.HTagLib qualified as HTagLib
 import Sound.HTagLib.Extra qualified as HTagLib
 import UnliftIO.Exception qualified as Exception
@@ -132,59 +131,57 @@ checkArtist (Just check) artist = do
       HTagLib.unAlbumArtistOrArtist $ Artist.albumArtistOrArtist artist
 
 data FixFilePathsOptions = FixFilePathsOptions
-  { fiDryRun :: Bool,
-    fiBaseDirectory :: Path.Path Path.Abs Path.Dir,
+  { fiBaseDirectory :: Path.Path Path.Abs Path.Dir,
     fiFormatting :: Pattern.Formatting,
     fiPattern :: Pattern.Pattern,
     fiCoverImages :: Maybe (NonEmpty (Path.Path Path.Rel Path.File))
   }
   deriving (Show)
 
--- | Version for testing that returns the new path if changed
 fixFilePaths' ::
   (MonadIO m) =>
+  FileSystem.FileSystem m ->
   FixFilePathsOptions ->
   Path.Path Path.Abs Path.File ->
   m (Maybe (Path.Path Path.Abs Path.File))
-fixFilePaths' FixFilePathsOptions {..} fromFile = do
-  track <- AudioTrack.getTags fromFile
-  toFile <-
-    Exception.fromEither $
-      maybeToRight (UnableToFormatFile fromFile) $
-        Pattern.toPath fiFormatting track fiPattern
-  let toFileAbs = fiBaseDirectory </> toFile
-  if toFileAbs == fromFile
-    then pure Nothing
-    else do
-      whenM (Path.doesFileExist toFileAbs) $
-        Exception.throwIO $
-          TargetFileAlreadyExists toFileAbs
+fixFilePaths'
+  fileSystem@FileSystem.FileSystem {..}
+  FixFilePathsOptions {..}
+  fromFile = do
+    track <- AudioTrack.getTags fromFile
+    toFile <-
+      Exception.fromEither $
+        maybeToRight (UnableToFormatFile fromFile) $
+          Pattern.toPath fiFormatting track fiPattern
+    let toFileAbs = fiBaseDirectory </> toFile
+    if toFileAbs == fromFile
+      then pure Nothing
+      else do
+        whenM (fiDoesFileExist toFileAbs) $
+          Exception.throwIO $
+            TargetFileAlreadyExists toFileAbs
 
-      unless fiDryRun $ do
-        Path.ensureDir $ Path.parent toFileAbs
+        fiEnsureDir $ Path.parent toFileAbs
+        fiRenameFile fromFile toFileAbs
 
-        Path.renameFile fromFile toFileAbs
-
-        -- Move the cover if there
         let parentDir = Path.parent fromFile
-        whenJust fiCoverImages $ \covers -> do
-          forM_ covers $ \cover -> do
-            whenM (Path.doesFileExist (parentDir </> cover)) $ do
-              Path.renameFile
-                (parentDir </> cover)
-                (Path.parent toFileAbs </> cover)
+        whenJust fiCoverImages $ \covers ->
+          forM_ covers $ \cover ->
+            whenM (fiDoesFileExist (parentDir </> cover)) $
+              fiRenameFile (parentDir </> cover) (Path.parent toFileAbs </> cover)
 
-        Path.removeDirAndParentsIfEmpty parentDir
+        FileSystem.removeDirAndParentsIfEmpty fileSystem parentDir
 
-      pure (Just toFileAbs)
+        pure (Just toFileAbs)
 
 fixFilePaths ::
   (MonadIO m) =>
+  FileSystem.FileSystem m ->
   FixFilePathsOptions ->
   Path.Path Path.Abs Path.File ->
   m ()
-fixFilePaths options fromFile = do
-  mbNewPath <- fixFilePaths' options fromFile
+fixFilePaths fileSystem options fromFile = do
+  mbNewPath <- fixFilePaths' fileSystem options fromFile
   whenJust mbNewPath $ \toFile ->
     putTextLn $
       fromString (Path.toFilePath fromFile)
