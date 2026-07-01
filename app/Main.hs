@@ -1,6 +1,7 @@
 module Main where
 
 import Commands qualified
+import Commands.FileSystem qualified as FileSystem
 import ConduitUtils qualified
 import Config qualified
 import Data.Conduit.Combinators qualified as Conduit
@@ -167,16 +168,20 @@ main = do
         baseDir <- maybe (pure fiBaseDir) Path.makeAbsolute foBaseDirectory
         let fixFilePathOptions =
               Commands.FixFilePathsOptions
-                { Commands.fiDryRun = foDryRun,
-                  Commands.fiBaseDirectory = baseDir,
+                { Commands.fiBaseDirectory = baseDir,
                   Commands.fiFormatting = fiFormatting,
                   Commands.fiPattern = pattern,
                   Commands.fiCoverImages = coverImages
                 }
 
+        fileSystem <-
+          if foDryRun
+            then FileSystem.mkOverlay
+            else pure FileSystem.mkReal
+
         ConduitUtils.runConduitWithProgress files $
           Conduit.mapM_C $
-            Commands.fixFilePaths fixFilePathOptions
+            Commands.fixFilePaths fileSystem fixFilePathOptions
       Options.Search options -> do
         case options of
           Options.SeSearchMany (Options.SearchMany {..}) ->
