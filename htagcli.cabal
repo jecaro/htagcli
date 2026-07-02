@@ -76,6 +76,7 @@ library
   build-depends:
     JuicyPixels,
     aeson,
+    bluefin,
     containers,
     extra,
     file-embed,
@@ -113,6 +114,7 @@ executable htagcli
 
   build-depends:
     ansi-terminal,
+    bluefin,
     conduit,
     extra,
     filepath,
@@ -159,6 +161,7 @@ test-suite tests
 
   build-depends:
     aeson,
+    bluefin,
     extra,
     hedgehog,
     hspec,

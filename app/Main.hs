@@ -1,7 +1,6 @@
-module Main where
+module Main (main) where
 
 import Commands qualified
-import Commands.FileSystem qualified as FileSystem
 import ConduitUtils qualified
 import Config qualified
 import Data.Conduit.Combinators qualified as Conduit
@@ -174,14 +173,11 @@ main = do
                   Commands.fiCoverImages = coverImages
                 }
 
-        fileSystem <-
-          if foDryRun
-            then FileSystem.mkOverlay
-            else pure FileSystem.mkReal
-
-        ConduitUtils.runConduitWithProgress files $
-          Conduit.mapM_C $
-            Commands.fixFilePaths fileSystem fixFilePathOptions
+        Commands.withFixFilePath foDryRun $ \fixFilePath ->
+          ConduitUtils.runConduitWithProgress files $
+            Conduit.mapM_C $ \file -> liftIO $ do
+              track <- AudioTrack.getTags file
+              fixFilePath fixFilePathOptions track
       Options.Search options -> do
         case options of
           Options.SeSearchMany (Options.SearchMany {..}) ->

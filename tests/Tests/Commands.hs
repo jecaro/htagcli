@@ -4,7 +4,6 @@ module Tests.Commands (test) where
 
 import Check.Track qualified as Track
 import Commands qualified
-import Commands.FileSystem qualified as FileSystem
 import Model.AudioTrack qualified as AudioTrack
 import Model.Pattern qualified as Pattern
 import Model.Tag qualified as Tag
@@ -31,10 +30,10 @@ testFixFilePaths =
           let inputDir = dir
           filenamesBefore <- snd <$> Path.listDir inputDir
 
-          fileSystem <- FileSystem.mkOverlay
-          traverse_
-            (Commands.fixFilePaths fileSystem $ fixFilePathsOptions False inputDir)
-            filenamesBefore
+          Commands.withFixFilePath True $ \fixPath ->
+            forM_ filenamesBefore $ \file -> do
+              track <- AudioTrack.getTags file
+              fixPath (fixFilePathsOptions False inputDir) track
 
           -- No changes visible on disk
           filenamesAfter <- snd <$> Path.listDir inputDir
@@ -43,9 +42,11 @@ testFixFilePaths =
         Common.withTenTracksFilesInSubdir [reldir|./input|] $ \dir _ -> do
           let inputDir = dir </> [reldir|input|]
           filenamesInCurrentDirBefore <- snd <$> Path.listDir inputDir
-          traverse_
-            (Commands.fixFilePaths FileSystem.mkReal $ fixFilePathsOptions False dir)
-            filenamesInCurrentDirBefore
+
+          Commands.withFixFilePath False $ \fixPath ->
+            forM_ filenamesInCurrentDirBefore $ \file -> do
+              track <- AudioTrack.getTags file
+              fixPath (fixFilePathsOptions False dir) track
 
           -- All files have been moved, 'input' directory doesn't exist anymore
           exists <- Path.doesDirExist inputDir
@@ -66,9 +67,10 @@ testFixFilePaths =
           filenamesInCurrentDirBefore <-
             filter (/= dummy) . snd <$> Path.listDir inputDir
 
-          traverse_
-            (Commands.fixFilePaths FileSystem.mkReal $ fixFilePathsOptions False dir)
-            filenamesInCurrentDirBefore
+          Commands.withFixFilePath False $ \fixPath ->
+            forM_ filenamesInCurrentDirBefore $ \file -> do
+              track <- AudioTrack.getTags file
+              fixPath (fixFilePathsOptions False dir) track
 
           exists <- Path.doesDirExist inputDir
           exists `shouldBe` True,
@@ -81,9 +83,10 @@ testFixFilePaths =
           filenamesInCurrentDirBefore <-
             filter (/= cover) . snd <$> Path.listDir inputDir
 
-          traverse_
-            (Commands.fixFilePaths FileSystem.mkReal $ fixFilePathsOptions False dir)
-            filenamesInCurrentDirBefore
+          Commands.withFixFilePath False $ \fixPath ->
+            forM_ filenamesInCurrentDirBefore $ \file -> do
+              track <- AudioTrack.getTags file
+              fixPath (fixFilePathsOptions False dir) track
 
           exists <- Path.doesFileExist cover
           exists `shouldBe` True,
@@ -101,9 +104,10 @@ testFixFilePaths =
           filenamesInCurrentDirBefore <-
             filter (/= cover) . snd <$> Path.listDir inputDir
 
-          traverse_
-            (Commands.fixFilePaths FileSystem.mkReal $ fixFilePathsOptions True dir)
-            filenamesInCurrentDirBefore
+          Commands.withFixFilePath False $ \fixPath ->
+            forM_ filenamesInCurrentDirBefore $ \file -> do
+              track <- AudioTrack.getTags file
+              fixPath (fixFilePathsOptions True dir) track
 
           oldCoverExists <- Path.doesFileExist cover
           oldCoverExists `shouldBe` False
@@ -130,8 +134,10 @@ testTargetAlreadyExists dryRun =
     Path.ensureDir $ Path.parent targetFile
     -- Create a dummy file where the file should be moved
     System.writeFile (Path.toFilePath targetFile) ""
-    fileSystem <- if dryRun then FileSystem.mkOverlay else pure FileSystem.mkReal
-    result <- Exception.try $ Commands.fixFilePaths fileSystem opts file
+    result <-
+      Exception.try $
+        Commands.withFixFilePath dryRun $ \fixPath ->
+          fixPath opts track
     result `shouldBe` Left (Commands.TargetFileAlreadyExists targetFile)
 
 check :: (MonadIO m) => Path.Path Path.Abs Path.File -> m (Either Track.Error ())
