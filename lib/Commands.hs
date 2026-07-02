@@ -6,12 +6,16 @@ module Commands
     checkAlbum,
     checkArtist,
     FixFilePathsOptions (..),
-    fixFilePaths,
+    withFixFilePath,
     Error (..),
     errorToText,
   )
 where
 
+import Bluefin.Eff ((:&), (:>))
+import Bluefin.Eff qualified as Bluefin
+import Bluefin.Exception qualified as Bluefin
+import Bluefin.IO qualified as Bluefin
 import Check.Album qualified as Album
 import Check.Artist qualified as Artist
 import Check.Disc qualified as Disc
@@ -137,44 +141,65 @@ data FixFilePathsOptions = FixFilePathsOptions
   }
   deriving (Show)
 
-fixFilePaths ::
-  (MonadIO m) =>
-  FileSystem.FileSystem m ->
+fixFilePath ::
+  (ex :> es, fs :> es) =>
+  Bluefin.Exception Error ex ->
+  FileSystem.FileSystem fs ->
   FixFilePathsOptions ->
-  Path.Path Path.Abs Path.File ->
-  m ()
-fixFilePaths
-  fileSystem@FileSystem.FileSystem {..}
+  AudioTrack.AudioTrack ->
+  Bluefin.Eff es ()
+fixFilePath
+  ex
+  fileSystem
   FixFilePathsOptions {..}
-  fromFile = do
-    track <- AudioTrack.getTags fromFile
+  track = do
+    let fromFile = AudioTrack.atFile track
     toFile <-
-      Exception.fromEither $
+      either (Bluefin.throw ex) pure $
         maybeToRight (UnableToFormatFile fromFile) $
           Pattern.toPath fiFormatting track fiPattern
     let toFileAbs = fiBaseDirectory </> toFile
     unless (toFileAbs == fromFile) $ do
-      whenM (fiDoesFileExist toFileAbs) $
-        Exception.throwIO $
+      whenM (FileSystem.doesFileExist fileSystem toFileAbs) $
+        Bluefin.throw ex $
           TargetFileAlreadyExists toFileAbs
 
-      fiEnsureDir $ Path.parent toFileAbs
-      putTextLn $
+      FileSystem.ensureDir fileSystem $ Path.parent toFileAbs
+      FileSystem.printLine fileSystem $
         fromString (Path.toFilePath fromFile)
           <> " -> "
           <> fromString (Path.toFilePath toFileAbs)
-      fiRenameFile fromFile toFileAbs
+      FileSystem.renameFile fileSystem fromFile toFileAbs
 
       let parentDir = Path.parent fromFile
       whenJust fiCoverImages $ \covers ->
         forM_ covers $ \cover ->
-          whenM (fiDoesFileExist (parentDir </> cover)) $ do
+          whenM (FileSystem.doesFileExist fileSystem (parentDir </> cover)) $ do
             let coverFrom = parentDir </> cover
                 coverTo = Path.parent toFileAbs </> cover
-            putTextLn $
+            FileSystem.printLine fileSystem $
               fromString (Path.toFilePath coverFrom)
                 <> " -> "
                 <> fromString (Path.toFilePath coverTo)
-            fiRenameFile coverFrom coverTo
+            FileSystem.renameFile fileSystem coverFrom coverTo
 
       FileSystem.removeDirAndParentsIfEmpty fileSystem parentDir
+
+withFixFilePath ::
+  Bool ->
+  ((FixFilePathsOptions -> AudioTrack.AudioTrack -> IO ()) -> IO r) ->
+  IO r
+withFixFilePath dryRun cont =
+  Bluefin.runEff_ $ \io -> withFs io $ \fs -> Bluefin.withEffToIO_ io $ \toIO ->
+    cont $ \opts track -> do
+      result <- toIO $ Bluefin.try $ \ex -> fixFilePath ex fs opts track
+      either Exception.throwIO pure result
+  where
+    withFs ::
+      (io :> es) =>
+      Bluefin.IOE io ->
+      (forall e. FileSystem.FileSystem e -> Bluefin.Eff (e :& es) r') ->
+      Bluefin.Eff es r'
+    withFs
+      | dryRun = FileSystem.withOverlayFileSystem
+      | otherwise = FileSystem.withRealFileSystem
