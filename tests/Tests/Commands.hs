@@ -11,6 +11,7 @@ import Path (reldir, relfile, (</>))
 import Path qualified
 import Path.IO qualified as Path
 import Relude.Unsafe qualified as Unsafe
+import Sound.HTagLib qualified as HTagLib
 import System.IO qualified as System
 import Test.Hspec.Expectations (shouldBe)
 import Test.Tasty qualified as Tasty
@@ -19,7 +20,7 @@ import Tests.Common qualified as Common
 import UnliftIO.Exception qualified as Exception
 
 test :: Tasty.TestTree
-test = Tasty.testGroup "Commands" [testFixFilePaths]
+test = Tasty.testGroup "Commands" [testFixFilePaths, testNumberTracks]
 
 testFixFilePaths :: Tasty.TestTree
 testFixFilePaths =
@@ -117,6 +118,48 @@ testFixFilePaths =
           let coverFiles = filter ((relCover ==) . Path.filename) allFiles
           null coverFiles `shouldBe` False
     ]
+
+testNumberTracks :: Tasty.TestTree
+testNumberTracks =
+  Tasty.testGroup
+    "numberTracks"
+    [ Tasty.testCase "ascending order" $
+        withThreeFiles $ \(a, b, c) -> do
+          Commands.numberTracks False [c, a, b]
+          getTrack a >>= (`shouldBe` HTagLib.mkTrackNumber 1)
+          getTrack b >>= (`shouldBe` HTagLib.mkTrackNumber 2)
+          getTrack c >>= (`shouldBe` HTagLib.mkTrackNumber 3),
+      Tasty.testCase "descending order" $
+        withThreeFiles $ \(a, b, c) -> do
+          Commands.numberTracks True [c, a, b]
+          getTrack a >>= (`shouldBe` HTagLib.mkTrackNumber 3)
+          getTrack b >>= (`shouldBe` HTagLib.mkTrackNumber 2)
+          getTrack c >>= (`shouldBe` HTagLib.mkTrackNumber 1)
+    ]
+
+withThreeFiles ::
+  ( ( Path.Path Path.Abs Path.File,
+      Path.Path Path.Abs Path.File,
+      Path.Path Path.Abs Path.File
+    ) ->
+    IO ()
+  ) ->
+  Tasty.Assertion
+withThreeFiles action =
+  Path.withSystemTempDir "htagcli" $ \dir -> do
+    let mkFile name = do
+          file <- Path.parseRelFile name
+          let absFile = dir </> file
+          Path.copyFile [relfile|./data/sample.mp3|] absFile
+          pure absFile
+    a <- mkFile "a.mp3"
+    b <- mkFile "b.mp3"
+    c <- mkFile "c.mp3"
+    action (a, b, c)
+
+getTrack ::
+  (MonadIO m) => Path.Path Path.Abs Path.File -> m (Maybe HTagLib.TrackNumber)
+getTrack file = AudioTrack.atTrack <$> AudioTrack.getTags file
 
 testTargetAlreadyExists :: Bool -> Tasty.Assertion
 testTargetAlreadyExists dryRun =

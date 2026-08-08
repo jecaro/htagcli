@@ -1,6 +1,7 @@
 module Commands
   ( getTags,
     setTags,
+    numberTracks,
     checkTrack,
     checkDisc,
     checkAlbum,
@@ -21,6 +22,7 @@ import Check.Artist qualified as Artist
 import Check.Disc qualified as Disc
 import Check.Track qualified as Track
 import Commands.FileSystem qualified as FileSystem
+import Data.List qualified as List
 import Model.Album qualified as Album
 import Model.Artist qualified as Artist
 import Model.AudioTrack qualified as AudioTrack
@@ -57,6 +59,19 @@ setTags options filename =
     (Path.toFilePath filename)
     Nothing
     (SetTags.setter options)
+
+numberTracks :: (MonadIO m) => Bool -> [Path.Path Path.Abs Path.File] -> m ()
+numberTracks isReverse files =
+  traverse_ (uncurry setTrackNumber) $ zip [1 ..] ordered
+  where
+    sorted = List.sort files
+    ordered = if isReverse then reverse sorted else sorted
+    setTrackNumber n filename =
+      HTagLib.setTags
+        (Path.toFilePath filename)
+        Nothing
+        $ HTagLib.trackNumberSetter
+        $ HTagLib.mkTrackNumber n
 
 countTrues :: [Bool] -> Int
 countTrues = length . filter id
