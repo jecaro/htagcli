@@ -178,6 +178,9 @@ main = do
             Conduit.mapM_C $ \file -> liftIO $ do
               track <- AudioTrack.getTags file
               fixFilePath fixFilePathOptions track
+      Options.NumberTracks Options.NumberTracksOptions {..} files -> do
+        allFiles <- ConduitUtils.runConduitWithProgress files Conduit.sinkList
+        Commands.numberTracks nuReverse allFiles
       Options.Search options -> do
         case options of
           Options.SeSearchMany (Options.SearchMany {..}) ->

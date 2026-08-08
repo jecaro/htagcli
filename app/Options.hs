@@ -3,6 +3,7 @@ module Options
     Command (..),
     Files (..),
     FixFilePathsOptions (..),
+    NumberTracksOptions (..),
     SearchMany (..),
     SearchManySource (..),
     SearchOne (..),
@@ -75,10 +76,16 @@ data SetTagsOptions
   | SetTagsFromId UUID.UUID
   deriving (Show)
 
+newtype NumberTracksOptions = NumberTracksOptions
+  { nuReverse :: Bool
+  }
+  deriving (Show)
+
 data Command
   = CreateConfig
   | GetTags Files
   | SetTags SetTagsOptions Files
+  | NumberTracks NumberTracksOptions Files
   | Edit Files
   | Check CheckOptions Files
   | FixFilePaths FixFilePathsOptions Files
@@ -121,6 +128,14 @@ checksP =
     <*> albumDiscsSequentialP
     <*> optional albumSameTagsP
     <*> artistSameGenreP
+
+numberTracksOptionsP :: Options.Parser NumberTracksOptions
+numberTracksOptionsP =
+  NumberTracksOptions
+    <$> Options.switch
+      ( Options.long "reverse"
+          <> Options.help "Sort in reverse alphabetical order"
+      )
 
 fixFilePathsOptionsP :: Options.Parser FixFilePathsOptions
 fixFilePathsOptionsP =
@@ -469,6 +484,12 @@ optionsP =
           ( Options.info
               (SetTags <$> setTagsOptionsP <*> filesP)
               (Options.progDesc "Set tags")
+          )
+        <> Options.command
+          "number-tracks"
+          ( Options.info
+              (NumberTracks <$> numberTracksOptionsP <*> filesP)
+              (Options.progDesc "Set track numbers based on filename sort order")
           )
         <> Options.command
           "edit"
