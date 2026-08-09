@@ -10,7 +10,6 @@ module Commands.FileSystem
     renameFile,
     isDirEmpty,
     removeDir,
-    printLine,
     removeDirAndParentsIfEmpty,
   )
 where
@@ -20,6 +19,7 @@ import Bluefin.Eff ((:&), (:>))
 import Bluefin.Eff qualified as Bluefin
 import Bluefin.IO qualified as Bluefin
 import Bluefin.State qualified as Bluefin
+import Commands.Printer qualified as Printer
 import Data.Set qualified as Set
 import Path qualified
 import Path.IO qualified as Path
@@ -41,10 +41,7 @@ data FileSystem (es :: Bluefin.Effects) = MkFileSystem
       Path.Path Path.Abs Path.Dir -> Bluefin.Eff (e :& es) Bool,
     fiRemoveDirImpl ::
       forall e.
-      Path.Path Path.Abs Path.Dir -> Bluefin.Eff (e :& es) (),
-    fiPrintLineImpl ::
-      forall e.
-      Text -> Bluefin.Eff (e :& es) ()
+      Path.Path Path.Abs Path.Dir -> Bluefin.Eff (e :& es) ()
   }
 
 instance Bluefin.Handle FileSystem where
@@ -55,8 +52,7 @@ instance Bluefin.Handle FileSystem where
         fiRenameFileImpl =
           \from to -> Bluefin.useImplUnder $ fiRenameFileImpl from to,
         fiIsDirEmptyImpl = Bluefin.useImplUnder . fiIsDirEmptyImpl,
-        fiRemoveDirImpl = Bluefin.useImplUnder . fiRemoveDirImpl,
-        fiPrintLineImpl = Bluefin.useImplUnder . fiPrintLineImpl
+        fiRemoveDirImpl = Bluefin.useImplUnder . fiRemoveDirImpl
       }
 
 doesFileExist ::
@@ -96,13 +92,6 @@ removeDir ::
   Bluefin.Eff es ()
 removeDir fs = Bluefin.makeOp . fiRemoveDirImpl (Bluefin.mapHandle fs)
 
-printLine ::
-  (e :> es) =>
-  FileSystem e ->
-  Text ->
-  Bluefin.Eff es ()
-printLine fs = Bluefin.makeOp . fiPrintLineImpl (Bluefin.mapHandle fs)
-
 withRealFileSystem ::
   (io :> es) =>
   Bluefin.IOE io ->
@@ -117,7 +106,6 @@ withRealFileSystem ioe action = Bluefin.useImplIn action MkFileSystem {..}
       (dirs, files) <- Path.listDir dir
       pure $ null dirs && null files
     fiRemoveDirImpl = Bluefin.effIO ioe . Path.removeDir
-    fiPrintLineImpl = Bluefin.effIO ioe . putTextLn
 
 data Overlay = Overlay
   { ovAdded :: Set.Set (Path.Path Path.Abs Path.File),
@@ -160,18 +148,18 @@ withOverlayFileSystem ioe action =
             overlay
               { ovDeletedDirs = Set.insert dir $ ovDeletedDirs overlay
               }
-        fiPrintLineImpl = Bluefin.effIO ioe . putTextLn
 
     Bluefin.useImplIn action MkFileSystem {..}
 
 removeDirAndParentsIfEmpty ::
-  (e :> es) =>
-  FileSystem e ->
+  (fs :> es, pr :> es) =>
+  FileSystem fs ->
+  Printer.Printer pr ->
   Path.Path Path.Abs Path.Dir ->
   Bluefin.Eff es ()
-removeDirAndParentsIfEmpty fs dir =
+removeDirAndParentsIfEmpty fs pr dir =
   whenM (isDirEmpty fs dir) $ do
-    printLine fs $ fromString (Path.toFilePath dir) <> " (deleted)"
+    Printer.printLine pr $ fromString (Path.toFilePath dir) <> " (deleted)"
     removeDir fs dir
     let parent = Path.parent dir
-    when (parent /= dir) $ removeDirAndParentsIfEmpty fs parent
+    when (parent /= dir) $ removeDirAndParentsIfEmpty fs pr parent

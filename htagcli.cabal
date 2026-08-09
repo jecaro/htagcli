@@ -55,6 +55,7 @@ library
     Check.Track
     Commands
     Commands.FileSystem
+    Commands.Printer
     Config
     Data.List.NonEmpty.Extra
     Model.Album
