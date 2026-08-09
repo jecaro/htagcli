@@ -8,6 +8,7 @@ module Commands
     checkArtist,
     FixFilePathsOptions (..),
     withFixFilePath,
+    withFixFilePathSilent,
     Error (..),
     errorToText,
   )
@@ -22,6 +23,7 @@ import Check.Artist qualified as Artist
 import Check.Disc qualified as Disc
 import Check.Track qualified as Track
 import Commands.FileSystem qualified as FileSystem
+import Commands.Printer qualified as Printer
 import Data.List qualified as List
 import Model.Album qualified as Album
 import Model.Artist qualified as Artist
@@ -157,15 +159,17 @@ data FixFilePathsOptions = FixFilePathsOptions
   deriving (Show)
 
 fixFilePath ::
-  (ex :> es, fs :> es) =>
+  (ex :> es, fs :> es, pr :> es) =>
   Bluefin.Exception Error ex ->
   FileSystem.FileSystem fs ->
+  Printer.Printer pr ->
   FixFilePathsOptions ->
   AudioTrack.AudioTrack ->
   Bluefin.Eff es ()
 fixFilePath
   ex
   fileSystem
+  printer
   FixFilePathsOptions {..}
   track = do
     let fromFile = AudioTrack.atFile track
@@ -180,7 +184,7 @@ fixFilePath
           TargetFileAlreadyExists toFileAbs
 
       FileSystem.ensureDir fileSystem $ Path.parent toFileAbs
-      FileSystem.printLine fileSystem $
+      Printer.printLine printer $
         fromString (Path.toFilePath fromFile)
           <> " -> "
           <> fromString (Path.toFilePath toFileAbs)
@@ -192,29 +196,53 @@ fixFilePath
           whenM (FileSystem.doesFileExist fileSystem (parentDir </> cover)) $ do
             let coverFrom = parentDir </> cover
                 coverTo = Path.parent toFileAbs </> cover
-            FileSystem.printLine fileSystem $
+            Printer.printLine printer $
               fromString (Path.toFilePath coverFrom)
                 <> " -> "
                 <> fromString (Path.toFilePath coverTo)
             FileSystem.renameFile fileSystem coverFrom coverTo
 
-      FileSystem.removeDirAndParentsIfEmpty fileSystem parentDir
+      FileSystem.removeDirAndParentsIfEmpty fileSystem printer parentDir
 
 withFixFilePath ::
   Bool ->
   ((FixFilePathsOptions -> AudioTrack.AudioTrack -> IO ()) -> IO r) ->
   IO r
-withFixFilePath dryRun cont =
-  Bluefin.runEff_ $ \io -> withFs io $ \fs -> Bluefin.withEffToIO_ io $ \toIO ->
-    cont $ \opts track -> do
-      result <- toIO $ Bluefin.try $ \ex -> fixFilePath ex fs opts track
-      either Exception.throwIO pure result
+withFixFilePath = withFixFilePath' False
+
+withFixFilePathSilent ::
+  Bool ->
+  ((FixFilePathsOptions -> AudioTrack.AudioTrack -> IO ()) -> IO r) ->
+  IO r
+withFixFilePathSilent = withFixFilePath' True
+
+withFixFilePath' ::
+  Bool ->
+  Bool ->
+  ((FixFilePathsOptions -> AudioTrack.AudioTrack -> IO ()) -> IO r) ->
+  IO r
+withFixFilePath' quiet dryRun cont =
+  Bluefin.runEff_ $ \io ->
+    withFileSystem io $ \fs ->
+      withPrinter io $ \pr ->
+        Bluefin.withEffToIO_ io $ \toIO ->
+          cont $ \opts track -> do
+            result <- toIO $ Bluefin.try $ \ex -> fixFilePath ex fs pr opts track
+            either Exception.throwIO pure result
   where
-    withFs ::
+    withFileSystem ::
       (io :> es) =>
       Bluefin.IOE io ->
       (forall e. FileSystem.FileSystem e -> Bluefin.Eff (e :& es) r') ->
       Bluefin.Eff es r'
-    withFs
+    withFileSystem
       | dryRun = FileSystem.withOverlayFileSystem
       | otherwise = FileSystem.withRealFileSystem
+    withPrinter ::
+      (io :> es) =>
+      Bluefin.IOE io ->
+      (forall e. Printer.Printer e -> Bluefin.Eff (e :& es) r') ->
+      Bluefin.Eff es r'
+    withPrinter
+      | quiet = \_ action -> Printer.withSilentPrinter action
+      | otherwise = Printer.withStdoutPrinter

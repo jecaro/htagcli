@@ -31,7 +31,7 @@ testFixFilePaths =
           let inputDir = dir
           filenamesBefore <- snd <$> Path.listDir inputDir
 
-          Commands.withFixFilePath True $ \fixPath ->
+          Commands.withFixFilePathSilent True $ \fixPath ->
             forM_ filenamesBefore $ \file -> do
               track <- AudioTrack.getTags file
               fixPath (fixFilePathsOptions False inputDir) track
@@ -44,7 +44,7 @@ testFixFilePaths =
           let inputDir = dir </> [reldir|input|]
           filenamesInCurrentDirBefore <- snd <$> Path.listDir inputDir
 
-          Commands.withFixFilePath False $ \fixPath ->
+          Commands.withFixFilePathSilent False $ \fixPath ->
             forM_ filenamesInCurrentDirBefore $ \file -> do
               track <- AudioTrack.getTags file
               fixPath (fixFilePathsOptions False dir) track
@@ -68,7 +68,7 @@ testFixFilePaths =
           filenamesInCurrentDirBefore <-
             filter (/= dummy) . snd <$> Path.listDir inputDir
 
-          Commands.withFixFilePath False $ \fixPath ->
+          Commands.withFixFilePathSilent False $ \fixPath ->
             forM_ filenamesInCurrentDirBefore $ \file -> do
               track <- AudioTrack.getTags file
               fixPath (fixFilePathsOptions False dir) track
@@ -84,7 +84,7 @@ testFixFilePaths =
           filenamesInCurrentDirBefore <-
             filter (/= cover) . snd <$> Path.listDir inputDir
 
-          Commands.withFixFilePath False $ \fixPath ->
+          Commands.withFixFilePathSilent False $ \fixPath ->
             forM_ filenamesInCurrentDirBefore $ \file -> do
               track <- AudioTrack.getTags file
               fixPath (fixFilePathsOptions False dir) track
@@ -105,7 +105,7 @@ testFixFilePaths =
           filenamesInCurrentDirBefore <-
             filter (/= cover) . snd <$> Path.listDir inputDir
 
-          Commands.withFixFilePath False $ \fixPath ->
+          Commands.withFixFilePathSilent False $ \fixPath ->
             forM_ filenamesInCurrentDirBefore $ \file -> do
               track <- AudioTrack.getTags file
               fixPath (fixFilePathsOptions True dir) track
@@ -179,7 +179,7 @@ testTargetAlreadyExists dryRun =
     System.writeFile (Path.toFilePath targetFile) ""
     result <-
       Exception.try $
-        Commands.withFixFilePath dryRun $ \fixPath ->
+        Commands.withFixFilePathSilent dryRun $ \fixPath ->
           fixPath opts track
     result `shouldBe` Left (Commands.TargetFileAlreadyExists targetFile)
 
