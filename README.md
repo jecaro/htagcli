@@ -1,6 +1,7 @@
 # htagcli
 
 [![nix][status-nix-png]][status-nix]
+[![AUR][status-aur-png]][status-aur]
 
 `htaglib` is a command-line tool for viewing and editing tags in audio files.
 It also includes utilities to organize your music collection in various ways.
@@ -11,7 +12,8 @@ All audio formats supported by [taglib] are supported.
 ## Installation
 
 A static binary is available in the [releases][releases] page. It should work 
-on any linux distribution. For nix users, an overlay is available in [the flake 
+on any linux distribution. For Arch Linux users, the package is available on 
+the [AUR][status-aur]. For nix users, an overlay is available in [the flake 
 file](./flake.nix).
 
 ## Basic usage
@@ -260,6 +262,8 @@ This project uses [htaglib] as the underlying library to manipulate audio file.
 [musicbrainz]: https://musicbrainz.org/
 [nix]: https://nixos.org/
 [releases]: https://github.com/jecaro/htagcli/releases
+[status-aur-png]: https://img.shields.io/aur/version/htagcli-bin
+[status-aur]: https://aur.archlinux.org/packages/htagcli-bin
 [status-nix-png]: https://github.com/jecaro/htagcli/workflows/nix/badge.svg
 [status-nix]: https://github.com/jecaro/htagcli/actions/workflows/nix.yml
 [taglib]: https://taglib.org/
