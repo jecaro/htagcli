@@ -8,7 +8,7 @@ maintainer: jeancharles.quillet@gmail.com
 common defaults
   default-language: GHC2021
   ghc-options:
-    -- -Werror
+    -Werror
     -Wall
     -Wcompat
     -Widentities
