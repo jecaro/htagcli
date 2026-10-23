@@ -3,7 +3,7 @@
 [![nix][status-nix-png]][status-nix]
 [![AUR][status-aur-png]][status-aur]
 
-`htaglib` is a command-line tool for viewing and editing tags in audio files.
+`htagcli` is a command-line tool for viewing and editing tags in audio files.
 It also includes utilities to organize your music collection in various ways.
 All audio formats supported by [taglib] are supported.
 
