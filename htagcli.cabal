@@ -72,7 +72,6 @@ library
     MusicBrainz.Similarity
     MusicBrainz.Types
     Sound.HTagLib.Extra
-    Toml.Extra
 
   build-depends:
     JuicyPixels,
@@ -90,11 +89,10 @@ library
     req,
     string-interpolate,
     text-metrics,
-    tomland,
+    toml-reader,
     transformers,
     unliftio,
     uuid,
-    validation-selective,
 
 executable htagcli
   import:

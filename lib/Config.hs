@@ -35,15 +35,12 @@ import Path.IO qualified as Path
 import Sound.HTagLib qualified as HTagLib
 import System.IO qualified as System
 import System.IO.Error qualified as Error
+import TOML qualified
 import Text.Megaparsec qualified as Megaparsec
-import Toml ((.=))
-import Toml qualified
-import Toml.Extra qualified as Toml
 import UnliftIO.Exception qualified as Exception
-import Validation qualified
 
 data Error
-  = ErToml Text
+  = ErToml TOML.TOMLError
   | ErNotFound Exception.IOException
   | ErUnicode UnicodeException
   | ErConfigFileExists
@@ -169,7 +166,11 @@ factorChecks' pattern formatting checks =
     }
 
 errorToText :: Error -> Text
-errorToText (ErToml err) = "TOML error: \n" <> err
+errorToText (ErToml err) =
+  unlines
+    [ "TOML error: ",
+      TOML.renderTOMLError err
+    ]
 errorToText (ErNotFound err) =
   unlines
     [ "Config file not found: "
@@ -192,7 +193,7 @@ readConfig = do
 parseByteString :: ByteString.ByteString -> IO Config
 parseByteString bytestring = do
   text <- Exception.fromEither $ first ErUnicode $ decodeUtf8Strict bytestring
-  Exception.fromEither $ decode' configC text
+  Exception.fromEither $ first ErToml $ TOML.decodeWith configD text
 
 -- | Get a path from a file in the config directory
 getFileInConfigDir ::
@@ -218,177 +219,135 @@ createConfig = do
   putTextLn $
     "Created default config file at: " <> toText (Path.toFilePath configFile)
 
--- | Variant of 'Toml.decode' that returns our custom 'Error' type
-decode' :: Toml.TomlCodec c -> Text -> Either Error c
-decode' codec content =
-  first (ErToml . Toml.prettyTomlDecodeErrors) $
-    Toml.decode codec content
-
-configC :: Toml.TomlCodec Config
-configC =
+configD :: TOML.Decoder Config
+configD =
   Config
-    <$> Toml.table filenameC "filename" .= coFilename
-    <*> Toml.table fixPathsC "fix_paths" .= coFixPaths
-    <*> Toml.table checksC "checks" .= coChecks
+    <$> TOML.getFieldWith filenameD "filename"
+    <*> TOML.getFieldWith fixPathsD "fix_paths"
+    <*> TOML.getFieldWith checksD "checks"
 
-fixPathsC :: Toml.TomlCodec FixPaths
-fixPathsC =
+fixPathsD :: TOML.Decoder FixPaths
+fixPathsD =
   FixPaths
-    <$> absDirC "base_dir" .= fiBaseDir
-    <*> Toml.bool "move_cover" .= fiMoveCover
+    <$> TOML.getFieldWith absDirD "base_dir"
+    <*> TOML.getField "move_cover"
 
-absDirC :: Toml.Key -> Toml.TomlCodec (Path.Path Path.Abs Path.Dir)
-absDirC =
-  Toml.textBy (toText . Path.toFilePath) parse
-  where
-    parse :: Text -> Either Text (Path.Path Path.Abs Path.Dir)
-    parse text = case Path.parseAbsDir (toString text) of
-      Nothing -> Left "Invalid absolute directory path"
-      Just directory -> Right directory
+-- | Decode a string with the given parser
+textD :: (Text -> Either Text a) -> TOML.Decoder a
+textD parse =
+  TOML.tomlDecoder
+    >>= either (TOML.makeDecoder . TOML.invalidValue) pure . parse
 
-relFileB :: Toml.TomlBiMap (Path.Path Path.Rel Path.File) Toml.AnyValue
-relFileB = Toml._TextBy (toText . Path.toFilePath) parse
-  where
-    parse :: Text -> Either Text (Path.Path Path.Rel Path.File)
-    parse text = case Path.parseRelFile (toString text) of
-      Nothing -> Left "Invalid relative file path"
-      Just file -> Right file
+-- | Decode a string with a megaparsec parser
+parserD :: Megaparsec.Parsec Void Text a -> TOML.Decoder a
+parserD parser =
+  textD $
+    first (toText . Megaparsec.errorBundlePretty)
+      . Megaparsec.parse (parser <* Megaparsec.eof) ""
 
-filenameC :: Toml.TomlCodec Filename
-filenameC =
+absDirD :: TOML.Decoder (Path.Path Path.Abs Path.Dir)
+absDirD = textD $ \text -> case Path.parseAbsDir (toString text) of
+  Nothing -> Left "Invalid absolute directory path"
+  Just directory -> Right directory
+
+relFileD :: TOML.Decoder (Path.Path Path.Rel Path.File)
+relFileD = textD $ \text -> case Path.parseRelFile (toString text) of
+  Nothing -> Left "Invalid relative file path"
+  Just file -> Right file
+
+nonEmptyD :: TOML.Decoder a -> TOML.Decoder (NonEmpty a)
+nonEmptyD decoder =
+  TOML.getArrayOf decoder
+    >>= maybe (TOML.makeDecoder $ TOML.invalidValue "Got empty list") pure
+      . nonEmpty
+
+filenameD :: TOML.Decoder Filename
+filenameD =
   Filename
-    <$> patternC .= fiPattern
-    <*> formattingC .= fiFormatting
+    <$> TOML.getFieldWith patternD "filename_matches"
+    <*> formattingD
 
-checksC :: Toml.TomlCodec Checks
-checksC =
+checksD :: TOML.Decoder Checks
+checksD =
   Checks
-    <$> maybeValidatedC "track_tags" tagsC chTrackTags
-    <*> maybeValidatedC "track_genre" amongC chTrackGenreAmong
-    <*> trackFilenameC .= chTrackFilename
-    <*> maybeValidatedC "disc_cover" discHaveCoverC chDiscHaveCover
-    <*> discSameDirC .= chDiscSameDir
-    <*> maybeValidatedC "disc_tags" tagsC chDiscSameTags
-    <*> discTracksSequentialC .= chDiscTracksSequential
-    <*> albumDiscsSequentialC .= chAlbumDiscsSequential
-    <*> maybeValidatedC "album_tags" tagsC chAlbumSameTags
-    <*> maybeValidatedC "artist_same_genre" artistSameGenreC chArtistSameGenre
+    <$> enabledWith "track_tags" tagsD
+    <*> enabledWith "track_genre" (TOML.getFieldWith (nonEmptyD genreD) "among")
+    <*> enabled "track_filename"
+    <*> enabledWith "disc_cover" discHaveCoverD
+    <*> enabled "disc_same_dir"
+    <*> enabledWith "disc_tags" tagsD
+    <*> enabled "disc_tracks_sequential"
+    <*> enabled "album_discs_sequential"
+    <*> enabledWith "album_tags" tagsD
+    <*> enabledWith "artist_same_genre" artistSameGenreD
   where
-    trackFilenameC = Toml.table (Toml.bool "enable") "track_filename"
-    discSameDirC = Toml.table (Toml.bool "enable") "disc_same_dir"
-    tagsC = Toml.arrayNonEmptyOf tagB "tags"
-    discTracksSequentialC =
-      Toml.table (Toml.bool "enable") "disc_tracks_sequential"
-    albumDiscsSequentialC =
-      Toml.table (Toml.bool "enable") "album_discs_sequential"
-    artistSameGenreC =
-      Toml.diwrap $
-        Toml.map
-          (Toml.text "artist")
-          (Toml.arrayNonEmptyOf genreB "genres")
-          "except"
-    amongC = Toml.arrayNonEmptyOf genreB "among"
-    discHaveCoverC =
+    tagsD = TOML.getFieldWith (nonEmptyD tagD) "tags"
+    artistSameGenreD =
+      Artist.SameGenre . fromList . fromMaybe []
+        <$> TOML.getFieldOptWith (TOML.getArrayOf exceptD) "except"
+    exceptD =
+      (,)
+        <$> TOML.getField "artist"
+        <*> TOML.getFieldWith (nonEmptyD genreD) "genres"
+    discHaveCoverD =
       Cover.Cover
-        <$> filenamesC .= Cover.coPaths
-        <*> Toml.dioptional (sizeC "min_size") .= Cover.coMinSize
-        <*> Toml.dioptional (sizeC "max_size") .= Cover.coMaxSize
-    filenamesC = Toml.arrayNonEmptyOf relFileB "filenames"
-    sizeC =
-      Toml.table
-        ( Cover.Size
-            <$> Toml.int "width" .= Cover.siWidth
-            <*> Toml.int "height" .= Cover.siHeight
-        )
+        <$> TOML.getFieldWith (nonEmptyD relFileD) "filenames"
+        <*> TOML.getFieldOptWith sizeD "min_size"
+        <*> TOML.getFieldOptWith sizeD "max_size"
+    sizeD =
+      Cover.Size
+        <$> TOML.getField "width"
+        <*> TOML.getField "height"
 
-genreB :: Toml.TomlBiMap HTagLib.Genre Toml.AnyValue
-genreB = Toml._TextBy HTagLib.unGenre $ Right . HTagLib.mkGenre
+-- | Read the "enable" flag of the given table
+enabled :: Text -> TOML.Decoder Bool
+enabled key = TOML.getFields [key, "enable"]
 
--- | Unwrap the Maybe value according to the enable flag.
-maybeValidatedC ::
-  Toml.Key ->
-  Toml.TomlCodec a ->
-  (object -> Maybe a) ->
-  Toml.Codec object (Maybe a)
-maybeValidatedC key codec getter =
-  (unwrap <$> enableAndMaybeValidatedC codec key) .= wrap getter
-  where
-    unwrap (True, Just a) = Just a
-    unwrap _ = Nothing
-    wrap :: (a -> Maybe b) -> a -> (Bool, Maybe b)
-    wrap getter' a
-      | Just b <- getter' a = (True, Just b)
-      | otherwise = (False, Nothing)
+-- | Decode the given table only if its "enable" flag is true
+enabledWith :: Text -> TOML.Decoder a -> TOML.Decoder (Maybe a)
+enabledWith key decoder = do
+  isEnabled <- enabled key
+  if isEnabled
+    then Just <$> TOML.getFieldWith decoder key
+    else pure Nothing
 
--- | From a Codec for a value, create a Codec for an optional value that is
--- defined by a table with an "enable" boolean and the value itself. If the
--- enable flag is true, the value must be present.
-enableAndMaybeValidatedC ::
-  Toml.TomlCodec a ->
-  Toml.Key ->
-  Toml.TomlCodec (Bool, Maybe a)
-enableAndMaybeValidatedC codec key =
-  Toml.thenValidate validate $ enableAndMaybeC codec key
-  where
-    validate (True, Nothing) =
-      Validation.Failure
-        [Toml.BiMapError key $ Toml.ArbitraryError "Enabled but no value"]
-    validate v = Validation.Success v
+genreD :: TOML.Decoder HTagLib.Genre
+genreD = HTagLib.mkGenre <$> TOML.tomlDecoder
 
--- | Codec for a table with an optional value and an "enable" boolean
-enableAndMaybeC :: Toml.TomlCodec a -> Toml.Key -> Toml.TomlCodec (Bool, Maybe a)
-enableAndMaybeC codec =
-  Toml.table $
-    Toml.pair
-      (Toml.bool "enable")
-      (Toml.dioptional codec)
+tagD :: TOML.Decoder Tag.Tag
+tagD = parserD Tag.parser
 
-tagB :: Toml.TomlBiMap Tag.Tag Toml.AnyValue
-tagB = Toml._TextBy Tag.asText parse
-  where
-    parse :: Text -> Either Text Tag.Tag
-    parse text = case Megaparsec.parseMaybe Tag.parser text of
-      Just tag -> Right tag
-      Nothing -> Left $ "Invalid tag: " <> text
+patternD :: TOML.Decoder Pattern.Pattern
+patternD = parserD Pattern.parser
 
-patternC :: Toml.TomlCodec Pattern.Pattern
-patternC = Toml.textBy Pattern.asText parse "filename_matches"
-  where
-    parse :: Text -> Either Text Pattern.Pattern
-    parse text =
-      first (toText . Megaparsec.errorBundlePretty) $
-        Megaparsec.parse Pattern.parser "" text
-
-formattingC :: Toml.TomlCodec Pattern.Formatting
-formattingC =
+formattingD :: TOML.Decoder Pattern.Formatting
+formattingD =
   Pattern.Formatting
-    <$> ( Pattern.addSlashIfNeeded
-            <$> Toml.list charAndCharActionC "unwanted" .= Pattern.foCharActions
-        )
-    <*> paddingC "pad_track_numbers" .= Pattern.foPadTrackNumbers
-    <*> paddingC "pad_disc_numbers" .= Pattern.foPadDiscNumbers
-    <*> Toml.int "placeholder_max_length" .= Pattern.foPlaceholderMaxLength
-
-charAndCharActionC :: Toml.TomlCodec (Char, Pattern.CharAction)
-charAndCharActionC = Toml.pair (charC "char") (charActionC "action")
-
-charC :: Toml.Key -> Toml.TomlCodec Char
-charC = Toml.textBy Text.singleton parseChar
+    <$> charActionsD
+    <*> TOML.getFieldWith paddingD "pad_track_numbers"
+    <*> TOML.getFieldWith paddingD "pad_disc_numbers"
+    <*> TOML.getField "placeholder_max_length"
   where
-    parseChar :: Text -> Either Text Char
-    parseChar text
-      | Just (c, rest) <- Text.uncons text,
-        Text.null rest =
-          Right c
-      | otherwise = Left "Should be a single character"
+    -- Optional list, always removing '/' to avoid creating directories
+    charActionsD =
+      Pattern.addSlashIfNeeded . fromMaybe []
+        <$> TOML.getFieldOptWith
+          (TOML.getArrayOf charAndCharActionD)
+          "unwanted"
 
-charActionC :: Toml.Key -> Toml.TomlCodec Pattern.CharAction
-charActionC = Toml.textBy Pattern.charActionAsText parse
-  where
-    parse :: Text -> Either Text Pattern.CharAction
-    parse text = case Megaparsec.parseMaybe Pattern.charActionParser text of
-      Just charAction -> Right charAction
-      Nothing -> Left $ "Invalid ation: " <> text
+charAndCharActionD :: TOML.Decoder (Char, Pattern.CharAction)
+charAndCharActionD =
+  (,)
+    <$> TOML.getFieldWith charD "char"
+    <*> TOML.getFieldWith charActionD "action"
 
-paddingC :: Toml.Key -> Toml.TomlCodec Pattern.Padding
-paddingC = Toml.textBy Pattern.paddingAsText Pattern.parsePadding
+charD :: TOML.Decoder Char
+charD = textD $ \text -> case Text.uncons text of
+  Just (c, rest) | Text.null rest -> Right c
+  _ -> Left "Should be a single character"
+
+charActionD :: TOML.Decoder Pattern.CharAction
+charActionD = parserD Pattern.charActionParser
+
+paddingD :: TOML.Decoder Pattern.Padding
+paddingD = textD Pattern.parsePadding
