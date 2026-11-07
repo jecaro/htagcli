@@ -109,7 +109,9 @@ enable = true
 # Verify that disc-level tags are consistent across all tracks of a disc. No
 # need to check for album, artist, or albumartist tags here as it is already
 # enforced by htagcli when grouping tracks into discs.
-[checks.disc_tags] enable = true tags = ["year", "genre"]
+[checks.disc_tags]
+enable = true
+tags = ["year", "genre"]
 
 # Verify that track numbers in each disc are sequential starting from 1
 [checks.disc_tracks_sequential]
